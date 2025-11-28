@@ -49,6 +49,7 @@ import ReferredOutTests from "./components/resultPage/resultsReferredOut/Referre
 import ChangePassword from "./components/ChangePassword.js";
 import { Roles } from "./components/utils/Utils";
 import NoteBookInstanceEntryForm from "./components/notebook/NoteBookInstanceEntryForm.js";
+import LabDashboard from "./components/home/LabDashboard.tsx";
 
 export default function App() {
   let i18nConfig = {
@@ -246,6 +247,12 @@ export default function App() {
                 <SecureRoute
                   path="/"
                   exact
+                  component={() => <LabDashboard />}
+                  role=""
+                />
+                <SecureRoute
+                  path="/HomeDashboard"
+                  exact
                   component={() => <Home />}
                   role=""
                 />
@@ -282,7 +289,7 @@ export default function App() {
                 <SecureRoute
                   path="/Dashboard"
                   exact
-                  component={() => <Home />}
+                  component={() => <LabDashboard />}
                   role=""
                 />
                 <SecureRoute
