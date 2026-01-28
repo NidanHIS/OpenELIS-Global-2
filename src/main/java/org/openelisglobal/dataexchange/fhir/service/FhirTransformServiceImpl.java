@@ -172,6 +172,8 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     private OrganizationService organizationService;
     @Autowired
     private FhirUtil fhirUtil;
+    @Autowired
+    private FhirFacilityOrganizationService facilityOrganizationService;
 
     private String ADDRESS_PART_VILLAGE_ID;
     private String ADDRESS_PART_COMMUNE_ID;
@@ -575,6 +577,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         practitioner.setId(provider.getFhirUuidAsString());
         practitioner.addIdentifier(
                 this.createIdentifier(fhirConfig.getOeFhirSystem() + "/provider_uuid", provider.getFhirUuidAsString()));
+        Identifier facilityId = createFacilityIdentifier();
+        if (facilityId != null) {
+            practitioner.addIdentifier(facilityId);
+        }
         practitioner.addName(new HumanName().setFamily(provider.getPerson().getLastName())
                 .addGiven(provider.getPerson().getFirstName()));
         practitioner.setTelecom(transformToTelecom(provider.getPerson()));
@@ -709,6 +715,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
 
         fhirPatient.setId(uuid);
         fhirPatient.setIdentifier(createPatientIdentifiers(subjectNumber, nationalId, stNumber, guid, uuid));
+        Identifier facilityId = createFacilityIdentifier();
+        if (facilityId != null) {
+            fhirPatient.addIdentifier(facilityId);
+        }
 
         HumanName humanName = new HumanName();
         List<HumanName> humanNameList = new ArrayList<>();
@@ -888,6 +898,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         serviceRequest.setId(analysis.getFhirUuidAsString());
         serviceRequest.addIdentifier(
                 this.createIdentifier(fhirConfig.getOeFhirSystem() + "/analysis_uuid", analysis.getFhirUuidAsString()));
+        Identifier facilityId = createFacilityIdentifier();
+        if (facilityId != null) {
+            serviceRequest.addIdentifier(facilityId);
+        }
         serviceRequest.setRequisition(this.createIdentifier(fhirConfig.getOeFhirSystem() + "/samp_labNo",
                 analysis.getSampleItem().getSample().getAccessionNumber()));
         if (organization != null) {
@@ -915,7 +929,7 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         } else if (analysis.getStatusId().equals(statusService.getStatusID(AnalysisStatus.TechnicalAcceptance))) {
             serviceRequest.setStatus(ServiceRequestStatus.ACTIVE);
         } else if (analysis.getStatusId().equals(statusService.getStatusID(AnalysisStatus.TechnicalRejected))) {
-            serviceRequest.setStatus(ServiceRequestStatus.ACTIVE);
+            serviceRequest.setStatus(ServiceRequestStatus.REVOKED);
         } else if (analysis.getStatusId().equals(statusService.getStatusID(AnalysisStatus.Finalized))) {
             serviceRequest.setStatus(ServiceRequestStatus.COMPLETED);
         } else if (analysis.getStatusId().equals(statusService.getStatusID(AnalysisStatus.Canceled))) {
@@ -1010,6 +1024,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         specimen.setId(sampleItem.getFhirUuidAsString());
         specimen.addIdentifier(this.createIdentifier(fhirConfig.getOeFhirSystem() + "/sampleItem_uuid",
                 sampleItem.getFhirUuidAsString()));
+        Identifier facilityId = createFacilityIdentifier();
+        if (facilityId != null) {
+            specimen.addIdentifier(facilityId);
+        }
         specimen.setAccessionIdentifier(this.createIdentifier(fhirConfig.getOeFhirSystem() + "/sampleItem_labNo",
                 sampleItem.getSample().getAccessionNumber() + "-" + sampleItem.getSortOrder()));
         specimen.setStatus(SpecimenStatus.AVAILABLE);
@@ -1268,6 +1286,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         diagnosticReport.setId(analysis.getFhirUuidAsString());
         diagnosticReport.addIdentifier(this.createIdentifier(fhirConfig.getOeFhirSystem() + "/analysisResult_uuid",
                 analysis.getFhirUuidAsString()));
+        Identifier facilityId = createFacilityIdentifier();
+        if (facilityId != null) {
+            diagnosticReport.addIdentifier(facilityId);
+        }
         return diagnosticReport;
     }
 
@@ -1288,6 +1310,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         observation.setId(result.getFhirUuidAsString());
         observation.addIdentifier(
                 this.createIdentifier(fhirConfig.getOeFhirSystem() + "/result_uuid", result.getFhirUuidAsString()));
+        Identifier facilityId = createFacilityIdentifier();
+        if (facilityId != null) {
+            observation.addIdentifier(facilityId);
+        }
 
         // TODO make sure these align with each other.
         // we may need to add detection for when result is changed and add those status
@@ -1606,6 +1632,33 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         }
 
         identifier.setSystem(system);
+        return identifier;
+    }
+
+    /**
+     * Creates a facility identifier that links a FHIR resource to this OpenELIS
+     * facility. This identifier uses the facility UUID and includes the facility
+     * Organization as the assigner.
+     *
+     * @return the facility identifier, or null if facility is not initialized
+     */
+    private Identifier createFacilityIdentifier() {
+        String facilityUuid = facilityOrganizationService.getFacilityUuid();
+        Reference assignerRef = facilityOrganizationService.getFacilityOrganizationReference();
+
+        if (facilityUuid == null) {
+            return null;
+        }
+
+        Identifier identifier = new Identifier();
+        identifier.setUse(Identifier.IdentifierUse.OFFICIAL);
+        identifier.setSystem(fhirConfig.getOeFhirSystem() + "/facility_uuid");
+        identifier.setValue(facilityUuid);
+
+        if (assignerRef != null) {
+            identifier.setAssigner(assignerRef);
+        }
+
         return identifier;
     }
 
