@@ -138,9 +138,8 @@
                <Host name="localhost" appBase="webapps"
                     unpackWARs="true" autoDeploy="true">
 
-                    <Context docBase="ROOT" path="/openelis/api" />
                     <Context docBase="OpenELIS-Global"
-                         path="/openelis/api/OpenELIS-Global/" logEffectiveWebXml="true">
+                         path="/OpenELIS-Global" logEffectiveWebXml="true">
                          <Resources cacheMaxSize="102400" />
                          <Resource auth="Container"
                               driverClassName="org.postgresql.Driver" maxTotal="20" maxIdle="10"

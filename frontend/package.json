@@ -20,7 +20,7 @@
     "carbon-components": "^10.58.12",
     "cors": "^2.8.5",
     "d3": "^7.6.1",
-    "date-fns": "^2.8.1",
+    "date-fns": "2.21.0",
     "dayjs": "^1.10.4",
     "formik": "^2.2.9",
     "formik-error-focus": "2.0.0",
@@ -92,8 +92,11 @@
       "last 1 safari version"
     ]
   },
-  "resolutions": {
-    "**/@types/react": "16.14.5"
+  "overrides": {
+    "date-fns": "2.21.0",
+    "@carbon/charts": {
+      "date-fns": "2.21.0"
+    }
   },
   "devDependencies": {
     "@testing-library/react-hooks": "^8.0.1",
