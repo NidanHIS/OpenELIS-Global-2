@@ -40,7 +40,7 @@ services:
 
     oe.openelis.org:
         container_name: openelisglobal-webapp
-        image: itechuw/openelis-global-2:develop
+        image: dipakthapa/openelis-global-2-backend:latest
         platform: linux/amd64
         depends_on:
             - db.openelis.org
@@ -100,7 +100,7 @@ services:
         build:
             context: ./frontend
             dockerfile: Dockerfile.prod
-        image: itechuw/openelis-global-2-frontend:develop
+        image: dipakthapa/openelis-global-2-frontend:latest
         container_name: openelisglobal-front-end
         platform: linux/amd64
         networks:

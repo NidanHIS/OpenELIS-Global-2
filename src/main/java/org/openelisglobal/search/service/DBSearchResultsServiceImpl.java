@@ -28,9 +28,9 @@ public class DBSearchResultsServiceImpl implements SearchResultsService {
     @Transactional
     public List<PatientSearchResults> getSearchResults(String lastName, String firstName, String STNumber,
             String subjectNumber, String nationalID, String externalID, String patientID, String guid,
-            String dateOfBirth, String gender) {
+            String dateOfBirth, String gender, String phoneNumber) {
         List<PatientSearchResults> results = searchResultsDAO.getSearchResults(lastName, firstName, STNumber,
-                subjectNumber, nationalID, externalID, patientID, guid, dateOfBirth, gender);
+                subjectNumber, nationalID, externalID, patientID, guid, dateOfBirth, gender, phoneNumber);
 
         // FR-015: Redirect merged patients to primary when searching by identifier
         // Only apply redirect for identifier-based searches, not for name/primary ID
@@ -50,9 +50,9 @@ public class DBSearchResultsServiceImpl implements SearchResultsService {
     @Transactional
     public List<PatientSearchResults> getSearchResultsExact(String lastName, String firstName, String STNumber,
             String subjectNumber, String nationalID, String externalID, String patientID, String guid,
-            String dateOfBirth, String gender) {
+            String dateOfBirth, String gender, String phoneNumber) {
         List<PatientSearchResults> results = searchResultsDAO.getSearchResultsExact(lastName, firstName, STNumber,
-                subjectNumber, nationalID, externalID, patientID, guid, dateOfBirth, gender);
+                subjectNumber, nationalID, externalID, patientID, guid, dateOfBirth, gender, phoneNumber);
 
         // FR-015: Redirect merged patients to primary when searching by identifier
         boolean isIdentifierSearch = !GenericValidator.isBlankOrNull(nationalID)
