@@ -888,6 +888,10 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         serviceRequest.setId(analysis.getFhirUuidAsString());
         serviceRequest.addIdentifier(
                 this.createIdentifier(fhirConfig.getOeFhirSystem() + "/analysis_uuid", analysis.getFhirUuidAsString()));
+        if (sample != null && !GenericValidator.isBlankOrNull(sample.getReferringId())) {
+            serviceRequest.addIdentifier(
+                    this.createIdentifier(fhirConfig.getOeFhirSystem() + "/external_order_uuid", "sr-" + sample.getReferringId()));
+        }
         serviceRequest.setRequisition(this.createIdentifier(fhirConfig.getOeFhirSystem() + "/samp_labNo",
                 analysis.getSampleItem().getSample().getAccessionNumber()));
         if (organization != null) {
@@ -982,6 +986,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         CodeableConcept codeableConcept = new CodeableConcept();
         codeableConcept
                 .addCoding(new Coding("http://loinc.org", test.getLoinc(), test.getLocalizedTestName().getEnglish()));
+        if (!GenericValidator.isBlankOrNull(test.getGuid())) {
+            codeableConcept.addCoding(new Coding(null, test.getGuid(), null));
+        }
         return codeableConcept;
     }
 
@@ -1176,7 +1183,21 @@ public class FhirTransformServiceImpl implements FhirTransformService {
             this.addToOperations(fhirOperations, tempIdGenerator, task);
         }
 
-        Bundle responseBundle = fhirPersistanceService.createUpdateFhirResourcesInFhirStore(fhirOperations);
+        try {
+            fhirPersistanceService.createUpdateFhirResourcesInFhirStore(fhirOperations);
+        } catch (FhirLocalPersistingException e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "transformPersistResultValidationFhirObjects",
+                    "Local FHIR store persistence failed; continuing with middleware dispatch. Error: "
+                            + e.getMessage());
+            LogEvent.logError(this.getClass().getSimpleName(), "transformPersistResultValidationFhirObjects",
+                    "Full error: " + e);
+        } catch (RuntimeException e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "transformPersistResultValidationFhirObjects",
+                    "Unexpected error during local FHIR store persistence; continuing with middleware dispatch. Error: "
+                            + e.getMessage());
+            LogEvent.logError(this.getClass().getSimpleName(), "transformPersistResultValidationFhirObjects",
+                    "Full error: " + e);
+        }
 
         try {
             Bundle outboundBundle = new Bundle();
