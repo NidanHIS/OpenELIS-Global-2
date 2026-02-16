@@ -57,7 +57,14 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
 
         form.getSampleOrderItems().setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
         form.getSampleOrderItems().setReferringSiteId(externalOrderRequest.getReferringSiteId());
+        form.getSampleOrderItems().setReferringSiteName(externalOrderRequest.getReferringSiteName());
+        form.getSampleOrderItems().setReferringSiteDepartmentId(externalOrderRequest.getReferringSiteDepartmentId());
         form.getSampleOrderItems().setProviderPersonId(externalOrderRequest.getProviderPersonId());
+        form.getSampleOrderItems().setProviderFirstName(externalOrderRequest.getProviderFirstName());
+        form.getSampleOrderItems().setProviderLastName(externalOrderRequest.getProviderLastName());
+        form.getSampleOrderItems().setProviderWorkPhone(externalOrderRequest.getProviderWorkPhone());
+        form.getSampleOrderItems().setProviderFax(externalOrderRequest.getProviderFax());
+        form.getSampleOrderItems().setProviderEmail(externalOrderRequest.getProviderEmail());
 
         if (externalOrderRequest.getPriority() != null) {
             form.getSampleOrderItems().setPriority(OrderPriority.valueOf(externalOrderRequest.getPriority()));

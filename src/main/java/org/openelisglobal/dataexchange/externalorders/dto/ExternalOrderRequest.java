@@ -31,9 +31,24 @@ public class ExternalOrderRequest {
     @Pattern(regexp = ValidationHelper.ID_REGEX)
     private String referringSiteId;
 
+    private String referringSiteName;
+
+    @Pattern(regexp = ValidationHelper.ID_REGEX)
+    private String referringSiteDepartmentId;
+
     /** Existing provider person ID (foreign key to Person/Provider). */
     @Pattern(regexp = ValidationHelper.ID_REGEX)
     private String providerPersonId;
+
+    private String providerFirstName;
+
+    private String providerLastName;
+
+    private String providerWorkPhone;
+
+    private String providerFax;
+
+    private String providerEmail;
 
     /** Optional received date (yyyy-MM-dd), mapped to receivedDateForDisplay. */
     private String receivedDate;
@@ -82,12 +97,68 @@ public class ExternalOrderRequest {
         this.referringSiteId = referringSiteId;
     }
 
+    public String getReferringSiteName() {
+        return referringSiteName;
+    }
+
+    public void setReferringSiteName(String referringSiteName) {
+        this.referringSiteName = referringSiteName;
+    }
+
+    public String getReferringSiteDepartmentId() {
+        return referringSiteDepartmentId;
+    }
+
+    public void setReferringSiteDepartmentId(String referringSiteDepartmentId) {
+        this.referringSiteDepartmentId = referringSiteDepartmentId;
+    }
+
     public String getProviderPersonId() {
         return providerPersonId;
     }
 
     public void setProviderPersonId(String providerPersonId) {
         this.providerPersonId = providerPersonId;
+    }
+
+    public String getProviderFirstName() {
+        return providerFirstName;
+    }
+
+    public void setProviderFirstName(String providerFirstName) {
+        this.providerFirstName = providerFirstName;
+    }
+
+    public String getProviderLastName() {
+        return providerLastName;
+    }
+
+    public void setProviderLastName(String providerLastName) {
+        this.providerLastName = providerLastName;
+    }
+
+    public String getProviderWorkPhone() {
+        return providerWorkPhone;
+    }
+
+    public void setProviderWorkPhone(String providerWorkPhone) {
+        this.providerWorkPhone = providerWorkPhone;
+    }
+
+    public String getProviderFax() {
+        return providerFax;
+    }
+
+    public void setProviderFax(String providerFax) {
+        this.providerFax = providerFax;
+    }
+
+    public String getProviderEmail() {
+        return providerEmail;
+    }
+
+    public void setProviderEmail(String providerEmail) {
+        this.providerEmail = providerEmail;
     }
 
     public String getReceivedDate() {
