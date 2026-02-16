@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
-import org.openelisglobal.dataexchange.externalorders.service.ExternalOrderHoldingService;
+import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderService;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ExternalOrderRestController {
 
     @Autowired
-    private ExternalOrderHoldingService externalOrderHoldingService;
+    private IncomingOrderService incomingOrderService;
 
     @Autowired
     private PatientService patientService;
@@ -55,7 +55,7 @@ public class ExternalOrderRestController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON payload");
         }
 
-        Integer holdingId = externalOrderHoldingService.receiveOrder(externalOrderRequest, payloadJson, null);
+        Integer holdingId = incomingOrderService.receiveOrder(externalOrderRequest, payloadJson, null);
 
         ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
         response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());

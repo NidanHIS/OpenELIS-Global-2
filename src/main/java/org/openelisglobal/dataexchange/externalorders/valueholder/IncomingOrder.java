@@ -11,14 +11,14 @@ import java.sql.Timestamp;
 import org.openelisglobal.common.valueholder.BaseObject;
 
 @Entity
-@Table(name = "external_order_holding")
-public class ExternalOrderHolding extends BaseObject<Integer> {
+@Table(name = "incoming_orders")
+public class IncomingOrder extends BaseObject<Integer> {
 
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "external_order_holding_generator")
-    @SequenceGenerator(name = "external_order_holding_generator", sequenceName = "external_order_holding_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "incoming_orders_generator")
+    @SequenceGenerator(name = "incoming_orders_generator", sequenceName = "incoming_orders_seq", allocationSize = 1)
     @Column(name = "id")
     private Integer id;
 

@@ -19,7 +19,7 @@ import {
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 
-export default function ExternalOrdersHolding() {
+export default function IncomingOrders() {
   const intl = useIntl();
   const componentMounted = useRef(false);
 
@@ -32,31 +32,31 @@ export default function ExternalOrdersHolding() {
   const headers = [
     {
       key: "externalOrderNumber",
-      header: intl.formatMessage({ id: "externalOrdersHolding.table.externalOrderNumber" }),
+      header: intl.formatMessage({ id: "incomingOrders.table.externalOrderNumber" }),
     },
     {
       key: "patientGuid",
-      header: intl.formatMessage({ id: "externalOrdersHolding.table.patientGuid" }),
+      header: intl.formatMessage({ id: "incomingOrders.table.patientGuid" }),
     },
     {
       key: "receivedTimestamp",
-      header: intl.formatMessage({ id: "externalOrdersHolding.table.receivedTimestamp" }),
+      header: intl.formatMessage({ id: "incomingOrders.table.receivedTimestamp" }),
     },
     {
       key: "actions",
-      header: intl.formatMessage({ id: "externalOrdersHolding.table.actions" }),
+      header: intl.formatMessage({ id: "incomingOrders.table.actions" }),
     },
   ];
 
   const loadRows = () => {
     setLoading(true);
-    getFromOpenElisServer("/rest/external-orders-holding", (data) => {
+    getFromOpenElisServer("/rest/incoming-orders", (data) => {
       if (!componentMounted.current) {
         return;
       }
       const list = Array.isArray(data) ? data : [];
       const mapped = list.map((item) => ({
-        id: String(item.id),
+        id: String(item.externalOrderNumber || ""),
         externalOrderNumber: item.externalOrderNumber || "",
         patientGuid: item.patientGuid || "",
         receivedTimestamp: item.receivedTimestamp || "",
@@ -80,11 +80,11 @@ export default function ExternalOrdersHolding() {
     }
 
     setLoading(true);
+    const externalOrderNumber = row.id || row.externalOrderNumber || "";
     const url =
-      "/rest/external-orders-holding/" +
-      row.id +
-      "/collect?externalOrderNumber=" +
-      encodeURIComponent(row.externalOrderNumber || "");
+      "/rest/incoming-orders/" +
+      encodeURIComponent(externalOrderNumber) +
+      "/collect";
 
     postToOpenElisServerJsonResponse(url, JSON.stringify({}), (res) => {
       if (!componentMounted.current) {
@@ -107,7 +107,7 @@ export default function ExternalOrdersHolding() {
         kind: NotificationKinds.success,
         title: intl.formatMessage({ id: "notification.title" }),
         message: intl.formatMessage({
-          id: "externalOrdersHolding.notification.collectSuccess",
+          id: "incomingOrders.notification.collectSuccess",
         }),
       });
 
@@ -121,12 +121,12 @@ export default function ExternalOrdersHolding() {
       {notificationVisible === true ? <AlertDialog /> : ""}
 
       <TableContainer
-        title={intl.formatMessage({ id: "externalOrdersHolding.title" })}
-        description={intl.formatMessage({ id: "externalOrdersHolding.description" })}
+        title={intl.formatMessage({ id: "incomingOrders.title" })}
+        description={intl.formatMessage({ id: "incomingOrders.description" })}
       >
         {loading ? (
           <InlineLoading
-            description={intl.formatMessage({ id: "externalOrdersHolding.loading" })}
+            description={intl.formatMessage({ id: "incomingOrders.loading" })}
           />
         ) : null}
 
@@ -157,7 +157,7 @@ export default function ExternalOrdersHolding() {
                                 onCollect(row);
                               }}
                             >
-                              <FormattedMessage id="externalOrdersHolding.collect" />
+                              <FormattedMessage id="incomingOrders.collect" />
                             </Button>
                           </TableCell>
                         );

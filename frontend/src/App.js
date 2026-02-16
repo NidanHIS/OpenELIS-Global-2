@@ -54,7 +54,7 @@ import NotebookSampleOrder from "./components/notebook/NotebookSampleOrder.js";
 import FreezerMonitoringDashboard from "./components/coldStorage/FreezerMonitoringDashboard";
 import SampleManagement from "./components/sampleManagement/SampleManagement";
 import LabDashboard from "./components/home/LabDashboard.tsx";
-import ExternalOrdersHolding from "./components/externalOrdersHolding/Index";
+import IncomingOrders from "./components/incomingOrders/Index";
 
 export default function App() {
   let i18nConfig = {
@@ -455,9 +455,9 @@ export default function App() {
                 />
 
                 <SecureRoute
-                  path="/ExternalOrdersHolding"
+                  path="/IncomingOrders"
                   exact
-                  component={() => <ExternalOrdersHolding />}
+                  component={() => <IncomingOrders />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute

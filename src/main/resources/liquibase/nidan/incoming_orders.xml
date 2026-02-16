@@ -5,15 +5,15 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet author="Prabin Timalsina" id="nidan-external-order-holding-001">
+    <changeSet author="Pravin Timalsina" id="nidan-incoming-orders-001">
         <preConditions onFail="MARK_RAN">
             <not>
-                <tableExists tableName="external_order_holding" />
+                <tableExists tableName="incoming_orders" />
             </not>
         </preConditions>
 
-        <createTable schemaName="clinlims" tableName="external_order_holding">
-            <column name="id" type="INTEGER" valueSequenceNext="external_order_holding_seq">
+        <createTable schemaName="clinlims" tableName="incoming_orders">
+            <column name="id" type="INTEGER" valueSequenceNext="incoming_orders_seq">
                 <constraints primaryKey="true" />
             </column>
 
@@ -43,13 +43,13 @@
             <column name="last_updated" type="TIMESTAMP" />
         </createTable>
 
-        <createSequence incrementBy="1" schemaName="clinlims" sequenceName="external_order_holding_seq"
+        <createSequence incrementBy="1" schemaName="clinlims" sequenceName="incoming_orders_seq"
             startValue="1" />
 
-        <addUniqueConstraint schemaName="clinlims" tableName="external_order_holding"
-            columnNames="external_order_number" constraintName="unique_external_order_holding_external_order_number" />
+        <addUniqueConstraint schemaName="clinlims" tableName="incoming_orders"
+            columnNames="external_order_number" constraintName="unique_incoming_orders_external_order_number" />
 
-        <createIndex schemaName="clinlims" tableName="external_order_holding" indexName="idx_external_order_holding_received_ts">
+        <createIndex schemaName="clinlims" tableName="incoming_orders" indexName="idx_incoming_orders_received_ts">
             <column name="received_timestamp" />
         </createIndex>
 

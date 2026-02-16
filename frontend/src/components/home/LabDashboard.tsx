@@ -114,7 +114,7 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
 
   useEffect(() => {
     getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
-    getFromOpenElisServer("/rest/external-orders-holding", (data) => {
+    getFromOpenElisServer("/rest/incoming-orders", (data) => {
       if (!componentMounted.current) {
         return;
       }
@@ -302,7 +302,7 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
 
   const handleMaximizeClick = (tile) => {
     if (tile?.type === "SAMPLES_TO_COLLECT") {
-      history.push("/ExternalOrdersHolding");
+      history.push("/IncomingOrders");
       return;
     }
     if (
