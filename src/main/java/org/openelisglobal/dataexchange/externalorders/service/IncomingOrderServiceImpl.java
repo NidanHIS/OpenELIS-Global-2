@@ -1,7 +1,6 @@
 package org.openelisglobal.dataexchange.externalorders.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
@@ -10,14 +9,9 @@ import org.openelisglobal.dataexchange.externalorders.dao.IncomingOrderDAO;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
 import org.openelisglobal.sample.form.SamplePatientEntryForm;
-import org.openelisglobal.sample.service.SamplePatientEntryOrderPlacementService;
-import org.openelisglobal.sample.service.SampleService;
-import org.openelisglobal.sample.valueholder.Sample;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.BindingResult;
 
 @Service
 public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<IncomingOrder, Integer>
@@ -28,12 +22,6 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
 
     @Autowired
     private ExternalOrderFormMapperService externalOrderFormMapperService;
-
-    @Autowired
-    private SamplePatientEntryOrderPlacementService samplePatientEntryOrderPlacementService;
-
-    @Autowired
-    private SampleService sampleService;
 
     IncomingOrderServiceImpl() {
         super(IncomingOrder.class);
@@ -112,24 +100,27 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
 
     @Override
     @Transactional
-    public ExternalOrderCollectResult collect(String externalOrderNumber, HttpServletRequest request) {
+    public void finalizeHolding(String externalOrderNumber) {
         if (externalOrderNumber == null || externalOrderNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("Missing externalOrderNumber");
         }
 
         IncomingOrder holding = baseObjectDAO.getByExternalOrderNumber(externalOrderNumber).orElse(null);
+        if (holding != null) {
+            baseObjectDAO.delete(holding);
+        }
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public SamplePatientEntryForm buildSamplePatientEntryForm(String externalOrderNumber) {
+        if (externalOrderNumber == null || externalOrderNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Missing externalOrderNumber");
+        }
+
+        IncomingOrder holding = baseObjectDAO.getByExternalOrderNumber(externalOrderNumber).orElse(null);
         if (holding == null) {
-            ExternalOrderCollectResult result = new ExternalOrderCollectResult();
-            Sample existingSample = sampleService.getSampleByReferringId(externalOrderNumber);
-            if (existingSample != null) {
-                result.setExternalOrderNumber(externalOrderNumber);
-                result.setLabNo(existingSample.getAccessionNumber());
-                result.setSampleId(existingSample.getId());
-                return result;
-            }
-            result.setExternalOrderNumber(null);
-            return result;
+            throw new IllegalArgumentException("Unknown externalOrderNumber");
         }
 
         ExternalOrderRequest externalOrderRequest;
@@ -144,48 +135,6 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
             throw new IllegalArgumentException("Stored payload externalOrderNumber mismatch");
         }
 
-        Sample existingSample = null;
-        if (payloadExternalOrderNumber != null) {
-            existingSample = sampleService.getSampleByReferringId(payloadExternalOrderNumber);
-        }
-
-        if (existingSample != null) {
-            baseObjectDAO.delete(holding);
-            ExternalOrderCollectResult result = new ExternalOrderCollectResult();
-            result.setExternalOrderNumber(payloadExternalOrderNumber);
-            result.setLabNo(existingSample.getAccessionNumber());
-            result.setSampleId(existingSample.getId());
-            return result;
-        }
-
-        SamplePatientEntryForm form = externalOrderFormMapperService.buildForm(externalOrderRequest);
-        BindingResult bindingResult = new BeanPropertyBindingResult(form, "samplePatientEntryForm");
-
-        try {
-            samplePatientEntryOrderPlacementService.placeOrder(request, form, bindingResult);
-        } catch (Exception e) {
-            throw new IllegalStateException("Collect failed");
-        }
-
-        if (bindingResult.hasErrors()) {
-            throw new IllegalArgumentException("Collect validation failed");
-        }
-
-        Sample createdSample = null;
-        if (payloadExternalOrderNumber != null) {
-            createdSample = sampleService.getSampleByReferringId(payloadExternalOrderNumber);
-        }
-
-        baseObjectDAO.delete(holding);
-
-        ExternalOrderCollectResult result = new ExternalOrderCollectResult();
-        result.setExternalOrderNumber(payloadExternalOrderNumber);
-        if (createdSample != null) {
-            result.setLabNo(createdSample.getAccessionNumber());
-            result.setSampleId(createdSample.getId());
-        } else {
-            result.setLabNo(form.getSampleOrderItems() != null ? form.getSampleOrderItems().getLabNo() : null);
-        }
-        return result;
+        return externalOrderFormMapperService.buildForm(externalOrderRequest);
     }
 }

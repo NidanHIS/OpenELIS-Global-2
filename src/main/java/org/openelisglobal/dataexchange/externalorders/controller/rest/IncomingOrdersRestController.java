@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
-import org.openelisglobal.dataexchange.externalorders.service.ExternalOrderCollectResult;
 import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderService;
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
+import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,6 +51,16 @@ public class IncomingOrdersRestController {
         return ResponseEntity.ok(toDetail(holdingOpt.get()));
     }
 
+    @GetMapping(value = "/{externalOrderNumber}/sample-patient-entry-form", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getSamplePatientEntryForm(@PathVariable("externalOrderNumber") String externalOrderNumber) {
+        try {
+            SamplePatientEntryForm form = incomingOrderService.buildSamplePatientEntryForm(externalOrderNumber);
+            return ResponseEntity.ok(form);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
     @PutMapping(value = "/{externalOrderNumber}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@PathVariable("externalOrderNumber") String externalOrderNumber,
             @RequestBody ExternalOrderRequest updatedRequest) {
@@ -64,19 +73,13 @@ public class IncomingOrdersRestController {
         }
     }
 
-    @PostMapping(value = "/{externalOrderNumber}/collect", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> collect(@PathVariable("externalOrderNumber") String externalOrderNumber,
-            HttpServletRequest request) {
+    @PostMapping(value = "/{externalOrderNumber}/finalize", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> finalizeHolding(@PathVariable("externalOrderNumber") String externalOrderNumber) {
         try {
-            ExternalOrderCollectResult result = incomingOrderService.collect(externalOrderNumber, request);
-            if (result.getExternalOrderNumber() == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Unknown externalOrderNumber");
-            }
-            return ResponseEntity.ok(result);
+            incomingOrderService.finalizeHolding(externalOrderNumber);
+            return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 

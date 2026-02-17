@@ -11,10 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@carbon/react";
+import { useHistory } from "react-router-dom";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   getFromOpenElisServer,
-  postToOpenElisServerJsonResponse,
 } from "../utils/Utils";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
@@ -22,6 +22,7 @@ import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 export default function IncomingOrders() {
   const intl = useIntl();
   const componentMounted = useRef(false);
+  const history = useHistory();
 
   const { notificationVisible, setNotificationVisible, addNotification } =
     useContext(NotificationContext);
@@ -79,41 +80,21 @@ export default function IncomingOrders() {
       return;
     }
 
-    setLoading(true);
     const externalOrderNumber = row.id || row.externalOrderNumber || "";
-    const url =
-      "/rest/incoming-orders/" +
-      encodeURIComponent(externalOrderNumber) +
-      "/collect";
-
-    postToOpenElisServerJsonResponse(url, JSON.stringify({}), (res) => {
-      if (!componentMounted.current) {
-        return;
-      }
-
-      if (res && (res.status === 0 || res.status >= 400)) {
-        setNotificationVisible(true);
-        addNotification({
-          kind: NotificationKinds.error,
-          title: intl.formatMessage({ id: "notification.title" }),
-          message: res.message || res.error || res.statusText || "Error",
-        });
-        setLoading(false);
-        return;
-      }
-
+    if (!externalOrderNumber) {
       setNotificationVisible(true);
       addNotification({
-        kind: NotificationKinds.success,
+        kind: NotificationKinds.error,
         title: intl.formatMessage({ id: "notification.title" }),
-        message: intl.formatMessage({
-          id: "incomingOrders.notification.collectSuccess",
-        }),
+        message: "Missing external order number",
       });
+      return;
+    }
 
-      setRows((prev) => prev.filter((r) => r.id !== row.id));
-      setLoading(false);
-    });
+    history.push(
+      "/SamplePatientEntry?incomingOrderNumber=" +
+        encodeURIComponent(externalOrderNumber),
+    );
   };
 
   return (
@@ -136,7 +117,10 @@ export default function IncomingOrders() {
               <TableHead>
                 <TableRow>
                   {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })}>
+                    <TableHeader
+                      key={header.key}
+                      {...getHeaderProps({ header })}
+                    >
                       {header.header}
                     </TableHeader>
                   ))}

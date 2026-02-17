@@ -15,6 +15,10 @@ import org.openelisglobal.patient.action.IPatientUpdate.PatientUpdateStatus;
 import org.openelisglobal.patient.action.bean.PatientManagementInfo;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.valueholder.Patient;
+import org.openelisglobal.organization.service.OrganizationService;
+import org.openelisglobal.organization.valueholder.Organization;
+import org.openelisglobal.person.service.PersonService;
+import org.openelisglobal.person.valueholder.Person;
 import org.openelisglobal.sample.bean.SampleOrderItem;
 import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
@@ -39,6 +43,12 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
     @Autowired
     private PanelItemService panelItemService;
 
+    @Autowired
+    private OrganizationService organizationService;
+
+    @Autowired
+    private PersonService personService;
+
     @Override
     public SamplePatientEntryForm buildForm(ExternalOrderRequest externalOrderRequest) {
         SamplePatientEntryForm form = new SamplePatientEntryForm();
@@ -51,6 +61,22 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
 
         PatientManagementInfo patientInfo = new PatientManagementInfo();
         patientInfo.setPatientPK(patient.getId());
+        patientInfo.setGuid(externalOrderRequest.getPatientGuid());
+        if (patient.getPerson() != null) {
+            patientInfo.setFirstName(patient.getPerson().getFirstName());
+            patientInfo.setLastName(patient.getPerson().getLastName());
+            if (patient.getPerson().getPrimaryPhone() != null && !patient.getPerson().getPrimaryPhone().trim().isEmpty()) {
+                patientInfo.setPrimaryPhone(patient.getPerson().getPrimaryPhone());
+            } else {
+                patientInfo.setPrimaryPhone(patient.getPerson().getWorkPhone());
+            }
+            patientInfo.setEmail(patient.getPerson().getEmail());
+            patientInfo.setStreetAddress(patient.getPerson().getStreetAddress());
+            patientInfo.setCity(patient.getPerson().getCity());
+        }
+        patientInfo.setGender(patient.getGender());
+        patientInfo.setBirthDateForDisplay(patient.getBirthDateForDisplay());
+        patientInfo.setNationalId(patient.getNationalId());
         patientInfo.setPatientUpdateStatus(PatientUpdateStatus.NO_ACTION);
         form.setPatientProperties(patientInfo);
         form.setPatientUpdateStatus(PatientUpdateStatus.NO_ACTION);
@@ -65,6 +91,9 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         form.getSampleOrderItems().setProviderWorkPhone(externalOrderRequest.getProviderWorkPhone());
         form.getSampleOrderItems().setProviderFax(externalOrderRequest.getProviderFax());
         form.getSampleOrderItems().setProviderEmail(externalOrderRequest.getProviderEmail());
+
+        resolveReferringSite(form.getSampleOrderItems());
+        resolveRequester(form.getSampleOrderItems());
 
         if (externalOrderRequest.getPriority() != null) {
             form.getSampleOrderItems().setPriority(OrderPriority.valueOf(externalOrderRequest.getPriority()));
@@ -159,6 +188,76 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
 
         form.setSampleXML(xmlBuilder.buildSamplesXml(samples, sampleTestIds, samplePanelIds));
         return form;
+    }
+
+    private void resolveReferringSite(SampleOrderItem sampleOrderItems) {
+        if (sampleOrderItems == null) {
+            return;
+        }
+
+        // If only ID is provided, populate display name so the UI doesn't show raw numeric IDs.
+        if (sampleOrderItems.getReferringSiteId() != null && !sampleOrderItems.getReferringSiteId().trim().isEmpty()
+                && (sampleOrderItems.getReferringSiteName() == null
+                        || sampleOrderItems.getReferringSiteName().trim().isEmpty())) {
+            Organization org = organizationService.getOrganizationById(sampleOrderItems.getReferringSiteId().trim());
+            if (org != null && org.getOrganizationName() != null) {
+                sampleOrderItems.setReferringSiteName(org.getOrganizationName());
+            }
+        }
+
+        // If only free-text name is provided, try to resolve an existing organization ID (best-effort).
+        if ((sampleOrderItems.getReferringSiteId() == null || sampleOrderItems.getReferringSiteId().trim().isEmpty())
+                && sampleOrderItems.getReferringSiteName() != null
+                && !sampleOrderItems.getReferringSiteName().trim().isEmpty()) {
+            Organization probe = new Organization();
+            probe.setOrganizationName(sampleOrderItems.getReferringSiteName().trim());
+            Organization existing = organizationService.getActiveOrganizationByName(probe, true);
+            if (existing != null && existing.getId() != null) {
+                sampleOrderItems.setReferringSiteId(existing.getId());
+            }
+        }
+    }
+
+    private void resolveRequester(SampleOrderItem sampleOrderItems) {
+        if (sampleOrderItems == null) {
+            return;
+        }
+
+        // If we have providerPersonId but missing display names, fill them in.
+        if (sampleOrderItems.getProviderPersonId() != null && !sampleOrderItems.getProviderPersonId().trim().isEmpty()
+                && ((sampleOrderItems.getProviderFirstName() == null
+                        || sampleOrderItems.getProviderFirstName().trim().isEmpty())
+                        || (sampleOrderItems.getProviderLastName() == null
+                                || sampleOrderItems.getProviderLastName().trim().isEmpty()))) {
+            Person person = personService.getPersonById(sampleOrderItems.getProviderPersonId().trim());
+            if (person != null) {
+                if (sampleOrderItems.getProviderFirstName() == null
+                        || sampleOrderItems.getProviderFirstName().trim().isEmpty()) {
+                    sampleOrderItems.setProviderFirstName(person.getFirstName());
+                }
+                if (sampleOrderItems.getProviderLastName() == null
+                        || sampleOrderItems.getProviderLastName().trim().isEmpty()) {
+                    sampleOrderItems.setProviderLastName(person.getLastName());
+                }
+            } else {
+                sampleOrderItems.setProviderPersonId("");
+                if (sampleOrderItems.getProviderFirstName() == null
+                        || sampleOrderItems.getProviderFirstName().trim().isEmpty()) {
+                    sampleOrderItems.setProviderFirstName("Unknown");
+                }
+                if (sampleOrderItems.getProviderLastName() == null
+                        || sampleOrderItems.getProviderLastName().trim().isEmpty()) {
+                    sampleOrderItems.setProviderLastName("Unknown");
+                }
+            }
+        }
+
+        if (sampleOrderItems.getProviderFirstName() == null || sampleOrderItems.getProviderFirstName().trim().isEmpty()) {
+            sampleOrderItems.setProviderFirstName("Unknown");
+        }
+        if (sampleOrderItems.getProviderLastName() == null || sampleOrderItems.getProviderLastName().trim().isEmpty()) {
+            sampleOrderItems.setProviderLastName("Unknown");
+        }
     }
 
     private String resolveTestId(ExternalOrderRequest.ExternalOrderTestRef testRef) {

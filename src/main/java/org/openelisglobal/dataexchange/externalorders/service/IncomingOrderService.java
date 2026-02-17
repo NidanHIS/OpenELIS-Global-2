@@ -1,10 +1,10 @@
 package org.openelisglobal.dataexchange.externalorders.service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
+import org.openelisglobal.sample.form.SamplePatientEntryForm;
 
 public interface IncomingOrderService {
 
@@ -17,5 +17,7 @@ public interface IncomingOrderService {
     IncomingOrder updateOrderByExternalOrderNumber(String externalOrderNumber, ExternalOrderRequest updatedRequest,
             String payloadJson, String updatedSysUserId);
 
-    ExternalOrderCollectResult collect(String externalOrderNumber, HttpServletRequest request);
+    void finalizeHolding(String externalOrderNumber);
+
+    SamplePatientEntryForm buildSamplePatientEntryForm(String externalOrderNumber);
 }
