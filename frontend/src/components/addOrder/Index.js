@@ -116,6 +116,8 @@ const Index = () => {
 
         const sampleOrderItems = form.sampleOrderItems || {};
         const patientProperties = form.patientProperties || {};
+        const resolvedExternalOrderNumber =
+          sampleOrderItems.externalOrderNumber || externalOrderNumber || "";
 
         setOrderFormValues({
           ...SampleOrderFormValues,
@@ -127,8 +129,10 @@ const Index = () => {
           sampleOrderItems: {
             ...SampleOrderFormValues.sampleOrderItems,
             ...sampleOrderItems,
-            // Incoming-order review flow should not use the external referral lookup mechanism.
-            externalOrderNumber: "",
+            // Incoming-order review flow uses incomingOrderNumber to skip referral lookup,
+            // but must still submit externalOrderNumber so it can be persisted and later
+            // included in middleware result sync payloads.
+            externalOrderNumber: resolvedExternalOrderNumber,
           },
         });
 
@@ -168,7 +172,10 @@ const Index = () => {
           if (res && Array.isArray(res.panels)) {
             res.panels.forEach((p) => {
               if (p && p.id != null) {
-                panelsById[String(p.id)] = p.name;
+                panelsById[String(p.id)] = {
+                  name: p.name,
+                  testIds: p.testIds,
+                };
               }
             });
           }
@@ -204,17 +211,24 @@ const Index = () => {
                     })
                   : current.tests,
                 panels: Array.isArray(current.panels)
-                  ? current.panels.map((p) => {
-                      const id = String(p.id);
-                      return {
-                        ...p,
-                        name:
-                          panelsById[id] ||
-                          globalPanelsById[id] ||
-                          p.name ||
-                          id,
-                      };
-                    })
+                  ? current.panels
+                      .map((p) => {
+                        const id = String(p.id);
+                        const resolved = panelsById[id];
+                        return {
+                          ...p,
+                          name:
+                            resolved?.name ||
+                            globalPanelsById[id] ||
+                            p.name ||
+                            id,
+                          testIds: resolved?.testIds,
+                        };
+                      })
+                      // Incoming-order panels coming from XML lack testIds.
+                      // SampleType panel-selection logic requires testIds, so drop panels
+                      // which cannot be resolved for this sample type.
+                      .filter((p) => p && p.testIds)
                   : current.panels,
               };
 
