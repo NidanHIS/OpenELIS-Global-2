@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -61,6 +62,40 @@ public class ExternalOrderRestController {
         response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
         response.setHoldingId(holdingId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateExternalOrder(HttpServletRequest request,
+            @Valid @RequestBody ExternalOrderRequest externalOrderRequest)
+            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+
+        Patient patient = patientService.getPatientForGuid(externalOrderRequest.getPatientGuid());
+        if (patient == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unknown patientGuid");
+        }
+
+        String payloadJson;
+        try {
+            payloadJson = new ObjectMapper().writeValueAsString(externalOrderRequest);
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON payload");
+        }
+
+        Integer holdingId;
+        try {
+            holdingId = incomingOrderService
+                    .updateOrderByExternalOrderNumber(externalOrderRequest.getExternalOrderNumber(),
+                            externalOrderRequest, payloadJson, null)
+                    .getId();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Order does not exist or has already been collected");
+        }
+
+        ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
+        response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
+        response.setHoldingId(holdingId);
+        return ResponseEntity.ok(response);
     }
 
     /**
