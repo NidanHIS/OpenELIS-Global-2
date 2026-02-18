@@ -5,11 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderService;
+import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.valueholder.Patient;
+import org.openelisglobal.sample.service.SampleService;
+import org.openelisglobal.sample.valueholder.Sample;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +44,9 @@ public class ExternalOrderRestController {
     @Autowired
     private PatientService patientService;
 
+    @Autowired
+    private SampleService sampleService;
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createExternalOrder(HttpServletRequest request,
             @Valid @RequestBody ExternalOrderRequest externalOrderRequest)
@@ -56,11 +64,57 @@ public class ExternalOrderRestController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON payload");
         }
 
-        Integer holdingId = incomingOrderService.receiveOrder(externalOrderRequest, payloadJson, null);
+        String externalOrderNumber = externalOrderRequest.getExternalOrderNumber();
+        if (externalOrderNumber != null) {
+            Sample existingSample = sampleService.getSampleByReferringId(externalOrderNumber);
+            if (existingSample != null) {
+                ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
+                response.setExternalOrderNumber(externalOrderNumber);
+                response.setHoldingId(null);
+                response.setStatus("COLLECTED");
+                response.setAccessionNumber(existingSample.getAccessionNumber());
+                response.setMessage("Order has already been collected");
+                return ResponseEntity.ok(response);
+            }
+
+            Optional<IncomingOrder> existingHolding = incomingOrderService.getOrderByExternalOrderNumber(
+                    externalOrderNumber);
+            if (existingHolding.isPresent()) {
+                Integer holdingId = existingHolding.get().getId();
+                ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
+                response.setExternalOrderNumber(externalOrderNumber);
+                response.setHoldingId(holdingId);
+                response.setStatus("ORDER_EXISTS");
+                response.setMessage("Order already exists");
+                return ResponseEntity.ok(response);
+            }
+        }
+
+        Integer holdingId;
+        try {
+            holdingId = incomingOrderService.receiveOrder(externalOrderRequest, payloadJson, null);
+        } catch (DataIntegrityViolationException e) {
+            if (externalOrderNumber != null) {
+                Optional<IncomingOrder> existingHolding = incomingOrderService.getOrderByExternalOrderNumber(
+                        externalOrderNumber);
+                if (existingHolding.isPresent()) {
+                    holdingId = existingHolding.get().getId();
+                    ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
+                    response.setExternalOrderNumber(externalOrderNumber);
+                    response.setHoldingId(holdingId);
+                    response.setStatus("ORDER_EXISTS");
+                    response.setMessage("Order already exists");
+                    return ResponseEntity.ok(response);
+                }
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Unable to receive order (possible duplicate externalOrderNumber)");
+        }
 
         ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
-        response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
+        response.setExternalOrderNumber(externalOrderNumber);
         response.setHoldingId(holdingId);
+        response.setStatus("CREATED");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -95,6 +149,7 @@ public class ExternalOrderRestController {
         ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
         response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
         response.setHoldingId(holdingId);
+        response.setStatus("UPDATED");
         return ResponseEntity.ok(response);
     }
 
@@ -104,6 +159,9 @@ public class ExternalOrderRestController {
     public static class ExternalOrderReceivedResponse {
         private String externalOrderNumber;
         private Integer holdingId;
+        private String status;
+        private String message;
+        private String accessionNumber;
 
         public String getExternalOrderNumber() {
             return externalOrderNumber;
@@ -120,6 +178,29 @@ public class ExternalOrderRestController {
         public void setHoldingId(Integer holdingId) {
             this.holdingId = holdingId;
         }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public String getAccessionNumber() {
+            return accessionNumber;
+        }
+
+        public void setAccessionNumber(String accessionNumber) {
+            this.accessionNumber = accessionNumber;
+        }
     }
 }
-
