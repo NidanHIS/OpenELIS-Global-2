@@ -19,5 +19,7 @@ public interface IncomingOrderService {
 
     void finalizeHolding(String externalOrderNumber);
 
+    void deleteHoldingByExternalOrderNumber(String externalOrderNumber);
+
     SamplePatientEntryForm buildSamplePatientEntryForm(String externalOrderNumber);
 }

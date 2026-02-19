@@ -112,6 +112,25 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
     }
 
     @Override
+    @Transactional
+    public void deleteHoldingByExternalOrderNumber(String externalOrderNumber) {
+        if (externalOrderNumber == null || externalOrderNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Missing externalOrderNumber");
+        }
+
+        IncomingOrder holding = baseObjectDAO.getByExternalOrderNumber(externalOrderNumber).orElse(null);
+        if (holding == null) {
+            return;
+        }
+
+        if (holding.getSampleId() != null || (holding.getLabNo() != null && !holding.getLabNo().trim().isEmpty())) {
+            throw new IllegalStateException("Order can't be deleted after collection");
+        }
+
+        baseObjectDAO.delete(holding);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public SamplePatientEntryForm buildSamplePatientEntryForm(String externalOrderNumber) {
         if (externalOrderNumber == null || externalOrderNumber.trim().isEmpty()) {
