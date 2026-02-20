@@ -19,6 +19,8 @@ import org.openelisglobal.organization.service.OrganizationService;
 import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.person.service.PersonService;
 import org.openelisglobal.person.valueholder.Person;
+import org.openelisglobal.typeofsample.service.TypeOfSampleTestService;
+import org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest;
 import org.openelisglobal.sample.bean.SampleOrderItem;
 import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
@@ -48,6 +50,9 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
 
     @Autowired
     private PersonService personService;
+
+    @Autowired
+    private TypeOfSampleTestService typeOfSampleTestService;
 
     @Override
     public SamplePatientEntryForm buildForm(ExternalOrderRequest externalOrderRequest) {
@@ -186,8 +191,41 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             samplePanelIds.add(new ArrayList<>(panelIds));
         }
 
+        for (int i = 0; i < samples.size(); i++) {
+            ExternalOrderRequest.ExternalOrderSample sample = samples.get(i);
+            if (sample.getSampleTypeId() == null || sample.getSampleTypeId().trim().isEmpty()) {
+                String resolvedSampleTypeId = resolveSampleTypeId(sampleTestIds.get(i));
+                if (resolvedSampleTypeId == null) {
+                    throw new IllegalArgumentException("Unable to resolve sample type");
+                }
+                sample.setSampleTypeId(resolvedSampleTypeId);
+            }
+        }
+
         form.setSampleXML(xmlBuilder.buildSamplesXml(samples, sampleTestIds, samplePanelIds));
         return form;
+    }
+
+    private String resolveSampleTypeId(List<String> testIds) {
+        if (testIds == null || testIds.isEmpty()) {
+            return null;
+        }
+
+        for (String testId : testIds) {
+            if (testId == null || testId.trim().isEmpty()) {
+                continue;
+            }
+            List<TypeOfSampleTest> mappings = typeOfSampleTestService.getTypeOfSampleTestsForTest(testId.trim());
+            if (mappings != null && !mappings.isEmpty()) {
+                TypeOfSampleTest chosen = mappings.get(0);
+                if (chosen != null && chosen.getTypeOfSampleId() != null
+                        && !chosen.getTypeOfSampleId().trim().isEmpty()) {
+                    return chosen.getTypeOfSampleId().trim();
+                }
+            }
+        }
+
+        return null;
     }
 
     private void resolveReferringSite(SampleOrderItem sampleOrderItems) {

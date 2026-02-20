@@ -203,7 +203,6 @@ public class ExternalOrderRequest {
 
     public static class ExternalOrderSample {
 
-        @NotBlank
         private String sampleTypeId;
 
         @Valid
