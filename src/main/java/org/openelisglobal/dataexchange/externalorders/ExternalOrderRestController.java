@@ -11,10 +11,7 @@ import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderServi
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.valueholder.Patient;
-import org.openelisglobal.sample.service.SampleService;
-import org.openelisglobal.sample.valueholder.Sample;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,9 +43,6 @@ public class ExternalOrderRestController {
     @Autowired
     private PatientService patientService;
 
-    @Autowired
-    private SampleService sampleService;
-
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createExternalOrder(HttpServletRequest request,
             @Valid @RequestBody ExternalOrderRequest externalOrderRequest)
@@ -67,57 +61,14 @@ public class ExternalOrderRestController {
         }
 
         String externalOrderNumber = externalOrderRequest.getExternalOrderNumber();
-        if (externalOrderNumber != null) {
-            Sample existingSample = sampleService.getSampleByReferringId(externalOrderNumber);
-            if (existingSample != null) {
-                ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
-                response.setExternalOrderNumber(externalOrderNumber);
-                response.setHoldingId(null);
-                response.setStatus("COLLECTED");
-                response.setAccessionNumber(existingSample.getAccessionNumber());
-                response.setMessage("Order has already been collected");
-                return ResponseEntity.ok(response);
-            }
 
-            Optional<IncomingOrder> existingHolding = incomingOrderService.getOrderByExternalOrderNumber(
-                    externalOrderNumber);
-            if (existingHolding.isPresent()) {
-                Integer holdingId = existingHolding.get().getId();
-                ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
-                response.setExternalOrderNumber(externalOrderNumber);
-                response.setHoldingId(holdingId);
-                response.setStatus("ORDER_EXISTS");
-                response.setMessage("Order already exists");
-                return ResponseEntity.ok(response);
-            }
-        }
-
-        Integer holdingId;
-        try {
-            holdingId = incomingOrderService.receiveOrder(externalOrderRequest, payloadJson, null);
-        } catch (DataIntegrityViolationException e) {
-            if (externalOrderNumber != null) {
-                Optional<IncomingOrder> existingHolding = incomingOrderService.getOrderByExternalOrderNumber(
-                        externalOrderNumber);
-                if (existingHolding.isPresent()) {
-                    holdingId = existingHolding.get().getId();
-                    ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
-                    response.setExternalOrderNumber(externalOrderNumber);
-                    response.setHoldingId(holdingId);
-                    response.setStatus("ORDER_EXISTS");
-                    response.setMessage("Order already exists");
-                    return ResponseEntity.ok(response);
-                }
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Unable to receive order (possible duplicate externalOrderNumber)");
-        }
+        IncomingOrder holding = incomingOrderService.receiveOrMergeOrder(externalOrderRequest, payloadJson, null);
 
         ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
         response.setExternalOrderNumber(externalOrderNumber);
-        response.setHoldingId(holdingId);
-        response.setStatus("CREATED");
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        response.setHoldingId(holding.getId());
+        response.setStatus(holding.getLastupdated() == null ? "CREATED" : "MERGED");
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -137,22 +88,18 @@ public class ExternalOrderRestController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON payload");
         }
 
-        Integer holdingId;
         try {
-            holdingId = incomingOrderService
-                    .updateOrderByExternalOrderNumber(externalOrderRequest.getExternalOrderNumber(),
-                            externalOrderRequest, payloadJson, null)
-                    .getId();
+            IncomingOrder holding = incomingOrderService.receiveOrMergeOrder(externalOrderRequest, payloadJson, null);
+
+            ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
+            response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
+            response.setHoldingId(holding.getId());
+            response.setStatus("MERGED");
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Order does not exist or has already been collected");
         }
-
-        ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
-        response.setExternalOrderNumber(externalOrderRequest.getExternalOrderNumber());
-        response.setHoldingId(holdingId);
-        response.setStatus("UPDATED");
-        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping(value = "/{externalOrderNumber}")

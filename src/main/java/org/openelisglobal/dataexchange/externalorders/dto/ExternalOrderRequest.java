@@ -206,10 +206,16 @@ public class ExternalOrderRequest {
         private String sampleTypeId;
 
         @Valid
-        private List<ExternalOrderTestRef> tests = new ArrayList<>();
+        private List<ExternalOrderTestRef> tests;
 
         @Valid
-        private List<ExternalOrderPanelRef> panels = new ArrayList<>();
+        private List<ExternalOrderTestRef> removedTests;
+
+        @Valid
+        private List<ExternalOrderPanelRef> panels;
+
+        @Valid
+        private List<ExternalOrderPanelRef> removedPanels;
 
         private String collectionDate;
 
@@ -237,12 +243,28 @@ public class ExternalOrderRequest {
             this.tests = tests;
         }
 
+        public List<ExternalOrderTestRef> getRemovedTests() {
+            return removedTests;
+        }
+
+        public void setRemovedTests(List<ExternalOrderTestRef> removedTests) {
+            this.removedTests = removedTests;
+        }
+
         public List<ExternalOrderPanelRef> getPanels() {
             return panels;
         }
 
         public void setPanels(List<ExternalOrderPanelRef> panels) {
             this.panels = panels;
+        }
+
+        public List<ExternalOrderPanelRef> getRemovedPanels() {
+            return removedPanels;
+        }
+
+        public void setRemovedPanels(List<ExternalOrderPanelRef> removedPanels) {
+            this.removedPanels = removedPanels;
         }
 
         public String getCollectionDate() {

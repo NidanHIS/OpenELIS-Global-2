@@ -46,9 +46,6 @@
         <createSequence incrementBy="1" schemaName="clinlims" sequenceName="incoming_orders_seq"
             startValue="1" />
 
-        <addUniqueConstraint schemaName="clinlims" tableName="incoming_orders"
-            columnNames="external_order_number" constraintName="unique_incoming_orders_external_order_number" />
-
         <createIndex schemaName="clinlims" tableName="incoming_orders" indexName="idx_incoming_orders_received_ts">
             <column name="received_timestamp" />
         </createIndex>
