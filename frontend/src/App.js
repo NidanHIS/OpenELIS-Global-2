@@ -57,6 +57,8 @@ import ProgramDashboard from "./components/program/programDashboard.jsx";
 import ProgramCaseView from "./components/program/programCaseView.jsx";
 import SampleManagement from "./components/sampleManagement/SampleManagement";
 import { getFullPath, navigateTo } from "./components/utils/Navigation";
+import LabDashboard from "./components/home/LabDashboard.tsx";
+import IncomingOrders from "./components/incomingOrders/Index";
 
 export default function App() {
   const defaultLocale =
@@ -382,6 +384,7 @@ export default function App() {
                   path="/NoteBookInstanceEditForm/:notebookentryid"
                   exact
                   component={() => <NoteBookInstanceEntryForm />}
+                  labUnitRole={{ Cytology: [Roles.RESULTS] }}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
@@ -458,6 +461,13 @@ export default function App() {
                   path="/ElectronicOrders"
                   exact
                   component={() => <EOrderPage />}
+                  role={Roles.RECEPTION}
+                />
+
+                <SecureRoute
+                  path="/IncomingOrders"
+                  exact
+                  component={() => <IncomingOrders />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute

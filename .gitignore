@@ -73,3 +73,6 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+#localbuild files
+local-stuff/
+
