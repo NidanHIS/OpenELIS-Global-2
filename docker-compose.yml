@@ -55,7 +55,7 @@ services:
 
         environment:
             - DEFAULT_PW=adminADMIN!
-            - TZ=Africa/Nairobi # context.xml doesn't seem to be able to pick up environment variables directly, so we are passing them in as CATALINA_OPTS
+            - TZ=Asia/Kathmandu # context.xml doesn't seem to be able to pick up environment variables directly, so we are passing them in as CATALINA_OPTS
             - CATALINA_OPTS= -Ddatasource.url=jdbc:postgresql://db.openelis.org:5432/clinlims -Ddatasource.username=clinlims -Ddatasource.password=${OE_DB_PASSWORD} -Doe.ssl.truststorepath=${SSL_TRUSTSTORE_PATH} -Doe.ssl.truststorepassword=${SSL_TRUSTSTORE_PASSWORD} -Doe.ssl.keystorepath=${SSL_KEYSTORE_PATH} -Doe.ssl.keystorepassword=${SSL_KEYSTORE_PASSWORD}
         volumes:
             - key_trust-store-volume:/etc/openelis-global
@@ -67,7 +67,7 @@ services:
             - ./configuration:/var/lib/openelis-global/configuration
             - ./volume/tomcat/oe_server.xml:/usr/local/tomcat/conf/server.xml:ro
             #Runing OpenELIS with the locally compiled war file
-            - ./target/OpenELIS-Global.war:/usr/local/tomcat/webapps/OpenELIS-Global.war
+            # - ./target/OpenELIS-Global.war:/usr/local/tomcat/webapps/OpenELIS-Global.war
         secrets:
             - source: common.properties
 
