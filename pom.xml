@@ -534,7 +534,7 @@
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
-            <version>1.8.10</version>
+            <version>1.9.22.1</version>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.barbecue</groupId>
@@ -746,9 +746,13 @@
                     <!-- move to release when we compile in java versions >= 9 -->
                     <release>${maven.java.release}</release>
                     <parameters>true</parameters>
-                    <!-- legacy for java versions < 9 -->
-                    <!-- <source>${maven.compiler.source}</source> -->
-                    <!-- <target>${maven.compiler.target}</target> -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.36</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
