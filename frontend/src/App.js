@@ -165,23 +165,19 @@ export default function App() {
           console.error(error);
         });
     } else {
-      fetch(config.serverBaseUrl + "/Logout", {
-        //includes the browser sessionId in the Header for Authentication on the backend server
-        credentials: "include",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": localStorage.getItem("CSRF"),
-        },
-      })
-        .then((response) => response.status)
-        .then(() => {
-          getUserSessionDetails();
-          navigateTo(config.loginRedirect);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
+      // Use form POST so the browser handles the full request/redirect cycle.
+      // This ensures the session is invalidated before the login page loads,
+      // avoiding the race where fetch + navigate left session valid and Login redirected to dashboard.
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = config.serverBaseUrl + "/Logout";
+      const csrfInput = document.createElement("input");
+      csrfInput.type = "hidden";
+      csrfInput.name = "_csrf";
+      csrfInput.value = localStorage.getItem("CSRF") || "";
+      form.appendChild(csrfInput);
+      document.body.appendChild(form);
+      form.submit();
     }
   };
 

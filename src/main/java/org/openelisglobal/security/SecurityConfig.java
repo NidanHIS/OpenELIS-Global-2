@@ -422,7 +422,7 @@ public class SecurityConfig {
                         .invalidateHttpSession(true))
                 .sessionManagement(sessionManagement -> sessionManagement.invalidSessionUrl("/LoginPage")
                         .sessionFixation().migrateSession())
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/ValidateLogin", "/rest/**",
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/ValidateLogin", "/Logout", "/rest/**",
                         "/api/OpenELIS-Global/rest/**"))
                 // add security headers
                 .headers(headers -> headers.frameOptions().sameOrigin().contentSecurityPolicy(CONTENT_SECURITY_POLICY));
