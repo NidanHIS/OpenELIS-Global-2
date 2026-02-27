@@ -136,6 +136,7 @@ export default function App() {
     if (userSessionDetails.loginMethod === "SAML") {
       fetch(config.serverBaseUrl + "/Logout?useSAML=true", {
         //includes the browser sessionId in the Header for Authentication on the backend server
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -166,6 +167,7 @@ export default function App() {
     } else {
       fetch(config.serverBaseUrl + "/Logout", {
         //includes the browser sessionId in the Header for Authentication on the backend server
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

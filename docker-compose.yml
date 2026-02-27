@@ -17,6 +17,9 @@ services:
 
     db.openelis.org:
         container_name: openelisglobal-database
+        build:
+            context: ./db
+            dockerfile: Dockerfile
         image: dipakthapa/openelis-global-2-database:latest
         platform: linux/amd64
         ports:
@@ -40,6 +43,9 @@ services:
 
     oe.openelis.org:
         container_name: openelisglobal-webapp
+        build:
+            context: .
+            dockerfile: Dockerfile
         image: dipakthapa/openelis-global-2-backend:latest
         platform: linux/amd64
         depends_on:
