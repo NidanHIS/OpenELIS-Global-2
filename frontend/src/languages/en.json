@@ -405,6 +405,7 @@
   "eorder.searchValue": "Search Value",
   "eorder.status": "Status",
   "eorder.test.name": "Test Name",
+  "eorder.test.count": "Test Count",
   "error.add.edited.msg": "Error while Editing/Adding",
   "error.delete.msg": "Error while Deleting",
   "error.duplicate.calculationname": "Duplicate Calculation Name or Error while saving",

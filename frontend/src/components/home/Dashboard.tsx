@@ -155,6 +155,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             selectedTile.id,
           loadData,
         );
+      } else if (selectedTile.type == "ORDERS_IN_PROGRESS") {
+        // Always use grouped endpoint for ORDERS_IN_PROGRESS
+        getFromOpenElisServer(
+          "/rest/home-dashboard/ORDERS-Grouped",
+          loadData,
+        );
       } else {
         getFromOpenElisServer(
           "/rest/home-dashboard/" + selectedTile.type,
@@ -304,8 +310,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     },
   ];
 
+  // Tiles that show department tabs (ORDERS_IN_PROGRESS excluded - always shows grouped view)
   const tilesWithTabs = [
-    "ORDERS_IN_PROGRESS",
     "ORDERS_READY_FOR_VALIDATION",
     "ORDERS_COMPLETED_TODAY",
     "ORDERS_FOR_USER",
@@ -434,6 +440,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
   };
 
+  // Headers for per-test view (used by ORDERS_READY_FOR_VALIDATION, ORDERS_COMPLETED_TODAY)
   const orderHeaders = [
     {
       key: "priority",
@@ -454,6 +461,30 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     {
       key: "testName",
       header: <FormattedMessage id="eorder.test.name" />,
+    },
+  ];
+
+  // Headers for grouped view (used by ORDERS_IN_PROGRESS)
+  const groupedOrderHeaders = [
+    {
+      key: "priority",
+      header: <FormattedMessage id="eorder.priority" />,
+    },
+    {
+      key: "orderDate",
+      header: <FormattedMessage id="sample.label.orderdate" />,
+    },
+    {
+      key: "patientId",
+      header: <FormattedMessage id="patient.id" />,
+    },
+    {
+      key: "labNumber",
+      header: <FormattedMessage id="eorder.labNumber" />,
+    },
+    {
+      key: "testCount",
+      header: <FormattedMessage id="eorder.test.count" />,
     },
   ];
 
@@ -643,7 +674,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         )
                         .slice((page - 1) * pageSize, page * pageSize)}
                       headers={
-                        selectedTile.type != "ORDERS_ENTERED_BY_USER_TODAY"
+                        selectedTile.type == "ORDERS_IN_PROGRESS"
+                          ? groupedOrderHeaders
+                          : selectedTile.type != "ORDERS_ENTERED_BY_USER_TODAY"
                           ? orderHeaders
                           : userHeaders
                       }
