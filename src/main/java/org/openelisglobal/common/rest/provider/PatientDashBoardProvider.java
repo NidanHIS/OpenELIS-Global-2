@@ -474,6 +474,31 @@ public class PatientDashBoardProvider {
         return response;
     }
 
+    @GetMapping(value = "home-dashboard/VALIDATION-Grouped", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public PatientDashBoardForm getGroupedValidationOrders(HttpServletRequest request)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+
+        PatientDashBoardForm response = new PatientDashBoardForm();
+        PatientDashBoardPaging paging = new PatientDashBoardPaging();
+        List<OrderDisplayBean> orderDisplayBeans = new ArrayList<>();
+
+        String requestedPage = request.getParameter("page");
+        if (GenericValidator.isBlankOrNull(requestedPage)) {
+            List<Analysis> analyses = analysisService
+                    .getAnalysesForStatusId(iStatusService.getStatusID(AnalysisStatus.TechnicalAcceptance));
+            orderDisplayBeans = convertAnalysesToGroupedOrderBean(analyses);
+
+            paging.setDatabaseResults(request, response, orderDisplayBeans);
+        } else {
+            int requestedPageNumber = Integer.parseInt(requestedPage);
+
+            paging.page(request, response, requestedPageNumber);
+        }
+
+        return response;
+    }
+
     /**
      * Returns the list of orders based on the type of the list provided by the
      * getdashBoardDisplayList method.

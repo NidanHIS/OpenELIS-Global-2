@@ -161,6 +161,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           "/rest/home-dashboard/ORDERS-Grouped",
           loadData,
         );
+      } else if (selectedTile.type == "ORDERS_READY_FOR_VALIDATION") {
+        // Always use grouped endpoint for ORDERS_READY_FOR_VALIDATION
+        getFromOpenElisServer(
+          "/rest/home-dashboard/VALIDATION-Grouped",
+          loadData,
+        );
       } else {
         getFromOpenElisServer(
           "/rest/home-dashboard/" + selectedTile.type,
@@ -310,9 +316,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     },
   ];
 
-  // Tiles that show department tabs (ORDERS_IN_PROGRESS excluded - always shows grouped view)
+  // Tiles that show department tabs (ORDERS_IN_PROGRESS and ORDERS_READY_FOR_VALIDATION excluded - always shows grouped view)
   const tilesWithTabs = [
-    "ORDERS_READY_FOR_VALIDATION",
     "ORDERS_COMPLETED_TODAY",
     "ORDERS_FOR_USER",
   ];
@@ -674,7 +679,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         )
                         .slice((page - 1) * pageSize, page * pageSize)}
                       headers={
-                        selectedTile.type == "ORDERS_IN_PROGRESS"
+                        selectedTile.type == "ORDERS_IN_PROGRESS" ||
+                        selectedTile.type == "ORDERS_READY_FOR_VALIDATION"
                           ? groupedOrderHeaders
                           : selectedTile.type != "ORDERS_ENTERED_BY_USER_TODAY"
                           ? orderHeaders
