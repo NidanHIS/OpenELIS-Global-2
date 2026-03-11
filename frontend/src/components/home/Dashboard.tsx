@@ -55,7 +55,8 @@ type MetricType =
   | "INCOMING_ORDERS"
   | "AVERAGE_TURN_AROUND_TIME"
   | "DELAYED_TURN_AROUND"
-  | "ORDERS_FOR_USER";
+  | "ORDERS_FOR_USER"
+  | "SAMPLES_TO_COLLECT";
 
 interface UserSessionDetails {
   userSessionDetails: any;
@@ -81,6 +82,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     incomigOrders: 0,
     averageTurnAroudTime: 0,
     delayedTurnAround: 0,
+    samplesToCollect: 0,
   });
 
   const [timeMetrics, setTimeMetrics] = useState({
@@ -117,6 +119,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   useEffect(() => {
     getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
+    getFromOpenElisServer("/rest/incoming-orders", (data) => {
+      if (!componentMounted.current) {
+        return;
+      }
+      const list = Array.isArray(data) ? data : [];
+      setCounts((prev) => ({
+        ...prev,
+        samplesToCollect: list.length,
+      }));
+    });
 
     return () => {
       // This code runs when component is unmounted
@@ -305,6 +317,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       type: "DELAYED_TURN_AROUND",
       value: counts.delayedTurnAround,
     },
+    {
+      title: <FormattedMessage id="dashboard.samplesToCollect.label" />,
+      subTitle: <FormattedMessage id="dashboard.samplesToCollect.subtitle.label" />,
+      type: "SAMPLES_TO_COLLECT",
+      value: counts.samplesToCollect,
+    },
   ];
 
   const averageTimeTileList: Array<Tile> = [
@@ -360,6 +378,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   };
 
   const handleMaximizeClick = (tile) => {
+    if (tile?.type === "SAMPLES_TO_COLLECT") {
+      window.location.href = "/openelis/IncomingOrders";
+      return;
+    }
     if (
       testSections?.length > 0 ||
       hasRole(userSessionDetails, "Global Administrator")

@@ -429,6 +429,7 @@
   "field.note": "Note",
   "field.orderable": "Orderable/Not orderable",
   "field.panel": "Panel",
+  "field.price": "Price",
   "field.referenceValue": "Reference value",
   "field.reportName": "Report Name",
   "field.resultLimits": "Result limits",
