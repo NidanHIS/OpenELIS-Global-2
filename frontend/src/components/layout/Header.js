@@ -449,11 +449,7 @@ function OEHeader(props) {
                   <HeaderName href={getFullPath("/")} prefix="" style={{ padding: "0px" }}>
                     <span id="header-logo">{logo()}</span>
                     <div className="banner">
-                      <h5>{configurationProperties?.BANNER_TEXT}</h5>
-                      <p>
-                        <FormattedMessage id="header.label.version" /> &nbsp;{" "}
-                        {configurationProperties?.releaseNumber}
-                      </p>
+                      <h5>Nidan LIMS</h5>
                     </div>
                   </HeaderName>
                   <HeaderGlobalBar>
@@ -599,13 +595,6 @@ function OEHeader(props) {
                             ),
                           )}
                         </Select>
-                      </li>
-                      <li className="userDetails">
-                        <label className="cds--label">
-                          {" "}
-                          <FormattedMessage id="header.label.version" />:{" "}
-                          {configurationProperties?.releaseNumber}
-                        </label>
                       </li>
                     </ul>
                   </HeaderPanel>

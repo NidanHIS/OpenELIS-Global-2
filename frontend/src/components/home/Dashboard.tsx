@@ -270,52 +270,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       value: counts.ordersCompletedToday,
     },
     {
-      title: <FormattedMessage id="dashboard.partially.completed.label" />,
-      subTitle: (
-        <FormattedMessage id="dashboard.partially.completed..subtitle.label" />
-      ),
-      type: "ORDERS_PATIALLY_COMPLETED_TODAY",
-      value: counts.patiallyCompletedToday,
-    },
-    {
       title: <FormattedMessage id="dashboard.user.orders.label" />,
       subTitle: <FormattedMessage id="dashboard.user.orders.subtitle.label" />,
       type: "ORDERS_ENTERED_BY_USER_TODAY",
       value: counts.orderEnterdByUserToday,
-    },
-    {
-      title: <FormattedMessage id="dashboard.rejected.orders" />,
-      subTitle: <FormattedMessage id="dashboard.rejected.orders.subtitle" />,
-      type: "ORDERS_REJECTED_TODAY",
-      value: counts.ordersRejectedToday,
-    },
-    {
-      title: <FormattedMessage id="dashboard.unprints.results.label" />,
-      subTitle: (
-        <FormattedMessage id="dashboard.unprints.results.subtitle.label" />
-      ),
-      type: "UN_PRINTED_RESULTS",
-      value: counts.unPritendResults,
-    },
-    {
-      title: <FormattedMessage id="sidenav.label.incomingorder" />,
-      subTitle: <FormattedMessage id="label.electronic.orders" />,
-      type: "INCOMING_ORDERS",
-      value: counts.incomigOrders,
-    },
-    {
-      title: <FormattedMessage id="dashboard.avg.turn.around.label" />,
-      subTitle: (
-        <FormattedMessage id="dashboard.avg.turn.around.subtitle.label" />
-      ),
-      type: "AVERAGE_TURN_AROUND_TIME",
-      value: counts.averageTurnAroudTime,
-    },
-    {
-      title: <FormattedMessage id="dashboard.turn.around.label" />,
-      subTitle: <FormattedMessage id="dashboard.turn.around.subtitle.label" />,
-      type: "DELAYED_TURN_AROUND",
-      value: counts.delayedTurnAround,
     },
     {
       title: <FormattedMessage id="dashboard.samplesToCollect.label" />,
@@ -350,11 +308,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     "ORDERS_IN_PROGRESS",
     "ORDERS_READY_FOR_VALIDATION",
     "ORDERS_COMPLETED_TODAY",
-    "ORDERS_REJECTED_TODAY",
-    "UN_PRINTED_RESULTS",
-    "DELAYED_TURN_AROUND",
     "ORDERS_FOR_USER",
-    "ORDERS_PATIALLY_COMPLETED_TODAY",
   ];
 
   const handleMinimizeClick = () => {
