@@ -7,7 +7,7 @@ import {
   convertAlphaNumLabNumForDisplay,
   Roles,
 } from "../utils/Utils";
-import { stripBasePath } from "../utils/Navigation";
+import { stripBasePath, getFullPath } from "../utils/Navigation";
 import {
   Form,
   TextInput,
@@ -1840,11 +1840,11 @@ export function SearchResults(props) {
       });
       if (props.refreshOnSubmit) {
         window.location.href =
-          "/result?type=" +
+          getFullPath("/result?type=" +
           props.searchBy.type +
           "&doRange=" +
           props.searchBy.doRange +
-          props.extraParams;
+          props.extraParams);
       }
     } else {
       addNotification({

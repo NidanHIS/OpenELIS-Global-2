@@ -30,6 +30,7 @@ import {
   convertAlphaNumLabNumForDisplay,
   hasRole,
 } from "../utils/Utils.js";
+import { getFullPath } from "../utils/Navigation";
 import { FormattedMessage, useIntl } from "react-intl";
 import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import { NotificationContext } from "../layout/Layout";
@@ -420,9 +421,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                   style={{ color: "blue" }}
                   href={
                     selectedTile.type == "ORDERS_IN_PROGRESS"
-                      ? "/result?type=order&doRange=false&accessionNumber=" +
-                        cell.value
-                      : "validation?type=order&accessionNumber=" + cell.value
+                      ? getFullPath("/result?type=order&doRange=false&accessionNumber=" +
+                        cell.value)
+                      : getFullPath("/validation?type=order&accessionNumber=" + cell.value)
                   }
                 >
                   <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
