@@ -345,7 +345,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const handleMaximizeClick = (tile) => {
     if (tile?.type === "SAMPLES_TO_COLLECT") {
-      window.location.href = "/openelis/IncomingOrders";
+      window.location.href = getFullPath("/IncomingOrders");
       return;
     }
     if (
