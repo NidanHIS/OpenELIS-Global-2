@@ -95,6 +95,12 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
 
         ExternalOrderRequest merged = mergeExternalOrders(existing, externalOrderRequest);
 
+        // If merged result is empty (all tests/panels removed), delete the holding
+        if (isEmptyMergedRequest(merged)) {
+            baseObjectDAO.delete(holding);
+            return null;
+        }
+
         String mergedJson;
         try {
             mergedJson = objectMapper.writeValueAsString(merged);
@@ -509,6 +515,27 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
             }
         }
         // Only has removals, no additions
+        return true;
+    }
+
+    /**
+     * Checks if a merged request is empty (no tests or panels remaining). Used to
+     * delete holdings that become vacant after DISCONTINUE merge.
+     */
+    private boolean isEmptyMergedRequest(ExternalOrderRequest request) {
+        if (request == null) {
+            return true;
+        }
+        if (request.getSamples() == null || request.getSamples().isEmpty()) {
+            return true;
+        }
+        for (ExternalOrderRequest.ExternalOrderSample sample : request.getSamples()) {
+            boolean hasTests = sample.getTests() != null && !sample.getTests().isEmpty();
+            boolean hasPanels = sample.getPanels() != null && !sample.getPanels().isEmpty();
+            if (hasTests || hasPanels) {
+                return false;
+            }
+        }
         return true;
     }
 }
