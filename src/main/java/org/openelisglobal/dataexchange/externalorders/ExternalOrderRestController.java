@@ -88,6 +88,12 @@ public class ExternalOrderRestController {
 
         IncomingOrder holding = incomingOrderService.receiveOrMergeOrder(filteredRequest, payloadJson, null);
 
+        // Handle removal-only request for non-existent order (e.g., DISCONTINUE after collection)
+        if (holding == null) {
+            return ResponseEntity.ok(buildValidationResponse(null, validationReport, "SKIPPED",
+                    "Order already processed or does not exist."));
+        }
+
         String status = holding.getLastupdated() == null ? "CREATED" : "MERGED";
         String message = validationReport.isFullyValid() 
                 ? "Order received successfully with all items validated."
@@ -132,6 +138,12 @@ public class ExternalOrderRestController {
 
         try {
             IncomingOrder holding = incomingOrderService.receiveOrMergeOrder(filteredRequest, payloadJson, null);
+
+            // Handle removal-only request for non-existent order (e.g., DISCONTINUE after collection)
+            if (holding == null) {
+                return ResponseEntity.ok(buildValidationResponse(null, validationReport, "SKIPPED",
+                        "Order already processed or does not exist."));
+            }
 
             String message = validationReport.isFullyValid() 
                     ? "Order updated successfully with all items validated."

@@ -72,6 +72,10 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
         IncomingOrder holding = baseObjectDAO.getByExternalOrderNumber(externalOrderRequest.getExternalOrderNumber())
                 .orElse(null);
         if (holding == null) {
+            // Prevent vacant holding creation for removal-only requests (e.g., DISCONTINUE after collection)
+            if (isRemovalOnlyRequest(externalOrderRequest)) {
+                return null;  // Silent success - order already processed or doesn't exist
+            }
             Integer id = receiveOrder(externalOrderRequest, payloadJson, receivedSysUserId);
             return baseObjectDAO.get(id).orElseThrow(() -> new IllegalStateException("Unable to create holding"));
         }
@@ -480,5 +484,25 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
             return "loinc:" + loinc.trim();
         }
         return null;
+    }
+
+    /**
+     * Checks if the request contains only removals (removedTests/removedPanels)
+     * with no additions (tests/panels).
+     * Used to prevent vacant holding creation for DISCONTINUE after collection.
+     */
+    private boolean isRemovalOnlyRequest(ExternalOrderRequest request) {
+        if (request.getSamples() == null || request.getSamples().isEmpty()) {
+            return false;
+        }
+        for (ExternalOrderRequest.ExternalOrderSample sample : request.getSamples()) {
+            // Has additions?
+            if ((sample.getTests() != null && !sample.getTests().isEmpty()) ||
+                (sample.getPanels() != null && !sample.getPanels().isEmpty())) {
+                return false;
+            }
+        }
+        // Only has removals, no additions
+        return true;
     }
 }
