@@ -26,11 +26,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -107,9 +107,9 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * Calculate total test count from payload.
-     * Includes direct tests + expanded panel tests - removed tests.
-     * Uses deduplication to avoid counting same test multiple times.
+     * Calculate total test count from payload. Includes direct tests + expanded
+     * panel tests - removed tests. Uses deduplication to avoid counting same test
+     * multiple times.
      */
     private Integer calculateTotalTestCount(String payload) {
         if (payload == null || payload.trim().isEmpty()) {
@@ -174,8 +174,8 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * Extract source (referringSiteName) from payload.
-     * Returns null if not available.
+     * Extract source (referringSiteName) from payload. Returns null if not
+     * available.
      */
     private String extractSource(String payload) {
         if (payload == null || payload.trim().isEmpty()) {
@@ -242,7 +242,8 @@ public class IncomingOrdersRestController {
     }
 
     @GetMapping(value = "/{externalOrderNumber}/sample-patient-entry-form", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getSamplePatientEntryForm(@PathVariable("externalOrderNumber") String externalOrderNumber) {
+    public ResponseEntity<?> getSamplePatientEntryForm(
+            @PathVariable("externalOrderNumber") String externalOrderNumber) {
         try {
             SamplePatientEntryForm form = incomingOrderService.buildSamplePatientEntryForm(externalOrderNumber);
             return ResponseEntity.ok(form);

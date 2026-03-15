@@ -320,10 +320,12 @@ export default function Workplan(props) {
                                 {showAccessionNumber && (
                                   <Link
                                     style={{ color: "blue" }}
-                                    href={
-                                      getFullPath("/result?type=order&doRange=false&source=" + sourceTitle + "&accessionNumber=" +
-                                      row.accessionNumber)
-                                    }
+                                    href={getFullPath(
+                                      "/result?type=order&doRange=false&source=" +
+                                        sourceTitle +
+                                        "&accessionNumber=" +
+                                        row.accessionNumber,
+                                    )}
                                   >
                                     <u>
                                       {convertAlphaNumLabNumForDisplay(

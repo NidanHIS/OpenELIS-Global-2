@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Validation report for an external order request.
- * Contains patient validation status and lists of valid/invalid tests and panels.
+ * Validation report for an external order request. Contains patient validation
+ * status and lists of valid/invalid tests and panels.
  */
 public class ValidationReport {
 
@@ -26,7 +26,8 @@ public class ValidationReport {
     }
 
     /**
-     * Returns true if the order can be stored (patient valid and at least one valid test/panel, or has removals).
+     * Returns true if the order can be stored (patient valid and at least one valid
+     * test/panel, or has removals).
      */
     public boolean canStore() {
         return patientValid && (!validTests.isEmpty() || !validPanels.isEmpty() || hasRemovedTests || hasRemovedPanels);
@@ -47,10 +48,12 @@ public class ValidationReport {
     }
 
     /**
-     * Returns true if nothing can be stored (invalid patient or no valid tests/panels and no removals).
+     * Returns true if nothing can be stored (invalid patient or no valid
+     * tests/panels and no removals).
      */
     public boolean isCompletelyInvalid() {
-        return !patientValid || (validTests.isEmpty() && validPanels.isEmpty() && !hasRemovedTests && !hasRemovedPanels);
+        return !patientValid
+                || (validTests.isEmpty() && validPanels.isEmpty() && !hasRemovedTests && !hasRemovedPanels);
     }
 
     // Getters and Setters

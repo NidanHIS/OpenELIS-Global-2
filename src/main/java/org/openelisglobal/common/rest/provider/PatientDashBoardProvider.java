@@ -235,14 +235,12 @@ public class PatientDashBoardProvider {
 
                 if (sample != null) {
                     orderBean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
-                    orderBean.setLabNumber(
-                            sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
+                    orderBean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
                     orderBean.setPatientId(sampleHumanService.getPatientForSample(sample).getNationalId());
                 }
 
                 orderBean.setOrderDate(analysis.getStartedDateForDisplay());
-                orderBean.setTestSection(
-                        analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");
+                orderBean.setTestSection(analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");
                 orderBean.setTestCount(1);
 
                 labNumberToBeanMap.put(key, orderBean);

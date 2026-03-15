@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Implementation of external order validation service.
- * Validates patient, tests, and panels before storage.
+ * Implementation of external order validation service. Validates patient,
+ * tests, and panels before storage.
  */
 @Service
 public class ExternalOrderValidationServiceImpl implements ExternalOrderValidationService {
@@ -192,7 +192,8 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
                 if ((filteredSample.getTests() != null && !filteredSample.getTests().isEmpty())
                         || (filteredSample.getPanels() != null && !filteredSample.getPanels().isEmpty())
                         || (filteredSample.getRemovedTests() != null && !filteredSample.getRemovedTests().isEmpty())
-                        || (filteredSample.getRemovedPanels() != null && !filteredSample.getRemovedPanels().isEmpty())) {
+                        || (filteredSample.getRemovedPanels() != null
+                                && !filteredSample.getRemovedPanels().isEmpty())) {
                     filteredSamples.add(filteredSample);
                 }
             }
@@ -211,11 +212,7 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
         if (testRef.getTestGuid() != null && !testRef.getTestGuid().trim().isEmpty()) {
             Test test = testService.getTestByGUID(testRef.getTestGuid().trim());
             if (test != null) {
-                return ValidationResult.validForGuid(
-                    testRef.getTestGuid().trim(),
-                    test.getId(),
-                    test.getName()
-                );
+                return ValidationResult.validForGuid(testRef.getTestGuid().trim(), test.getId(), test.getName());
             }
             return ValidationResult.invalidForGuid(testRef.getTestGuid().trim());
         }
@@ -225,11 +222,7 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
             List<Test> tests = testService.getActiveTestsByLoinc(testRef.getLoinc().trim());
             if (tests != null && !tests.isEmpty()) {
                 Test test = tests.get(0);
-                return ValidationResult.validForLoinc(
-                    testRef.getLoinc().trim(),
-                    test.getId(),
-                    test.getName()
-                );
+                return ValidationResult.validForLoinc(testRef.getLoinc().trim(), test.getId(), test.getName());
             }
             return ValidationResult.invalidForLoinc(testRef.getLoinc().trim());
         }
@@ -246,11 +239,8 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
         if (panelRef.getPanelGuid() != null && !panelRef.getPanelGuid().trim().isEmpty()) {
             Panel panel = panelService.getPanelByGUID(panelRef.getPanelGuid().trim());
             if (panel != null) {
-                return ValidationResult.validForGuid(
-                    panelRef.getPanelGuid().trim(),
-                    panel.getId(),
-                    panel.getPanelName()
-                );
+                return ValidationResult.validForGuid(panelRef.getPanelGuid().trim(), panel.getId(),
+                        panel.getPanelName());
             }
             return ValidationResult.invalidForGuid(panelRef.getPanelGuid().trim());
         }
@@ -259,11 +249,7 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
         if (panelRef.getLoinc() != null && !panelRef.getLoinc().trim().isEmpty()) {
             Panel panel = panelService.getPanelByLoincCode(panelRef.getLoinc().trim());
             if (panel != null) {
-                return ValidationResult.validForLoinc(
-                    panelRef.getLoinc().trim(),
-                    panel.getId(),
-                    panel.getPanelName()
-                );
+                return ValidationResult.validForLoinc(panelRef.getLoinc().trim(), panel.getId(), panel.getPanelName());
             }
             return ValidationResult.invalidForLoinc(panelRef.getLoinc().trim());
         }

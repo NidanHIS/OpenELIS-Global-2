@@ -7,16 +7,21 @@ import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 public class ExternalOrderXmlBuilder {
 
     /**
-     * Builds sample XML with testSampleTypeMap populated for proper UI test checkbox rendering.
+     * Builds sample XML with testSampleTypeMap populated for proper UI test
+     * checkbox rendering.
      * 
-     * @param samples List of sample objects (may be expanded from original request if tests span multiple sample types)
-     * @param sampleTestIds Test IDs for each sample
-     * @param samplePanelIds Panel IDs for each sample
-     * @param sampleTestSampleTypeMaps testSampleTypeMap strings for each sample (format: "testId:sampleTypeId,...")
+     * @param samples                  List of sample objects (may be expanded from
+     *                                 original request if tests span multiple
+     *                                 sample types)
+     * @param sampleTestIds            Test IDs for each sample
+     * @param samplePanelIds           Panel IDs for each sample
+     * @param sampleTestSampleTypeMaps testSampleTypeMap strings for each sample
+     *                                 (format: "testId:sampleTypeId,...")
      * @return XML string for samples
      */
-    public String buildSamplesXml(List<ExternalOrderRequest.ExternalOrderSample> samples, List<List<String>> sampleTestIds,
-            List<List<String>> samplePanelIds, List<String> sampleTestSampleTypeMaps) {
+    public String buildSamplesXml(List<ExternalOrderRequest.ExternalOrderSample> samples,
+            List<List<String>> sampleTestIds, List<List<String>> samplePanelIds,
+            List<String> sampleTestSampleTypeMaps) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -55,12 +60,14 @@ public class ExternalOrderXmlBuilder {
     }
 
     /**
-     * Legacy method for backward compatibility - builds XML without testSampleTypeMap.
+     * Legacy method for backward compatibility - builds XML without
+     * testSampleTypeMap.
+     * 
      * @deprecated Use {@link #buildSamplesXml(List, List, List, List)} instead.
      */
     @Deprecated
-    public String buildSamplesXml(List<ExternalOrderRequest.ExternalOrderSample> samples, List<List<String>> sampleTestIds,
-            List<List<String>> samplePanelIds) {
+    public String buildSamplesXml(List<ExternalOrderRequest.ExternalOrderSample> samples,
+            List<List<String>> sampleTestIds, List<List<String>> samplePanelIds) {
         return buildSamplesXml(samples, sampleTestIds, samplePanelIds, null);
     }
 
@@ -89,7 +96,7 @@ public class ExternalOrderXmlBuilder {
         if (s == null) {
             return "";
         }
-        return s.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;")
-                .replace(">", "&gt;").replace("'", "&apos;");
+        return s.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;").replace("'",
+                "&apos;");
     }
 }

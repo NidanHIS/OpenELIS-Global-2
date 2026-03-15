@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Optional;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.dto.ValidationReport;
 import org.openelisglobal.dataexchange.externalorders.dto.ValidationResult;
@@ -14,7 +13,6 @@ import org.openelisglobal.dataexchange.externalorders.service.ExternalOrderValid
 import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderService;
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
 import org.openelisglobal.patient.service.PatientService;
-import org.openelisglobal.patient.valueholder.Patient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,11 +29,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * New, minimal external-order endpoint that reuses the existing
  * SamplePatientEntry pipeline.
  *
- * This controller:
- * - Accepts a focused ExternalOrderRequest JSON payload
- * - Maps it into SamplePatientEntryForm
- * - Delegates to SamplePatientEntryRestController.samplePatientEntrySave(...)
- *   so that orders are created exactly as if they came from the UI.
+ * This controller: - Accepts a focused ExternalOrderRequest JSON payload - Maps
+ * it into SamplePatientEntryForm - Delegates to
+ * SamplePatientEntryRestController.samplePatientEntrySave(...) so that orders
+ * are created exactly as if they came from the UI.
  */
 @Controller
 @RequestMapping(value = "/rest/external-orders")
@@ -66,12 +63,13 @@ public class ExternalOrderRestController {
 
         // If nothing is valid, reject without storing
         if (validationReport.isCompletelyInvalid()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(buildValidationResponse(null, validationReport, "REJECTED", "No valid tests or panels found."));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    buildValidationResponse(null, validationReport, "REJECTED", "No valid tests or panels found."));
         }
 
         // Filter to only valid items
-        ExternalOrderRequest filteredRequest = validationService.filterValidItems(externalOrderRequest, validationReport);
+        ExternalOrderRequest filteredRequest = validationService.filterValidItems(externalOrderRequest,
+                validationReport);
         if (filteredRequest == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(buildValidationResponse(null, validationReport, "REJECTED", "No valid items to store."));
@@ -88,15 +86,15 @@ public class ExternalOrderRestController {
 
         IncomingOrder holding = incomingOrderService.receiveOrMergeOrder(filteredRequest, payloadJson, null);
 
-        // Handle removal-only request for non-existent order (e.g., DISCONTINUE after collection)
+        // Handle removal-only request for non-existent order (e.g., DISCONTINUE after
+        // collection)
         if (holding == null) {
             return ResponseEntity.ok(buildValidationResponse(null, validationReport, "SKIPPED",
                     "Order already processed or does not exist."));
         }
 
         String status = holding.getLastupdated() == null ? "CREATED" : "MERGED";
-        String message = validationReport.isFullyValid() 
-                ? "Order received successfully with all items validated."
+        String message = validationReport.isFullyValid() ? "Order received successfully with all items validated."
                 : "Order received with partial validation. Some items were not found.";
 
         return ResponseEntity.ok(buildValidationResponse(holding, validationReport, status, message));
@@ -118,12 +116,13 @@ public class ExternalOrderRestController {
 
         // If nothing is valid, reject without storing
         if (validationReport.isCompletelyInvalid()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(buildValidationResponse(null, validationReport, "REJECTED", "No valid tests or panels found."));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    buildValidationResponse(null, validationReport, "REJECTED", "No valid tests or panels found."));
         }
 
         // Filter to only valid items
-        ExternalOrderRequest filteredRequest = validationService.filterValidItems(externalOrderRequest, validationReport);
+        ExternalOrderRequest filteredRequest = validationService.filterValidItems(externalOrderRequest,
+                validationReport);
         if (filteredRequest == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(buildValidationResponse(null, validationReport, "REJECTED", "No valid items to store."));
@@ -139,14 +138,14 @@ public class ExternalOrderRestController {
         try {
             IncomingOrder holding = incomingOrderService.receiveOrMergeOrder(filteredRequest, payloadJson, null);
 
-            // Handle removal-only request for non-existent order (e.g., DISCONTINUE after collection)
+            // Handle removal-only request for non-existent order (e.g., DISCONTINUE after
+            // collection)
             if (holding == null) {
                 return ResponseEntity.ok(buildValidationResponse(null, validationReport, "SKIPPED",
                         "Order already processed or does not exist."));
             }
 
-            String message = validationReport.isFullyValid() 
-                    ? "Order updated successfully with all items validated."
+            String message = validationReport.isFullyValid() ? "Order updated successfully with all items validated."
                     : "Order updated with partial validation. Some items were not found.";
 
             return ResponseEntity.ok(buildValidationResponse(holding, validationReport, "MERGED", message));
@@ -299,8 +298,8 @@ public class ExternalOrderRestController {
     /**
      * Build validation response from validation report.
      */
-    private ExternalOrderReceivedResponse buildValidationResponse(
-            IncomingOrder holding, ValidationReport report, String status, String message) {
+    private ExternalOrderReceivedResponse buildValidationResponse(IncomingOrder holding, ValidationReport report,
+            String status, String message) {
         ExternalOrderReceivedResponse response = new ExternalOrderReceivedResponse();
         if (holding != null) {
             response.setExternalOrderNumber(holding.getExternalOrderNumber());

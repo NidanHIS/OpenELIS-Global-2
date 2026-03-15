@@ -158,10 +158,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         );
       } else if (selectedTile.type == "ORDERS_IN_PROGRESS") {
         // Always use grouped endpoint for ORDERS_IN_PROGRESS
-        getFromOpenElisServer(
-          "/rest/home-dashboard/ORDERS-Grouped",
-          loadData,
-        );
+        getFromOpenElisServer("/rest/home-dashboard/ORDERS-Grouped", loadData);
       } else if (selectedTile.type == "ORDERS_READY_FOR_VALIDATION") {
         // Always use grouped endpoint for ORDERS_READY_FOR_VALIDATION
         getFromOpenElisServer(
@@ -290,7 +287,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     },
     {
       title: <FormattedMessage id="dashboard.samplesToCollect.label" />,
-      subTitle: <FormattedMessage id="dashboard.samplesToCollect.subtitle.label" />,
+      subTitle: (
+        <FormattedMessage id="dashboard.samplesToCollect.subtitle.label" />
+      ),
       type: "SAMPLES_TO_COLLECT",
       value: counts.samplesToCollect,
     },
@@ -318,10 +317,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   ];
 
   // Tiles that show department tabs (ORDERS_IN_PROGRESS and ORDERS_READY_FOR_VALIDATION excluded - always shows grouped view)
-  const tilesWithTabs = [
-    "ORDERS_COMPLETED_TODAY",
-    "ORDERS_FOR_USER",
-  ];
+  const tilesWithTabs = ["ORDERS_COMPLETED_TODAY", "ORDERS_FOR_USER"];
 
   const handleMinimizeClick = () => {
     console.log("Icon clicked!");
@@ -421,9 +417,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                   style={{ color: "blue" }}
                   href={
                     selectedTile.type == "ORDERS_IN_PROGRESS"
-                      ? getFullPath("/result?type=order&doRange=false&accessionNumber=" +
-                        cell.value)
-                      : getFullPath("/validation?type=order&accessionNumber=" + cell.value)
+                      ? getFullPath(
+                          "/result?type=order&doRange=false&accessionNumber=" +
+                            cell.value,
+                        )
+                      : getFullPath(
+                          "/validation?type=order&accessionNumber=" +
+                            cell.value,
+                        )
                   }
                 >
                   <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
@@ -684,8 +685,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         selectedTile.type == "ORDERS_READY_FOR_VALIDATION"
                           ? groupedOrderHeaders
                           : selectedTile.type != "ORDERS_ENTERED_BY_USER_TODAY"
-                          ? orderHeaders
-                          : userHeaders
+                            ? orderHeaders
+                            : userHeaders
                       }
                       isSortable
                     >

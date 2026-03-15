@@ -4,8 +4,8 @@ import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.dto.ValidationReport;
 
 /**
- * Service for validating external order requests.
- * Validates patient, tests, and panels before storage.
+ * Service for validating external order requests. Validates patient, tests, and
+ * panels before storage.
  */
 public interface ExternalOrderValidationService {
 
@@ -13,7 +13,8 @@ public interface ExternalOrderValidationService {
      * Validate an external order request.
      * 
      * @param request the external order request to validate
-     * @return ValidationReport containing validation results for patient, tests, and panels
+     * @return ValidationReport containing validation results for patient, tests,
+     *         and panels
      */
     ValidationReport validateOrder(ExternalOrderRequest request);
 
@@ -29,7 +30,7 @@ public interface ExternalOrderValidationService {
      * Create a filtered request containing only valid tests and panels.
      * 
      * @param original the original request
-     * @param report the validation report
+     * @param report   the validation report
      * @return a new request with only valid items, or null if nothing is valid
      */
     ExternalOrderRequest filterValidItems(ExternalOrderRequest original, ValidationReport report);

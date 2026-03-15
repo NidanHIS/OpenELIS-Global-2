@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import org.openelisglobal.dataexchange.externalorders.ExternalOrderXmlBuilder;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
+import org.openelisglobal.organization.service.OrganizationService;
+import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.panel.service.PanelService;
 import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.panelitem.service.PanelItemService;
@@ -17,18 +19,16 @@ import org.openelisglobal.patient.action.IPatientUpdate.PatientUpdateStatus;
 import org.openelisglobal.patient.action.bean.PatientManagementInfo;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.valueholder.Patient;
-import org.openelisglobal.organization.service.OrganizationService;
-import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.person.service.PersonService;
 import org.openelisglobal.person.valueholder.Person;
-import org.openelisglobal.typeofsample.service.TypeOfSampleTestService;
-import org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest;
 import org.openelisglobal.sample.bean.SampleOrderItem;
 import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
 import org.openelisglobal.sample.valueholder.OrderPriority;
 import org.openelisglobal.test.service.TestService;
 import org.openelisglobal.test.valueholder.Test;
+import org.openelisglobal.typeofsample.service.TypeOfSampleTestService;
+import org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -72,7 +72,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         if (patient.getPerson() != null) {
             patientInfo.setFirstName(patient.getPerson().getFirstName());
             patientInfo.setLastName(patient.getPerson().getLastName());
-            if (patient.getPerson().getPrimaryPhone() != null && !patient.getPerson().getPrimaryPhone().trim().isEmpty()) {
+            if (patient.getPerson().getPrimaryPhone() != null
+                    && !patient.getPerson().getPrimaryPhone().trim().isEmpty()) {
                 patientInfo.setPrimaryPhone(patient.getPerson().getPrimaryPhone());
             } else {
                 patientInfo.setPrimaryPhone(patient.getPerson().getWorkPhone());
@@ -153,7 +154,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             }
         }
 
-        // Expanded lists - one entry per sample type (may be larger than original samples)
+        // Expanded lists - one entry per sample type (may be larger than original
+        // samples)
         List<ExternalOrderRequest.ExternalOrderSample> expandedSamples = new ArrayList<>();
         List<List<String>> expandedTestIds = new ArrayList<>();
         List<List<String>> expandedPanelIds = new ArrayList<>();
@@ -267,7 +269,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             }
         }
 
-        form.setSampleXML(xmlBuilder.buildSamplesXml(expandedSamples, expandedTestIds, expandedPanelIds, expandedTestSampleTypeMaps));
+        form.setSampleXML(xmlBuilder.buildSamplesXml(expandedSamples, expandedTestIds, expandedPanelIds,
+                expandedTestSampleTypeMaps));
         return form;
     }
 
@@ -298,7 +301,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             return;
         }
 
-        // If only ID is provided, populate display name so the UI doesn't show raw numeric IDs.
+        // If only ID is provided, populate display name so the UI doesn't show raw
+        // numeric IDs.
         if (sampleOrderItems.getReferringSiteId() != null && !sampleOrderItems.getReferringSiteId().trim().isEmpty()
                 && (sampleOrderItems.getReferringSiteName() == null
                         || sampleOrderItems.getReferringSiteName().trim().isEmpty())) {
@@ -308,7 +312,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             }
         }
 
-        // If only free-text name is provided, try to resolve an existing organization ID (best-effort).
+        // If only free-text name is provided, try to resolve an existing organization
+        // ID (best-effort).
         if ((sampleOrderItems.getReferringSiteId() == null || sampleOrderItems.getReferringSiteId().trim().isEmpty())
                 && sampleOrderItems.getReferringSiteName() != null
                 && !sampleOrderItems.getReferringSiteName().trim().isEmpty()) {
@@ -355,7 +360,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             }
         }
 
-        if (sampleOrderItems.getProviderFirstName() == null || sampleOrderItems.getProviderFirstName().trim().isEmpty()) {
+        if (sampleOrderItems.getProviderFirstName() == null
+                || sampleOrderItems.getProviderFirstName().trim().isEmpty()) {
             sampleOrderItems.setProviderFirstName("Unknown");
         }
         if (sampleOrderItems.getProviderLastName() == null || sampleOrderItems.getProviderLastName().trim().isEmpty()) {
@@ -396,8 +402,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
     private String generateAccessionNumber() {
         int attempts = 0;
         while (attempts < 100) {
-            String candidate = AccessionNumberUtil.getMainAccessionNumberGenerator().getNextAvailableAccessionNumber(null,
-                    true);
+            String candidate = AccessionNumberUtil.getMainAccessionNumberGenerator()
+                    .getNextAvailableAccessionNumber(null, true);
             if (candidate != null && !AccessionNumberUtil.isUsed(candidate)) {
                 return candidate;
             }

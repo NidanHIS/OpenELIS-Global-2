@@ -104,9 +104,7 @@ export const mapTestCatBeanToFormData = (test) => {
     uom: test.uom || "",
     loinc: test.loinc || "",
     price:
-      test.price !== undefined && test.price !== null
-        ? String(test.price)
-        : "",
+      test.price !== undefined && test.price !== null ? String(test.price) : "",
     resultType: test.resultType || "",
     orderable: test.orderable === "Orderable" ? "Y" : "N",
     notifyResults: test.notifyResults ? "Y" : "N",

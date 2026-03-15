@@ -13,9 +13,7 @@ import {
 } from "@carbon/react";
 import { useHistory } from "react-router-dom";
 import { FormattedMessage, useIntl } from "react-intl";
-import {
-  getFromOpenElisServer,
-} from "../utils/Utils";
+import { getFromOpenElisServer } from "../utils/Utils";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 
@@ -36,10 +34,10 @@ export default function IncomingOrders() {
     try {
       const date = new Date(Number(timestamp));
       if (isNaN(date.getTime())) return "";
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      const hh = String(date.getHours()).padStart(2, '0');
-      const min = String(date.getMinutes()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const min = String(date.getMinutes()).padStart(2, "0");
       return `${mm}/${dd} ${hh}:${min}`;
     } catch (e) {
       return "";
@@ -53,7 +51,9 @@ export default function IncomingOrders() {
     },
     {
       key: "receivedTimestamp",
-      header: intl.formatMessage({ id: "incomingOrders.table.receivedTimestamp" }),
+      header: intl.formatMessage({
+        id: "incomingOrders.table.receivedTimestamp",
+      }),
     },
     {
       key: "testCount",
