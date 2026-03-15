@@ -36,6 +36,7 @@ import org.openelisglobal.referral.fhir.service.FhirReferralService;
 import org.openelisglobal.reports.service.WHONetReportServiceImpl;
 import org.openelisglobal.requester.service.RequesterTypeService;
 import org.openelisglobal.result.controller.AnalyzerResultsController;
+import org.openelisglobal.test.service.fhir.TestFhirTransformService;
 import org.ozeki.sms.service.OzekiMessageOutService;
 import org.springframework.beans.factory.UnsatisfiedDependencyException;
 import org.springframework.context.MessageSource;
@@ -329,6 +330,12 @@ public class AppTestConfig implements WebMvcConfigurer {
     @Bean()
     public AnalyzerResultsController analyzerResultsController() {
         return mock(AnalyzerResultsController.class);
+    }
+
+    @Bean()
+    @Profile("test")
+    public TestFhirTransformService testFhirTransformService() {
+        return mock(TestFhirTransformService.class);
     }
 
 }
