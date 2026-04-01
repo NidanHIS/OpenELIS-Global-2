@@ -331,8 +331,7 @@ public class TestFhirTransformServiceImpl implements TestFhirTransformService {
             Coding coding = new Coding();
             coding.setSystem("urn:uuid");
             // Use stored guid if available, otherwise derive from dictionary ID
-            String answerUuid = entry.getGuid() != null && !entry.getGuid().isEmpty()
-                    ? entry.getGuid()
+            String answerUuid = entry.getGuid() != null && !entry.getGuid().isEmpty() ? entry.getGuid()
                     : generateStableGuidForDictionary(entry);
             coding.setCode(answerUuid);
             coding.setDisplay(entry.getDictEntry());

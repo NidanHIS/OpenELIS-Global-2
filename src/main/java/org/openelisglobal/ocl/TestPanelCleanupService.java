@@ -1,17 +1,12 @@
 package org.openelisglobal.ocl;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.sql.DataSource;
 import org.openelisglobal.panel.service.PanelService;
-import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.test.service.TestService;
-import org.openelisglobal.test.valueholder.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,21 +15,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service to clean up seeded demo tests and panels from OpenELIS database.
- * This runs BEFORE OCL import to ensure a clean slate for TTH Laboratory data.
+ * Service to clean up seeded demo tests and panels from OpenELIS database. This
+ * runs BEFORE OCL import to ensure a clean slate for TTH Laboratory data.
  * 
- * SAFETY FEATURES:
- * - Multiple safety checks before any deletion
- * - Transaction-based cleanup (rollback on failure)
- * - Detailed logging for audit trail
- * - Pre-cleanup database state logging
- * - Post-cleanup verification
+ * SAFETY FEATURES: - Multiple safety checks before any deletion -
+ * Transaction-based cleanup (rollback on failure) - Detailed logging for audit
+ * trail - Pre-cleanup database state logging - Post-cleanup verification
  * 
- * Cleanup order respects foreign key constraints:
- * 1. Child tables referencing test/panel (panel_item, sampletype_*, test_*, result_limits, etc.)
- * 2. Localization entries for tests/panels
- * 3. System modules and role modules for panels
- * 4. Finally, the test and panel tables themselves
+ * Cleanup order respects foreign key constraints: 1. Child tables referencing
+ * test/panel (panel_item, sampletype_*, test_*, result_limits, etc.) 2.
+ * Localization entries for tests/panels 3. System modules and role modules for
+ * panels 4. Finally, the test and panel tables themselves
  */
 @Service
 public class TestPanelCleanupService {
@@ -51,43 +42,23 @@ public class TestPanelCleanupService {
     private PanelService panelService;
 
     // Tables that reference tests - must be deleted first
-    private static final String[] TEST_CHILD_TABLES = {
-        "clinlims.test_dictionary",
-        "clinlims.test_code", 
-        "clinlims.test_worksheets",
-        "clinlims.test_notification_config",
-        "clinlims.test_operations",
-        "clinlims.test_result_map",
-        "clinlims.test_reflex",
-        "clinlims.test_analyte",
-        "clinlims.test_result",
-        "clinlims.result_limits",
-        "clinlims.sampletype_test",
-        "clinlims.analyzer_test_map",
-        "clinlims.qa_event",
-        "clinlims.referral_result"
-    };
+    private static final String[] TEST_CHILD_TABLES = { "clinlims.test_dictionary", "clinlims.test_code",
+            "clinlims.test_worksheets", "clinlims.test_notification_config", "clinlims.test_operations",
+            "clinlims.test_result_map", "clinlims.test_reflex", "clinlims.test_analyte", "clinlims.test_result",
+            "clinlims.result_limits", "clinlims.sampletype_test", "clinlims.analyzer_test_map", "clinlims.qa_event",
+            "clinlims.referral_result" };
 
     // Tables that reference panels - must be deleted first
-    private static final String[] PANEL_CHILD_TABLES = {
-        "clinlims.panel_item",
-        "clinlims.sampletype_panel",
-        "clinlims.notebook_page_panels"
-    };
+    private static final String[] PANEL_CHILD_TABLES = { "clinlims.panel_item", "clinlims.sampletype_panel",
+            "clinlims.notebook_page_panels" };
 
     // Patient data tables - presence of data blocks cleanup
-    private static final String[] PATIENT_DATA_TABLES = {
-        "clinlims.sample",
-        "clinlims.analysis",
-        "clinlims.result",
-        "clinlims.patient",
-        "clinlims.patient_identity",
-        "clinlims.patient_contact"
-    };
+    private static final String[] PATIENT_DATA_TABLES = { "clinlims.sample", "clinlims.analysis", "clinlims.result",
+            "clinlims.patient", "clinlims.patient_identity", "clinlims.patient_contact" };
 
     /**
-     * Removes all tests and panels from the database, handling FK constraints.
-     * This should only be called when there's no patient data (fresh install or reset).
+     * Removes all tests and panels from the database, handling FK constraints. This
+     * should only be called when there's no patient data (fresh install or reset).
      * 
      * @return number of tests and panels removed
      */
@@ -96,7 +67,7 @@ public class TestPanelCleanupService {
         log.info("========================================");
         log.info("STARTING TEST/PANEL CLEANUP");
         log.info("========================================");
-        
+
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         int totalRemoved = 0;
 
@@ -121,14 +92,14 @@ public class TestPanelCleanupService {
             // Step 3: Get localization IDs for tests and panels before deleting
             log.info("--- Phase 3: Collecting localization IDs for cleanup ---");
             Set<Integer> localizationIds = new HashSet<>();
-            
+
             List<Integer> testLocIds = jdbc.queryForList(
-                    "SELECT name_localization_id FROM clinlims.test WHERE name_localization_id IS NOT NULL " +
-                    "UNION SELECT reporting_name_localization_id FROM clinlims.test WHERE reporting_name_localization_id IS NOT NULL",
+                    "SELECT name_localization_id FROM clinlims.test WHERE name_localization_id IS NOT NULL "
+                            + "UNION SELECT reporting_name_localization_id FROM clinlims.test WHERE reporting_name_localization_id IS NOT NULL",
                     Integer.class);
             localizationIds.addAll(testLocIds);
             log.info("  Found {} test localization IDs", testLocIds.size());
-            
+
             List<Integer> panelLocIds = jdbc.queryForList(
                     "SELECT name_localization_id FROM clinlims.panel WHERE name_localization_id IS NOT NULL",
                     Integer.class);
@@ -136,11 +107,13 @@ public class TestPanelCleanupService {
             log.info("  Found {} panel localization IDs", panelLocIds.size());
 
             // Step 4: Delete system modules and role modules for panels
-            // Delete ALL panel-related system_modules, including orphaned ones from failed imports
-            // This handles the case where panels failed to create but system_modules were partially inserted
+            // Delete ALL panel-related system_modules, including orphaned ones from failed
+            // imports
+            // This handles the case where panels failed to create but system_modules were
+            // partially inserted
             log.info("--- Phase 4: Deleting system modules and role modules for panels ---");
-            int sysModulesDeleted = jdbc.update(
-                    "DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%'");
+            int sysModulesDeleted = jdbc
+                    .update("DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%'");
             log.info("  Deleted {} system_modules for panels (includes orphaned entries)", sysModulesDeleted);
 
             // Step 5: Delete tests
@@ -168,12 +141,13 @@ public class TestPanelCleanupService {
             log.info("--- Phase 8: Verifying cleanup ---");
             int remainingTests = jdbc.queryForObject("SELECT count(*) FROM clinlims.test", Integer.class);
             int remainingPanels = jdbc.queryForObject("SELECT count(*) FROM clinlims.panel", Integer.class);
-            
+
             if (remainingTests > 0 || remainingPanels > 0) {
-                log.error("CLEANUP VERIFICATION FAILED! Remaining tests: {}, panels: {}", remainingTests, remainingPanels);
+                log.error("CLEANUP VERIFICATION FAILED! Remaining tests: {}, panels: {}", remainingTests,
+                        remainingPanels);
                 throw new RuntimeException("Cleanup verification failed - some tests/panels remain");
             }
-            
+
             log.info("========================================");
             log.info("CLEANUP COMPLETE. Total removed: {}", totalRemoved);
             log.info("========================================");
@@ -193,8 +167,7 @@ public class TestPanelCleanupService {
      */
     private int safeDelete(JdbcTemplate jdbc, String table, String whereClause) {
         try {
-            String sql = whereClause != null 
-                    ? "DELETE FROM " + table + " WHERE " + whereClause
+            String sql = whereClause != null ? "DELETE FROM " + table + " WHERE " + whereClause
                     : "DELETE FROM " + table;
             return jdbc.update(sql);
         } catch (Exception e) {
@@ -208,49 +181,49 @@ public class TestPanelCleanupService {
      */
     private void logDatabaseState(JdbcTemplate jdbc) {
         log.info("--- Pre-cleanup database state ---");
-        
+
         try {
             // Log test count
             Integer testCount = jdbc.queryForObject("SELECT count(*) FROM clinlims.test", Integer.class);
             log.info("  Tests: {}", testCount);
-            
+
             // Log panel count
             Integer panelCount = jdbc.queryForObject("SELECT count(*) FROM clinlims.panel", Integer.class);
             log.info("  Panels: {}", panelCount);
-            
+
             // Log sample count (patient data check)
             Integer sampleCount = jdbc.queryForObject("SELECT count(*) FROM clinlims.sample", Integer.class);
             log.info("  Samples: {}", sampleCount);
-            
+
             // Log analysis count
             Integer analysisCount = jdbc.queryForObject("SELECT count(*) FROM clinlims.analysis", Integer.class);
             log.info("  Analysis records: {}", analysisCount);
-            
+
             // Log result count
             Integer resultCount = jdbc.queryForObject("SELECT count(*) FROM clinlims.result", Integer.class);
             log.info("  Results: {}", resultCount);
-            
+
             // Log patient count
             Integer patientCount = jdbc.queryForObject("SELECT count(*) FROM clinlims.patient", Integer.class);
             log.info("  Patients: {}", patientCount);
-            
+
         } catch (Exception e) {
             log.warn("Could not log database state: {}", e.getMessage());
         }
     }
 
     /**
-     * Performs comprehensive safety check before cleanup.
-     * Checks ALL patient-related tables for any data.
+     * Performs comprehensive safety check before cleanup. Checks ALL
+     * patient-related tables for any data.
      * 
      * @return true if database is safe to clean (no patient data)
      */
     public boolean isDatabaseSafeToClean() {
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-        
+
         log.info("Performing comprehensive database safety check...");
         List<String> blockingReasons = new ArrayList<>();
-        
+
         try {
             // Check all patient data tables
             for (String table : PATIENT_DATA_TABLES) {
@@ -268,7 +241,7 @@ public class TestPanelCleanupService {
             // Additional check: analysis with test_id or panel_id
             try {
                 Integer analysisWithTest = jdbc.queryForObject(
-                        "SELECT count(*) FROM clinlims.analysis WHERE test_id IS NOT NULL OR panel_id IS NOT NULL", 
+                        "SELECT count(*) FROM clinlims.analysis WHERE test_id IS NOT NULL OR panel_id IS NOT NULL",
                         Integer.class);
                 if (analysisWithTest != null && analysisWithTest > 0) {
                     blockingReasons.add("analysis linked to tests/panels: " + analysisWithTest + " records");

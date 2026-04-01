@@ -122,8 +122,8 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
                 "ENTER. accessionNumber=" + updateData.getAccessionNumber() + ", currentUserId="
                         + updateData.getCurrentUserId() + ", savePatient=" + updateData.isSavePatient()
                         + ", patientUpdateStatus=" + (patientInfo != null ? patientInfo.getPatientUpdateStatus() : null)
-                        + ", useInitialSampleCondition=" + useInitialSampleCondition
-                        + ", useSampleNature=" + useSampleNature + ", sampleItemsTestsCount="
+                        + ", useInitialSampleCondition=" + useInitialSampleCondition + ", useSampleNature="
+                        + useSampleNature + ", sampleItemsTestsCount="
                         + (updateData.getSampleItemsTests() != null ? updateData.getSampleItemsTests().size() : null));
 
         persistOrganizationData(updateData);
@@ -156,7 +156,8 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
 
     private void persistObservations(SamplePatientUpdateData updateData) {
         LogEvent.logWarn(this.getClass().getSimpleName(), "persistObservations",
-                "Observations count=" + (updateData.getObservations() != null ? updateData.getObservations().size() : null)
+                "Observations count="
+                        + (updateData.getObservations() != null ? updateData.getObservations().size() : null)
                         + ", accessionNumber=" + updateData.getAccessionNumber());
         for (ObservationHistory observation : updateData.getObservations()) {
             observation.setSampleId(updateData.getSample().getId());
@@ -168,15 +169,15 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
     private void persistOrganizationData(SamplePatientUpdateData updateData) {
         Organization newOrganization = updateData.getNewOrganization();
         LogEvent.logWarn(this.getClass().getSimpleName(), "persistOrganizationData",
-                "ENTER. newOrganizationPresent=" + (newOrganization != null)
-                        + ", currentOrganizationPresent=" + (updateData.getCurrentOrganization() != null)
-                        + ", requesterSitePresent=" + (updateData.getRequesterSite() != null)
-                        + ", orgAddressExtraCount=" + (updateData.getOrgAddressExtra() != null ? updateData.getOrgAddressExtra().size() : null)
+                "ENTER. newOrganizationPresent=" + (newOrganization != null) + ", currentOrganizationPresent="
+                        + (updateData.getCurrentOrganization() != null) + ", requesterSitePresent="
+                        + (updateData.getRequesterSite() != null) + ", orgAddressExtraCount="
+                        + (updateData.getOrgAddressExtra() != null ? updateData.getOrgAddressExtra().size() : null)
                         + ", accessionNumber=" + updateData.getAccessionNumber());
 
         if (newOrganization != null) {
-            LogEvent.logWarn(this.getClass().getSimpleName(), "persistOrganizationData",
-                    "Inserting newOrganization id=" + newOrganization.getId() + ", name=" + newOrganization.getOrganizationName());
+            LogEvent.logWarn(this.getClass().getSimpleName(), "persistOrganizationData", "Inserting newOrganization id="
+                    + newOrganization.getId() + ", name=" + newOrganization.getOrganizationName());
             organizationService.insert(newOrganization);
             organizationService.linkOrganizationAndType(newOrganization,
                     TableIdService.getInstance().REFERRING_ORG_TYPE_ID);
@@ -218,9 +219,8 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
 
     private void persistProviderData(SamplePatientUpdateData updateData) {
         LogEvent.logWarn(this.getClass().getSimpleName(), "persistProviderData",
-                "ENTER. providerPersonPresent=" + (updateData.getProviderPerson() != null)
-                        + ", providerPresent=" + (updateData.getProvider() != null)
-                        + ", accessionNumber=" + updateData.getAccessionNumber());
+                "ENTER. providerPersonPresent=" + (updateData.getProviderPerson() != null) + ", providerPresent="
+                        + (updateData.getProvider() != null) + ", accessionNumber=" + updateData.getAccessionNumber());
         if (updateData.getProviderPerson() != null && updateData.getProvider() != null) {
 
             personService.save(updateData.getProviderPerson());
@@ -236,15 +236,16 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
         LogEvent.logWarn(this.getClass().getSimpleName(), "persistSampleData",
                 "ENTER. analysisRevision=" + analysisRevision + ", accessionNumber=" + updateData.getAccessionNumber()
                         + ", priority=" + (updateData.getPriority() != null ? updateData.getPriority() : null)
-                        + ", sampleFieldsCount=" + (updateData.getSampleFields() != null ? updateData.getSampleFields().size() : null)
-                        + ", sampleItemsTestsCount=" + (updateData.getSampleItemsTests() != null ? updateData.getSampleItemsTests().size() : null));
+                        + ", sampleFieldsCount="
+                        + (updateData.getSampleFields() != null ? updateData.getSampleFields().size() : null)
+                        + ", sampleItemsTestsCount="
+                        + (updateData.getSampleItemsTests() != null ? updateData.getSampleItemsTests().size() : null));
 
         updateData.getSample().setFhirUuid(UUID.randomUUID());
         sampleService.insertDataWithAccessionNumber(updateData.getSample());
         updateData.getSample().setPriority(updateData.getPriority());
-        LogEvent.logWarn(this.getClass().getSimpleName(), "persistSampleData",
-                "Sample inserted. sampleId=" + updateData.getSample().getId() + ", accessionNumber="
-                        + updateData.getSample().getAccessionNumber());
+        LogEvent.logWarn(this.getClass().getSimpleName(), "persistSampleData", "Sample inserted. sampleId="
+                + updateData.getSample().getId() + ", accessionNumber=" + updateData.getSample().getAccessionNumber());
 
         for (SampleAdditionalField field : updateData.getSampleFields()) {
             field.setSample(updateData.getSample());
@@ -298,28 +299,25 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
                 if (sampleTestCollection.testIdToUserSectionMap == null
                         || sampleTestCollection.testIdToUserSampleTypeMap == null) {
                     LogEvent.logWarn(this.getClass().getSimpleName(), "persistSampleData",
-                            "Mapping map(s) null for testId=" + test.getId()
-                                    + ", testIdToUserSectionMapNull="
+                            "Mapping map(s) null for testId=" + test.getId() + ", testIdToUserSectionMapNull="
                                     + (sampleTestCollection.testIdToUserSectionMap == null)
                                     + ", testIdToUserSampleTypeMapNull="
-                                    + (sampleTestCollection.testIdToUserSampleTypeMap == null)
-                                    + ", accessionNumber=" + updateData.getAccessionNumber());
+                                    + (sampleTestCollection.testIdToUserSampleTypeMap == null) + ", accessionNumber="
+                                    + updateData.getAccessionNumber());
                 }
 
                 Analysis analysis = populateAnalysis(analysisRevision, sampleTestCollection, test,
                         userSelectedTestSection, userSelectedSampleTypeName, updateData);
                 LogEvent.logWarn(this.getClass().getSimpleName(), "persistSampleData",
-                        "About to insert Analysis. testId=" + test.getId()
-                                + ", userSelectedTestSection=" + userSelectedTestSection
-                                + ", userSelectedSampleTypeName=" + userSelectedSampleTypeName
-                                + ", panelResolved=" + (analysis.getPanel() != null)
-                                + ", sampleItemAccession=" + updateData.getAccessionNumber());
+                        "About to insert Analysis. testId=" + test.getId() + ", userSelectedTestSection="
+                                + userSelectedTestSection + ", userSelectedSampleTypeName=" + userSelectedSampleTypeName
+                                + ", panelResolved=" + (analysis.getPanel() != null) + ", sampleItemAccession="
+                                + updateData.getAccessionNumber());
                 analysisService.insert(analysis);
                 LogEvent.logWarn(this.getClass().getSimpleName(), "persistSampleData",
-                        "Inserted Analysis. analysisId=" + analysis.getId()
-                                + ", panelResolved=" + (analysis.getPanel() != null)
-                                + ", testId=" + test.getId()
-                                + ", accessionNumber=" + updateData.getAccessionNumber());
+                        "Inserted Analysis. analysisId=" + analysis.getId() + ", panelResolved="
+                                + (analysis.getPanel() != null) + ", testId=" + test.getId() + ", accessionNumber="
+                                + updateData.getAccessionNumber());
                 sampleTestCollection.analysises.add(analysis);
 
                 if (updateData.getCustomNotificationLogic()) {
@@ -400,8 +398,9 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
 
     private void persistRequesterData(SamplePatientUpdateData updateData) {
         LogEvent.logWarn(this.getClass().getSimpleName(), "persistRequesterData",
-                "ENTER. providerPersonIdPresent=" + (updateData.getProviderPerson() != null
-                        && !org.apache.commons.validator.GenericValidator.isBlankOrNull(updateData.getProviderPerson().getId()))
+                "ENTER. providerPersonIdPresent="
+                        + (updateData.getProviderPerson() != null && !org.apache.commons.validator.GenericValidator
+                                .isBlankOrNull(updateData.getProviderPerson().getId()))
                         + ", requesterSitePresent=" + (updateData.getRequesterSite() != null)
                         + ", requesterSiteDepartmentPresent=" + (updateData.getRequesterSiteDepartment() != null)
                         + ", accessionNumber=" + updateData.getAccessionNumber());
@@ -426,10 +425,9 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
                 updateData.getRequesterSite().setRequesterId(updateData.getNewOrganization().getId());
             }
             LogEvent.logWarn(this.getClass().getSimpleName(), "persistRequesterData",
-                    "Inserting requesterSite mapping. requesterId="
-                            + updateData.getRequesterSite().getRequesterId()
-                            + ", requesterTypeId=" + updateData.getRequesterSite().getRequesterTypeId()
-                            + ", sampleId=" + updateData.getSample().getId());
+                    "Inserting requesterSite mapping. requesterId=" + updateData.getRequesterSite().getRequesterId()
+                            + ", requesterTypeId=" + updateData.getRequesterSite().getRequesterTypeId() + ", sampleId="
+                            + updateData.getSample().getId());
             sampleRequesterService.insert(updateData.getRequesterSite());
         }
 
@@ -439,8 +437,8 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
             boolean orgHasType = false;
             LogEvent.logWarn(this.getClass().getSimpleName(), "persistRequesterData",
                     "RequesterSiteDepartment mapping. departmentRequesterId="
-                            + updateData.getRequesterSiteDepartment().getRequesterId()
-                            + ", siteDepartmentPresent=" + (siteDepartment != null));
+                            + updateData.getRequesterSiteDepartment().getRequesterId() + ", siteDepartmentPresent="
+                            + (siteDepartment != null));
             for (OrganizationType orgType : siteDepartment.getOrganizationTypes()) {
                 if (orgType.getId().equals(TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID)) {
                     orgHasType = true;

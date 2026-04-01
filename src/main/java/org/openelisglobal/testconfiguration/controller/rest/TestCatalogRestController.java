@@ -186,20 +186,19 @@ public class TestCatalogRestController extends BaseController {
         if (TypeOfTestResultServiceImpl.ResultType.isDictionaryVariant(testResult.getTestResultType())) {
             // Guard against null/invalid dictionary IDs
             String value = testResult.getValue();
-            if (org.apache.commons.validator.GenericValidator.isBlankOrNull(value) 
-                    || "null".equalsIgnoreCase(value)) {
+            if (org.apache.commons.validator.GenericValidator.isBlankOrNull(value) || "null".equalsIgnoreCase(value)) {
                 LogEvent.logWarn(this.getClass().getSimpleName(), "getDictionaryValue",
                         "Test result has null/invalid dictionary value for test_result id: " + testResult.getId());
                 return null;
             }
-            
+
             Dictionary dictionary = dictionaryService.getDataForId(value);
             if (dictionary == null) {
                 LogEvent.logWarn(this.getClass().getSimpleName(), "getDictionaryValue",
                         "Dictionary not found for id: " + value);
                 return null;
             }
-            
+
             String displayValue = dictionary.getLocalizedName();
 
             if ("unknown".equals(displayValue)) {

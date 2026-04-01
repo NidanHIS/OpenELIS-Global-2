@@ -12,8 +12,8 @@ import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Task;
 import org.openelisglobal.common.constants.Constants;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
-import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.formfields.FormFields;
+import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.services.DisplayListService;
 import org.openelisglobal.common.services.DisplayListService.ListType;
 import org.openelisglobal.common.services.SampleOrderService;
@@ -205,15 +205,16 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
             SampleOrderItem order = form != null ? form.getSampleOrderItems() : null;
 
             LogEvent.logWarn(this.getClass().getSimpleName(), "samplePatientEntrySave",
-                    "ENTER requestUri=" + (request != null ? request.getRequestURI() : null)
-                            + ", externalOrderNumber="
-                            + (order != null ? order.getExternalOrderNumber() : null)
-                            + ", labNo=" + (order != null ? order.getLabNo() : null)
-                            + ", referringSiteId=" + (order != null ? order.getReferringSiteId() : null)
-                            + ", referringSiteName=" + (order != null ? order.getReferringSiteName() : null)
-                            + ", patientPK=" + (patient != null ? patient.getPatientPK() : null)
-                            + ", nationalIdLen=" + (patient != null && patient.getNationalId() != null ? patient.getNationalId().length() : 0)
-                            + ", sampleXMLLen=" + (form != null && form.getSampleXML() != null ? form.getSampleXML().length() : 0)
+                    "ENTER requestUri=" + (request != null ? request.getRequestURI() : null) + ", externalOrderNumber="
+                            + (order != null ? order.getExternalOrderNumber() : null) + ", labNo="
+                            + (order != null ? order.getLabNo() : null) + ", referringSiteId="
+                            + (order != null ? order.getReferringSiteId() : null) + ", referringSiteName="
+                            + (order != null ? order.getReferringSiteName() : null) + ", patientPK="
+                            + (patient != null ? patient.getPatientPK() : null) + ", nationalIdLen="
+                            + (patient != null && patient.getNationalId() != null ? patient.getNationalId().length()
+                                    : 0)
+                            + ", sampleXMLLen="
+                            + (form != null && form.getSampleXML() != null ? form.getSampleXML().length() : 0)
                             + ", hasBindingErrors=" + (result != null && result.hasErrors()));
         } catch (Exception e) {
             // Never fail request only due to logging.
@@ -233,8 +234,8 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
                                     + String.valueOf(fe.getRejectedValue()));
                 } else {
                     LogEvent.logWarn(this.getClass().getSimpleName(), "samplePatientEntrySave",
-                            "BINDING_ERROR global code(s)=" + String.valueOf(err.getCodes())
-                                    + ", message=" + err.getDefaultMessage());
+                            "BINDING_ERROR global code(s)=" + String.valueOf(err.getCodes()) + ", message="
+                                    + err.getDefaultMessage());
                 }
             }
             LogEvent.logWarn(this.getClass().getSimpleName(), "samplePatientEntrySave",
@@ -249,9 +250,9 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
                 if (err instanceof org.springframework.validation.FieldError) {
                     org.springframework.validation.FieldError fe = (org.springframework.validation.FieldError) err;
                     LogEvent.logWarn(this.getClass().getSimpleName(), "samplePatientEntrySave",
-                            "POST_PLACEOrder_BINDING_ERROR field=" + fe.getField() + ", code(s)=" + String.valueOf(fe.getCodes())
-                                    + ", message=" + fe.getDefaultMessage() + ", rejectedValue="
-                                    + String.valueOf(fe.getRejectedValue()));
+                            "POST_PLACEOrder_BINDING_ERROR field=" + fe.getField() + ", code(s)="
+                                    + String.valueOf(fe.getCodes()) + ", message=" + fe.getDefaultMessage()
+                                    + ", rejectedValue=" + String.valueOf(fe.getRejectedValue()));
                 } else {
                     LogEvent.logWarn(this.getClass().getSimpleName(), "samplePatientEntrySave",
                             "POST_PLACEOrder_BINDING_ERROR global code(s)=" + String.valueOf(err.getCodes())

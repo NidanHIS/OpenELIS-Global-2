@@ -146,14 +146,15 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
         if (cleanupEnabled) {
             log.info("OCL Import: Cleanup enabled, checking database...");
             if (forceCleanup) {
-                log.warn("OCL Import: Force cleanup enabled - will remove ALL tests/panels regardless of patient data!");
+                log.warn(
+                        "OCL Import: Force cleanup enabled - will remove ALL tests/panels regardless of patient data!");
                 int removed = cleanupService.cleanupAllTestsAndPanels();
                 log.info("OCL Import: Removed {} tests/panels during force cleanup", removed);
             } else {
                 int removed = cleanupService.safeCleanup();
                 if (removed < 0) {
-                    log.warn("OCL Import: Database contains patient data, skipping cleanup. " +
-                            "Set org.openelisglobal.ocl.import.cleanup.force=true to override.");
+                    log.warn("OCL Import: Database contains patient data, skipping cleanup. "
+                            + "Set org.openelisglobal.ocl.import.cleanup.force=true to override.");
                 } else {
                     log.info("OCL Import: Removed {} tests/panels during safe cleanup", removed);
                 }

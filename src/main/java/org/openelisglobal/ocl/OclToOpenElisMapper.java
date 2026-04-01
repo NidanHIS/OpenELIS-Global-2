@@ -21,6 +21,7 @@ import org.openelisglobal.dictionary.valueholder.Dictionary;
 import org.openelisglobal.dictionarycategory.service.DictionaryCategoryService;
 import org.openelisglobal.localization.service.LocalizationService;
 import org.openelisglobal.localization.valueholder.Localization;
+import org.openelisglobal.ocl.service.OclMappingService;
 import org.openelisglobal.panel.service.PanelService;
 import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.role.service.RoleService;
@@ -37,7 +38,6 @@ import org.openelisglobal.testconfiguration.service.PanelCreateService;
 import org.openelisglobal.typeofsample.service.TypeOfSampleService;
 import org.openelisglobal.typeofsample.valueholder.TypeOfSample;
 import org.openelisglobal.typeoftestresult.service.TypeOfTestResultService;
-import org.openelisglobal.ocl.service.OclMappingService;
 import org.openelisglobal.typeoftestresult.valueholder.TypeOfTestResult;
 import org.openelisglobal.unitofmeasure.service.UnitOfMeasureService;
 import org.openelisglobal.unitofmeasure.valueholder.UnitOfMeasure;
@@ -89,8 +89,8 @@ public class OclToOpenElisMapper {
         RESULT_TYPE_MAPPING.put("NUMERIC", "N");
         RESULT_TYPE_MAPPING.put("CODED", "D");
         RESULT_TYPE_MAPPING.put("TEXT", "R");
-        RESULT_TYPE_MAPPING.put("N/A", "R");   // Free text result
-        RESULT_TYPE_MAPPING.put("NONE", "R");  // Free text result
+        RESULT_TYPE_MAPPING.put("N/A", "R"); // Free text result
+        RESULT_TYPE_MAPPING.put("NONE", "R"); // Free text result
     }
 
     /**
@@ -107,10 +107,12 @@ public class OclToOpenElisMapper {
             labSetPanelNodes = new HashSet<>();
             this.rootNode = rootNode;
 
-            // Validate root node structure - accept both Source Version and Collection Version
+            // Validate root node structure - accept both Source Version and Collection
+            // Version
             String oclType = getText(rootNode, "type");
             if (!rootNode.has("type") || (!"Collection Version".equals(oclType) && !"Source Version".equals(oclType))) {
-                log.error("Invalid OCL export format. Expected Collection Version or Source Version type. Got: " + oclType);
+                log.error("Invalid OCL export format. Expected Collection Version or Source Version type. Got: "
+                        + oclType);
                 return forms;
             }
             log.info("Processing OCL export of type: " + oclType);
@@ -153,7 +155,8 @@ public class OclToOpenElisMapper {
     private TestAddForm mapSingleConceptToForm(JsonNode concept) {
         try {
             String conceptId = getText(concept, "id");
-            String externalId = getText(concept, "external_id");  // OpenMRS UUID - this is what external orders reference
+            String externalId = getText(concept, "external_id"); // OpenMRS UUID - this is what external orders
+                                                                 // reference
             String displayName = getText(concept, "display_name");
             String dataType = getText(concept, "datatype");
             String conceptClass = getText(concept, "concept_class");
@@ -161,7 +164,8 @@ public class OclToOpenElisMapper {
             String englishName = names.get("englishName");
             String frenchName = names.get("frenchName");
             String description = names.get("description");
-            // Use englishName as fallback when description is empty to prevent duplicate empty description collision
+            // Use englishName as fallback when description is empty to prevent duplicate
+            // empty description collision
             if (StringUtils.isBlank(description)) {
                 description = englishName;
             }
@@ -176,20 +180,21 @@ public class OclToOpenElisMapper {
                 if (panelService.getPanelByName(panel) != null) {
                     Panel existingPanel = panelService.getPanelByName(panel);
                     boolean needsUpdate = false;
-                    
+
                     // Update LOINC if provided
                     if (StringUtils.isNotBlank(loinc)) {
                         existingPanel.setLoinc(loinc);
                         needsUpdate = true;
                     }
-                    
+
                     // Update GUID with external_id (OpenMRS UUID) if provided and different
                     if (StringUtils.isNotBlank(externalId) && !externalId.equals(existingPanel.getGuid())) {
                         existingPanel.setGuid(externalId);
                         needsUpdate = true;
-                        log.info("Updating GUID for existing panel '" + englishName + "' from '" + existingPanel.getGuid() + "' to '" + externalId + "'");
+                        log.info("Updating GUID for existing panel '" + englishName + "' from '"
+                                + existingPanel.getGuid() + "' to '" + externalId + "'");
                     }
-                    
+
                     if (needsUpdate) {
                         panelService.update(existingPanel);
                     }
@@ -241,7 +246,8 @@ public class OclToOpenElisMapper {
                 if (StringUtils.isNotBlank(externalId) && !externalId.equals(dbTest.getGuid())) {
                     dbTest.setGuid(externalId);
                     needsUpdate = true;
-                    log.info("Updating GUID for existing test '" + englishName + "' from '" + dbTest.getGuid() + "' to '" + externalId + "'");
+                    log.info("Updating GUID for existing test '" + englishName + "' from '" + dbTest.getGuid()
+                            + "' to '" + externalId + "'");
                 }
                 if (needsUpdate) {
                     testService.update(dbTest);
@@ -264,7 +270,7 @@ public class OclToOpenElisMapper {
             mapPanels(concept, jsonWad);
             mapUnits(concept, jsonWad);
             mapLoinc(loinc, jsonWad);
-            mapGuid(externalId, jsonWad);  // Pass external_id (OpenMRS UUID) as test GUID
+            mapGuid(externalId, jsonWad); // Pass external_id (OpenMRS UUID) as test GUID
             mapResultType(concept, jsonWad);
             mapOrderableFlags(concept, jsonWad);
             mapSampleTypes(concept, jsonWad);
@@ -275,7 +281,8 @@ public class OclToOpenElisMapper {
             String jsonWadString = objectMapper.writeValueAsString(jsonWad);
             form.setJsonWad(jsonWadString);
 
-            log.info("Successfully mapped OCL concept " + conceptId + " (external_id: " + externalId + ") to TestAddForm");
+            log.info("Successfully mapped OCL concept " + conceptId + " (external_id: " + externalId
+                    + ") to TestAddForm");
             log.debug("Generated JSON: " + jsonWadString);
 
             return form;
@@ -352,7 +359,7 @@ public class OclToOpenElisMapper {
         JsonNode extras = concept.get("extras");
         String testSectionId = null;
         TestSection testSection = null;
-        
+
         // Priority 1: Check OCL extras for explicit test_section
         if (extras != null && extras.has("test_section")) {
             String oclTestSection = getText(extras, "test_section");
@@ -386,7 +393,7 @@ public class OclToOpenElisMapper {
         if (testSection == null) {
             testSection = testSectionService.getTestSectionByName("Hematology");
         }
-        
+
         if (testSection != null) {
             testSectionId = testSection.getId();
         }
@@ -667,8 +674,9 @@ public class OclToOpenElisMapper {
                     Map<String, String> names = extractNames(mapConcept);
                     String englishName = names.get("englishName");
                     String frenchName = names.get("frenchName");
-                    String answerExternalId = getText(mapConcept, "external_id");  // OpenMRS UUID for answer concept
-                    log.info("  Creating dictionary entry: " + englishName + " (code: " + toConceptCode + ", external_id: " + answerExternalId + ")");
+                    String answerExternalId = getText(mapConcept, "external_id"); // OpenMRS UUID for answer concept
+                    log.info("  Creating dictionary entry: " + englishName + " (code: " + toConceptCode
+                            + ", external_id: " + answerExternalId + ")");
                     String loinc = getLoinc(toConceptCode);
 
                     Dictionary dictionary = new Dictionary();
@@ -685,11 +693,14 @@ public class OclToOpenElisMapper {
                             dictionaryCategoryService.getDictionaryCategoryByName("Test Result"));
                     boolean isDuplicate = dictionaryService.duplicateDictionaryExists(dictionary);
                     log.info("  Dictionary duplicate check for '" + englishName + "': " + isDuplicate);
-                    
+
                     if (isDuplicate) {
-                        // Retrieve existing dictionary by name AND category (fixes issue with multiple dictionaries having same name in different categories)
-                        dictionary = dictionaryService.getDictionaryEntrysByNameAndCategoryDescription(englishName, "General test result");
-                        log.info("  Retrieved existing dictionary by name+category: " + (dictionary != null ? "id=" + dictionary.getId() : "NULL"));
+                        // Retrieve existing dictionary by name AND category (fixes issue with multiple
+                        // dictionaries having same name in different categories)
+                        dictionary = dictionaryService.getDictionaryEntrysByNameAndCategoryDescription(englishName,
+                                "General test result");
+                        log.info("  Retrieved existing dictionary by name+category: "
+                                + (dictionary != null ? "id=" + dictionary.getId() : "NULL"));
                         if (dictionary != null) {
                             boolean needsUpdate = false;
                             if (StringUtils.isNotBlank(loinc) && !loinc.equals(dictionary.getLoincCode())) {
@@ -697,10 +708,12 @@ public class OclToOpenElisMapper {
                                 needsUpdate = true;
                             }
                             // Update GUID with external_id (OpenMRS UUID) if provided and different
-                            if (StringUtils.isNotBlank(answerExternalId) && !answerExternalId.equals(dictionary.getGuid())) {
+                            if (StringUtils.isNotBlank(answerExternalId)
+                                    && !answerExternalId.equals(dictionary.getGuid())) {
                                 dictionary.setGuid(answerExternalId);
                                 needsUpdate = true;
-                                log.info("  Updating GUID for existing dictionary '" + englishName + "' to '" + answerExternalId + "'");
+                                log.info("  Updating GUID for existing dictionary '" + englishName + "' to '"
+                                        + answerExternalId + "'");
                             }
                             if (needsUpdate) {
                                 dictionary = dictionaryService.update(dictionary);
@@ -713,7 +726,8 @@ public class OclToOpenElisMapper {
                         localization = localizationService.save(localization);
                         dictionary.setLocalizedDictionaryName(localization);
                         dictionary = dictionaryService.save(dictionary);
-                        log.info("  Saved new dictionary: " + (dictionary != null ? "id=" + dictionary.getId() : "NULL"));
+                        log.info("  Saved new dictionary: "
+                                + (dictionary != null ? "id=" + dictionary.getId() : "NULL"));
                     }
                     // Only add to dictionary array if dictionary was successfully created/retrieved
                     if (dictionary != null) {
@@ -721,16 +735,19 @@ public class OclToOpenElisMapper {
                         dictEntry.put("id", String.valueOf(dictionary.getId()));
                         dictEntry.put("qualified", "N");
                         dictionaryArray.add(dictEntry);
-                        log.info("  Added to dictionaryArray: id=" + dictionary.getId() + ", array size now: " + dictionaryArray.size());
+                        log.info("  Added to dictionaryArray: id=" + dictionary.getId() + ", array size now: "
+                                + dictionaryArray.size());
                     } else {
                         log.warn("  DICTIONARY IS NULL - not added to array!");
                     }
 
                 }
             }
-            log.info("  Total Q-AND-A mappings found for concept " + conceptId + ": " + qAndACount + ", dictionary entries created: " + dictionaryArray.size());
+            log.info("  Total Q-AND-A mappings found for concept " + conceptId + ": " + qAndACount
+                    + ", dictionary entries created: " + dictionaryArray.size());
             if (qAndACount == 0) {
-                log.warn("  No Q-AND-A mappings found for coded concept " + conceptId + " - dictionary array will be empty!");
+                log.warn("  No Q-AND-A mappings found for coded concept " + conceptId
+                        + " - dictionary array will be empty!");
             }
         }
         jsonWad.put("dictionary", dictionaryArray);
@@ -773,7 +790,7 @@ public class OclToOpenElisMapper {
     private TypeOfSample getTypeOfSample(JsonNode concept) {
         JsonNode extras = concept.get("extras");
         TypeOfSample typeOfSample = null;
-        
+
         // Priority 1: Check OCL extras for explicit sample_type
         if (extras != null && extras.has("sample_type")) {
             String ocltypeOfSample = getText(extras, "sample_type");

@@ -1411,15 +1411,14 @@ public class FhirTransformServiceImpl implements FhirTransformService {
                     && !"0".equals(result.getValue())) {
                 Dictionary dictionary = dictionaryService.getDataForId(result.getValue());
                 CodeableConcept codeableConcept = new CodeableConcept();
-                // Use dictionary.guid if available (from OCL import), otherwise use derived UUID
+                // Use dictionary.guid if available (from OCL import), otherwise use derived
+                // UUID
                 // Send UUID coding FIRST for OpenMRS concept matching
-                String dictUuid = dictionary.getGuid() != null && !dictionary.getGuid().isEmpty()
-                        ? dictionary.getGuid()
+                String dictUuid = dictionary.getGuid() != null && !dictionary.getGuid().isEmpty() ? dictionary.getGuid()
                         : generateStableGuidForDictionary(dictionary);
-                codeableConcept.addCoding(
-                        new Coding("urn:uuid", dictUuid,
-                                dictionary.getLocalizedDictionaryName() == null ? dictionary.getDictEntry()
-                                        : dictionary.getLocalizedDictionaryName().getEnglish()));
+                codeableConcept.addCoding(new Coding("urn:uuid", dictUuid,
+                        dictionary.getLocalizedDictionaryName() == null ? dictionary.getDictEntry()
+                                : dictionary.getLocalizedDictionaryName().getEnglish()));
                 // Add LOINC coding SECOND for interoperability
                 if (dictionary.getLoincCode() != null && !dictionary.getLoincCode().isEmpty()) {
                     codeableConcept.addCoding(new Coding("http://loinc.org", dictionary.getLoincCode(),
@@ -1431,15 +1430,14 @@ public class FhirTransformServiceImpl implements FhirTransformService {
                     && !"0".equals(result.getValue())) {
                 Dictionary dictionary = dictionaryService.getDataForId(result.getValue());
                 CodeableConcept codeableConcept = new CodeableConcept();
-                // Use dictionary.guid if available (from OCL import), otherwise use derived UUID
+                // Use dictionary.guid if available (from OCL import), otherwise use derived
+                // UUID
                 // Send UUID coding FIRST for OpenMRS concept matching
-                String dictUuid = dictionary.getGuid() != null && !dictionary.getGuid().isEmpty()
-                        ? dictionary.getGuid()
+                String dictUuid = dictionary.getGuid() != null && !dictionary.getGuid().isEmpty() ? dictionary.getGuid()
                         : generateStableGuidForDictionary(dictionary);
-                codeableConcept.addCoding(
-                        new Coding("urn:uuid", dictUuid,
-                                dictionary.getLocalizedDictionaryName() == null ? dictionary.getDictEntry()
-                                        : dictionary.getLocalizedDictionaryName().getEnglish()));
+                codeableConcept.addCoding(new Coding("urn:uuid", dictUuid,
+                        dictionary.getLocalizedDictionaryName() == null ? dictionary.getDictEntry()
+                                : dictionary.getLocalizedDictionaryName().getEnglish()));
                 // Add LOINC coding SECOND for interoperability
                 if (dictionary.getLoincCode() != null && !dictionary.getLoincCode().isEmpty()) {
                     codeableConcept.addCoding(new Coding("http://loinc.org", dictionary.getLoincCode(),

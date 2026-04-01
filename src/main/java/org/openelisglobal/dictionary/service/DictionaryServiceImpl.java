@@ -37,7 +37,8 @@ public class DictionaryServiceImpl extends AuditableBaseObjectServiceImpl<Dictio
         if (duplicateDictionaryExists(dictionary)) {
             throw new LIMSDuplicateRecordException("Duplicate record exists for " + dictionary.getDictEntry());
         } else {
-            // Generate UUID if not already set (defense-in-depth for UI-created dictionaries)
+            // Generate UUID if not already set (defense-in-depth for UI-created
+            // dictionaries)
             if (dictionary.getGuid() == null || dictionary.getGuid().isEmpty()) {
                 dictionary.setGuid(UUID.randomUUID().toString());
             }

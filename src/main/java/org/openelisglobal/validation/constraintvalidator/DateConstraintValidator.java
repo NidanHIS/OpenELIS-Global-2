@@ -47,7 +47,8 @@ public class DateConstraintValidator implements ConstraintValidator<ValidDate, S
 
         // Dynamic/dual-format validation:
         // Accept both MM/dd/yyyy and dd/MM/yyyy regardless of DEFAULT_DATE_LOCALE.
-        // When ambiguous (e.g. 03/04/2026), choose deterministically using DEFAULT_DATE_LOCALE.
+        // When ambiguous (e.g. 03/04/2026), choose deterministically using
+        // DEFAULT_DATE_LOCALE.
         LocalDate parsed = DateUtil.parseFlexibleLocalDate(datePortion,
                 ConfigurationProperties.getInstance().getPropertyValue(Property.DEFAULT_DATE_LOCALE));
         if (parsed == null) {

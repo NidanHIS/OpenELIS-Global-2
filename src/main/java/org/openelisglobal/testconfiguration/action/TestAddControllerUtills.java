@@ -352,7 +352,7 @@ public class TestAddControllerUtills {
         ArrayList<String> panelList = new ArrayList<>();
         String uomId;
         public String loinc;
-        public String guid;  // OCL concept UUID to be used as test GUID
+        public String guid; // OCL concept UUID to be used as test GUID
         String price;
         String resultTypeId;
         ArrayList<SampleTypeListAndTestOrder> sampleList = new ArrayList<>();

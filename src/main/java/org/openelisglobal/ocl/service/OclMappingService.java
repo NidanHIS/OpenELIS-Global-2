@@ -15,11 +15,11 @@ import org.springframework.stereotype.Service;
 /**
  * Service for mapping OCL test names to sample types and test sections.
  * 
- * Loads mapping data from a JSON file at startup and provides simple lookup.
- * If a test name is not found in the mapping, returns default values.
+ * Loads mapping data from a JSON file at startup and provides simple lookup. If
+ * a test name is not found in the mapping, returns default values.
  * 
- * This ensures that known tests get medically accurate sample type and department
- * assignments, while unknown tests gracefully fall back to defaults.
+ * This ensures that known tests get medically accurate sample type and
+ * department assignments, while unknown tests gracefully fall back to defaults.
  */
 @Service
 public class OclMappingService {
@@ -58,7 +58,7 @@ public class OclMappingService {
 
             try (InputStream is = resource.getInputStream()) {
                 JsonNode root = objectMapper.readTree(is);
-                
+
                 // Load defaults from file if present
                 if (root.has("defaults")) {
                     JsonNode defaults = root.get("defaults");
@@ -78,14 +78,12 @@ public class OclMappingService {
                         String testName = entry.getKey();
                         String normalized = normalizeName(testName);
                         JsonNode mapping = entry.getValue();
-                        
-                        String sampleType = mapping.has("sampleType") 
-                            ? mapping.get("sampleType").asText() 
-                            : defaultSampleType;
-                        String testSection = mapping.has("testSection") 
-                            ? mapping.get("testSection").asText() 
-                            : defaultTestSection;
-                        
+
+                        String sampleType = mapping.has("sampleType") ? mapping.get("sampleType").asText()
+                                : defaultSampleType;
+                        String testSection = mapping.has("testSection") ? mapping.get("testSection").asText()
+                                : defaultTestSection;
+
                         mappingCache.put(normalized, new MappingEntry(sampleType, testSection));
                         count++;
                     }
@@ -98,19 +96,20 @@ public class OclMappingService {
     }
 
     /**
-     * Normalizes a test name for lookup: lowercase, trimmed, multiple spaces collapsed.
+     * Normalizes a test name for lookup: lowercase, trimmed, multiple spaces
+     * collapsed.
      */
     private String normalizeName(String name) {
-        if (name == null) return "";
+        if (name == null)
+            return "";
         return name.toLowerCase().trim().replaceAll("\\s+", " ");
     }
 
     /**
      * Looks up sample type and test section for a given test name.
      * 
-     * Priority:
-     * 1. Exact match in mapping file (normalized)
-     * 2. Default values from configuration
+     * Priority: 1. Exact match in mapping file (normalized) 2. Default values from
+     * configuration
      * 
      * @param testName The test name from OCL concept
      * @return MappingEntry containing sample type and test section
@@ -122,16 +121,16 @@ public class OclMappingService {
 
         String normalized = normalizeName(testName);
         MappingEntry entry = mappingCache.get(normalized);
-        
+
         if (entry != null) {
-            log.debug("Found mapping for test '" + testName + "': sampleType=" 
-                + entry.getSampleType() + ", testSection=" + entry.getTestSection());
+            log.debug("Found mapping for test '" + testName + "': sampleType=" + entry.getSampleType()
+                    + ", testSection=" + entry.getTestSection());
             return entry;
         }
 
         // Not found - use defaults
-        log.debug("No mapping found for test '" + testName + "'. Using defaults: sampleType=" 
-            + defaultSampleType + ", testSection=" + defaultTestSection);
+        log.debug("No mapping found for test '" + testName + "'. Using defaults: sampleType=" + defaultSampleType
+                + ", testSection=" + defaultTestSection);
         return new MappingEntry(defaultSampleType, defaultTestSection);
     }
 

@@ -122,7 +122,8 @@ public class DateUtil {
             try {
                 returnDate = new java.sql.Date(format.parse(date).getTime());
             } catch (ParseException e) {
-                // Fallback: accept both MM/dd/yyyy HH:mm and dd/MM/yyyy HH:mm (and with seconds) regardless of locale.
+                // Fallback: accept both MM/dd/yyyy HH:mm and dd/MM/yyyy HH:mm (and with
+                // seconds) regardless of locale.
                 Timestamp ts = parseFlexibleTimestamp(date);
                 if (ts != null) {
                     return new java.sql.Date(ts.getTime());
@@ -163,7 +164,8 @@ public class DateUtil {
             try {
                 returnTimestamp = new Timestamp(format.parse(date).getTime());
             } catch (ParseException e) {
-                // Fallback: accept both MM/dd/yyyy HH:mm and dd/MM/yyyy HH:mm (and with seconds) regardless of locale.
+                // Fallback: accept both MM/dd/yyyy HH:mm and dd/MM/yyyy HH:mm (and with
+                // seconds) regardless of locale.
                 Timestamp ts = parseFlexibleTimestamp(date);
                 if (ts != null) {
                     return ts;
@@ -182,7 +184,7 @@ public class DateUtil {
      * preference is determined by the provided locale tag (en-US => MM/dd/yyyy,
      * otherwise dd/MM/yyyy).
      *
-     * @param input date string
+     * @param input              date string
      * @param preferredLocaleTag locale tag (e.g. en-US, fr-FR)
      * @return parsed LocalDate or null if invalid
      */
@@ -196,16 +198,10 @@ public class DateUtil {
         }
         normalized = normalized.replaceAll(AMBIGUOUS_DATE_SEGMENT, "01");
 
-        DateTimeFormatter mmdd = new DateTimeFormatterBuilder()
-                .parseCaseInsensitive()
-                .appendPattern("MM/dd/uuuu")
-                .toFormatter()
-                .withResolverStyle(ResolverStyle.STRICT);
-        DateTimeFormatter ddmm = new DateTimeFormatterBuilder()
-                .parseCaseInsensitive()
-                .appendPattern("dd/MM/uuuu")
-                .toFormatter()
-                .withResolverStyle(ResolverStyle.STRICT);
+        DateTimeFormatter mmdd = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("MM/dd/uuuu")
+                .toFormatter().withResolverStyle(ResolverStyle.STRICT);
+        DateTimeFormatter ddmm = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("dd/MM/uuuu")
+                .toFormatter().withResolverStyle(ResolverStyle.STRICT);
 
         LocalDate asMmDd = null;
         LocalDate asDdMm = null;
@@ -262,16 +258,10 @@ public class DateUtil {
 
         LocalTime time = LocalTime.MIDNIGHT;
         if (timePart != null) {
-            DateTimeFormatter hhmm = new DateTimeFormatterBuilder()
-                    .parseCaseInsensitive()
-                    .appendPattern("HH:mm")
-                    .toFormatter()
-                    .withResolverStyle(ResolverStyle.STRICT);
-            DateTimeFormatter hhmmss = new DateTimeFormatterBuilder()
-                    .parseCaseInsensitive()
-                    .appendPattern("HH:mm:ss")
-                    .toFormatter()
-                    .withResolverStyle(ResolverStyle.STRICT);
+            DateTimeFormatter hhmm = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("HH:mm")
+                    .toFormatter().withResolverStyle(ResolverStyle.STRICT);
+            DateTimeFormatter hhmmss = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("HH:mm:ss")
+                    .toFormatter().withResolverStyle(ResolverStyle.STRICT);
             try {
                 time = LocalTime.parse(timePart, hhmm);
             } catch (DateTimeParseException e) {
