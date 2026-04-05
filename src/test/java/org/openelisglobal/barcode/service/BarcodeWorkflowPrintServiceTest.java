@@ -51,7 +51,10 @@ public class BarcodeWorkflowPrintServiceTest {
         assertEquals("/LabelMakerServlet?labNo=ACC-1&type=order", dialog.getPrintableLabelTypes().get(0).getPrintUrl());
         assertEquals("specimen", dialog.getPrintableLabelTypes().get(1).getLabelType());
         assertEquals(1, dialog.getPrintableLabelTypes().get(1).getQuantity());
-        assertEquals("/LabelMakerServlet?labNo=ACC-1&type=specimen",
+        // "specimen" label type maps to "specimenOrder" in the URL — the post-save
+        // dialog only has the bare accession number, so we use specimenOrder which
+        // prints all specimens for the order without requiring a .sortOrder suffix.
+        assertEquals("/LabelMakerServlet?labNo=ACC-1&type=specimenOrder",
                 dialog.getPrintableLabelTypes().get(1).getPrintUrl());
         assertEquals(2, dialog.getPrintableLabelTypes().size());
         assertTrue(dialog.isAllowSkipPrintLater());
