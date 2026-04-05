@@ -28,7 +28,15 @@ const OrderSuccessMessage = (props) => {
       dialogModel?.printableLabelTypes &&
       dialogModel.printableLabelTypes.length > 0
         ? dialogModel.printableLabelTypes
-        : [{ labelType: "order", quantity: 1, printUrl: config.serverBaseUrl + `/LabelMakerServlet?labNo=${accessionNumber}&type=order` }];
+        : [
+            {
+              labelType: "order",
+              quantity: 1,
+              printUrl:
+                config.serverBaseUrl +
+                `/LabelMakerServlet?labNo=${accessionNumber}&type=order`,
+            },
+          ];
 
     return types.map((item) => {
       if (typeof item === "string") {
@@ -36,7 +44,9 @@ const OrderSuccessMessage = (props) => {
         return {
           labelType: item,
           quantity: 1,
-          printUrl: config.serverBaseUrl + `/LabelMakerServlet?labNo=${accessionNumber}&type=${item}`,
+          printUrl:
+            config.serverBaseUrl +
+            `/LabelMakerServlet?labNo=${accessionNumber}&type=${item}`,
         };
       }
       return {
@@ -46,7 +56,8 @@ const OrderSuccessMessage = (props) => {
         // Prepend serverBaseUrl to the relative path the backend returns
         printUrl: item.printUrl
           ? config.serverBaseUrl + item.printUrl
-          : config.serverBaseUrl + `/LabelMakerServlet?labNo=${accessionNumber}&type=${item.labelType}`,
+          : config.serverBaseUrl +
+            `/LabelMakerServlet?labNo=${accessionNumber}&type=${item.labelType}`,
       };
     });
   })();

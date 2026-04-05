@@ -356,7 +356,7 @@ export default function App() {
                   component={() => <CytologyDashboard />}
                   role=""
                 />
-                
+
                 <SecureRoute
                   path="/genericProgram"
                   exact

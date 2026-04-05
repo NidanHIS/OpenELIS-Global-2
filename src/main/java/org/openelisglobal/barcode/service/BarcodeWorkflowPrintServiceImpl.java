@@ -109,7 +109,8 @@ public class BarcodeWorkflowPrintServiceImpl implements BarcodeWorkflowPrintServ
         } else if ("specimen".equals(labelType)) {
             // "specimen" type requires labNo in "accession.sortOrder" format which is not
             // available at post-save dialog build time. Use "specimenOrder" instead, which
-            // prints all specimen labels for the order using just the bare accession number.
+            // prints all specimen labels for the order using just the bare accession
+            // number.
             typeForUrl = "specimenOrder";
         }
         String encodedAccession = URLEncoder.encode(accessionNumber == null ? "" : accessionNumber,

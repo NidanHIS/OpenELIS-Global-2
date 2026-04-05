@@ -651,7 +651,11 @@ function OEHeader({
                 {mode === SIDENAV_MODES.LOCK && <Close size={20} />}
               </button>
             )}
-            <HeaderName href={getFullPath("/")} prefix="" style={{ padding: "0px" }}>
+            <HeaderName
+              href={getFullPath("/")}
+              prefix=""
+              style={{ padding: "0px" }}
+            >
               <span id="header-logo">{logo()}</span>
               <div className="banner">
                 <h5>{configurationProperties?.BANNER_TEXT}</h5>
