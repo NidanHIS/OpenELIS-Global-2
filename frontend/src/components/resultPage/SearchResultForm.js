@@ -39,6 +39,26 @@ import CustomDatePicker from "../common/CustomDatePicker";
 import AsyncAvatar from "../patient/photoManagement/photoAvatar/AyncAvatar";
 import CompactFileInput from "./fileUpload/FileInput";
 import StorageLocationSelector from "../storage/StorageLocationSelector";
+import ResultMultiSelect from "../common/multiSelect";
+import CascadingMultiSelect from "../common/cascadingMultiSelect";
+import EQABadge from "../eqa/EQABadge";
+
+/**
+ * Value for `labNumber` on /rest/LogbookResults. Strips only the legacy
+ * two-segment pattern {@code BASE-SUFFIX} where SUFFIX is numeric (analysis ordinal).
+ * Multi-segment accessions (e.g. harness {@code HARN-QS7-2026-00001}) must stay intact.
+ */
+function labNumberForLogbookSearch(accessionNumber) {
+  if (!accessionNumber) {
+    return "";
+  }
+  const trimmed = accessionNumber.trim();
+  const parts = trimmed.split("-");
+  if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+    return parts[0];
+  }
+  return trimmed;
+}
 
 function ResultSearchPage() {
   const [originalResultForm, setOriginalResultForm] = useState({
@@ -170,7 +190,7 @@ export function SearchResultForm(props) {
       values.accessionNumber !== ""
         ? values.accessionNumber
         : values.startLabNo;
-    let labNo = accessionNumber ? accessionNumber.split("-")[0] : "";
+    let labNo = labNumberForLogbookSearch(accessionNumber);
     const endLabNo = values.endLabNo ? values.endLabNo : "";
     values.unitType = values.unitType ? values.unitType : "";
 
@@ -969,7 +989,7 @@ export function SearchResults(props) {
       cell: (row, index, column, id) => {
         return renderCell(row, index, column, id);
       },
-      width: "12rem",
+      width: "20rem",
     },
     {
       id: "currentResult",
@@ -1032,6 +1052,7 @@ export function SearchResults(props) {
                 : row.accessionNumber) +
                 "-" +
                 row.sequenceNumber}
+              {row.isEqaSample && <EQABadge priority={row.eqaPriority} />}
               <br></br>
               {row.patientName} <br></br>
               {row.patientInfo}
@@ -1145,8 +1166,6 @@ export function SearchResults(props) {
 
       case "result":
         switch (row.resultType) {
-          case "M":
-          case "C":
           case "D":
             return (
               <Select
@@ -1169,6 +1188,28 @@ export function SearchResults(props) {
                   ),
                 )}
               </Select>
+            );
+
+          case "M":
+            return (
+              <ResultMultiSelect
+                id={`multiResultValue${row.id}`}
+                name={`testResult[${row.id}].multiSelectResultValues`}
+                dictionaryValues={row.dictionaryResults}
+                value={row.multiSelectResultValues}
+                onChange={(e) => handleChange(e, row.id)}
+              />
+            );
+
+          case "C":
+            return (
+              <CascadingMultiSelect
+                id={`multiResult${row.id}`}
+                name={`testResult[${row.id}].multiSelectResultValues`}
+                dictionaryValues={row.dictionaryResults}
+                value={row.multiSelectResultValues}
+                onChange={(e) => handleChange(e, row.id)}
+              />
             );
 
           case "N":

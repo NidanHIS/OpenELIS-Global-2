@@ -216,7 +216,19 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const loadCount = (data) => {
     if (componentMounted.current) {
-      setCounts(data);
+      // Use functional setCounts to merge metrics data rather than replace,
+      // so that a concurrently-resolved /rest/incoming-orders fetch that
+      // already wrote samplesToCollect is not overwritten with 0.
+      // The metrics endpoint always returns samplesToCollect: 0 because it
+      // doesn't know about incoming orders — the real count comes from the
+      // separate /rest/incoming-orders fetch in the useEffect above.
+      setCounts((prev) => ({
+        ...data,
+        samplesToCollect:
+          prev.samplesToCollect > 0
+            ? prev.samplesToCollect
+            : data.samplesToCollect || 0,
+      }));
       setLoading(false);
     }
   };
