@@ -65,6 +65,8 @@ const LabelsSection = ({
   const [model, setModel] = useState(() =>
     buildLabelRowsModel(orderQuantity, specimenQuantities),
   );
+  const [orderError, setOrderError] = useState("");
+  const [specimenErrors, setSpecimenErrors] = useState([]);
 
   // NOTE: No useEffect to sync props → internal state after mount.
   // LabelsSection is intentionally "init-only controlled": props set the
@@ -83,7 +85,21 @@ const LabelsSection = ({
   };
 
   const updateOrderQuantity = (nextValue) => {
-    const normalizedOrderQuantity = normalizeQuantity(nextValue);
+    const parsed = parseInt(nextValue, 10);
+    if (!nextValue && nextValue !== 0) {
+      setOrderError("Required");
+      return;
+    }
+    if (isNaN(parsed) || parsed < 1) {
+      setOrderError("Must be at least 1");
+      return;
+    }
+    if (parsed > 15) {
+      setOrderError("Max 15 per print");
+      return;
+    }
+    setOrderError("");
+    const normalizedOrderQuantity = parsed;
     const nextOrderRow = {
       ...model.orderRow,
       quantities: {
@@ -101,7 +117,26 @@ const LabelsSection = ({
   };
 
   const updateSpecimenQuantity = (index, nextValue) => {
-    const normalizedSpecimenQuantity = normalizeQuantity(nextValue);
+    const parsed = parseInt(nextValue, 10);
+    const nextErrors = [...specimenErrors];
+    if (!nextValue && nextValue !== 0) {
+      nextErrors[index] = "Required";
+      setSpecimenErrors(nextErrors);
+      return;
+    }
+    if (isNaN(parsed) || parsed < 1) {
+      nextErrors[index] = "Must be at least 1";
+      setSpecimenErrors(nextErrors);
+      return;
+    }
+    if (parsed > 15) {
+      nextErrors[index] = "Max 15 per print";
+      setSpecimenErrors(nextErrors);
+      return;
+    }
+    nextErrors[index] = "";
+    setSpecimenErrors(nextErrors);
+    const normalizedSpecimenQuantity = parsed;
     const nextSampleRows = model.sampleRows.map((row, rowIndex) => {
       if (rowIndex !== index) {
         return row;
@@ -127,8 +162,12 @@ const LabelsSection = ({
         <NumberInput
           id="labels-order"
           label={orderLabelText}
-          min={0}
+          min={1}
+          max={15}
+          hideSteppers
           value={model.orderRow.quantities.order}
+          invalid={!!orderError}
+          invalidText={orderError}
           onChange={(event, { value }) => updateOrderQuantity(value)}
         />
         {model.sampleRows.map((sampleRow, index) => (
@@ -136,8 +175,12 @@ const LabelsSection = ({
             key={sampleRow.rowId}
             id={sampleRow.rowId}
             label={specimenLabelFormatter(index + 1)}
-            min={0}
+            min={1}
+            max={15}
+            hideSteppers
             value={sampleRow.quantities.specimen}
+            invalid={!!specimenErrors[index]}
+            invalidText={specimenErrors[index] || ""}
             onChange={(event, { value }) =>
               updateSpecimenQuantity(index, value)
             }

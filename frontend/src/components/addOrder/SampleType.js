@@ -163,11 +163,11 @@ const SampleType = (props) => {
   }
 
   const handleLabelsSectionChange = (labelsModel) => {
-    const nextOrderLabels = labelsModel?.orderRow?.quantities?.order ?? 0;
+    const nextOrderLabels = labelsModel?.orderRow?.quantities?.order ?? 1;
     const nextSpecimenLabels =
-      labelsModel?.sampleRows?.[0]?.quantities?.specimen ?? 0;
-    setSampleXml((currentSampleXml) => ({
-      ...currentSampleXml,
+      labelsModel?.sampleRows?.[0]?.quantities?.specimen ?? 1;
+    setSampleXml((prev) => ({
+      ...prev,
       numOrderLabels: nextOrderLabels,
       numSpecimenLabels: nextSpecimenLabels,
     }));
