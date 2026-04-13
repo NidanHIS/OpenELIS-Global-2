@@ -6,6 +6,7 @@ import {
   Grid,
   Button,
   Column,
+  TextInput,
   DataTable,
   TableContainer,
   Table,
@@ -25,6 +26,11 @@ import "./Dashboard.css";
 import { Minimize, Maximize, ArrowLeft, ArrowRight } from "@carbon/react/icons";
 import { Copy } from "@carbon/icons-react";
 import { useState, useEffect, useRef, useContext } from "react";
+import config from "../../config.json";
+import barcodeIcon from "./assets/barcode.png";
+import resultIcon from "./assets/results.png";
+import reportIcon from "./assets/report.png";
+import validateIcon from "./assets/validate.png";
 import {
   getFromOpenElisServer,
   convertAlphaNumLabNumForDisplay,
@@ -101,11 +107,24 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
   const [currentApiPage, setCurrentApiPage] = useState(null);
   const [totalApiPages, setTotalApiPages] = useState(null);
   const [url, setUrl] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
   const { userSessionDetails } = useContext(
     UserSessionDetailsContext,
   ) as UserSessionDetails;
   const { notificationVisible, setNotificationVisible, addNotification } =
     useContext(NotificationContext) as Notification;
+
+  // Returns true for tile types that use the grouped/in-progress endpoint
+  const usesInProgressEndpoint = (type: MetricType) =>
+    type === "ORDERS_IN_PROGRESS";
+
+  // Centralised endpoint resolver
+  const getTileEndpoint = (type: MetricType): string =>
+    usesInProgressEndpoint(type)
+      ? selectedTestSection === "all"
+        ? "/rest/home-dashboard/ORDERS-Grouped"
+        : "/rest/home-dashboard/ORDERS_IN_PROGRESS"
+      : "/rest/home-dashboard/" + type;
 
   useEffect(() => {
     setNextPage(null);
@@ -134,17 +153,10 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
 
   useEffect(() => {
     if (!selectedTile) return;
-    if (selectedTile.type !== "ORDERS_IN_PROGRESS") return;
+    if (!usesInProgressEndpoint(selectedTile.type)) return;
 
     setLoading(true);
-
-    // ✅ CHANGED LOGIC FOR ENDPOINT
-    const endpoint =
-      selectedTestSection === "all"
-        ? "/rest/home-dashboard/ORDERS-Grouped"
-        : "/rest/home-dashboard/ORDERS_IN_PROGRESS";
-
-    getFromOpenElisServer(endpoint, loadData);
+    getFromOpenElisServer(getTileEndpoint(selectedTile.type), loadData);
   }, [selectedTestSection]);
 
   useEffect(() => {
@@ -153,19 +165,7 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
       setPreviousPage(null);
       setPagination(false);
       setLoading(true);
-      if (selectedTile.type === "ORDERS_IN_PROGRESS") {
-        const endpoint =
-          selectedTestSection === "all"
-            ? "/rest/home-dashboard/ORDERS-Grouped"
-            : "/rest/home-dashboard/ORDERS_IN_PROGRESS";
-
-        getFromOpenElisServer(endpoint, loadData);
-      } else {
-        getFromOpenElisServer(
-          "/rest/home-dashboard/" + selectedTile.type,
-          loadData,
-        );
-      }
+      getFromOpenElisServer(getTileEndpoint(selectedTile.type), loadData);
     }
 
     return () => {
@@ -192,10 +192,18 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
       : setSelectedTestSection(res[0]?.id);
   };
 
+  useEffect(() => {
+    setOrderSearch("");
+  }, [selectedTile?.type]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [orderSearch]);
+
   const loadNextResultsPage = () => {
     setLoading(true);
     getFromOpenElisServer(
-      "/rest/home-dashboard/" + selectedTile.type + "?page=" + nextPage,
+      getTileEndpoint(selectedTile.type) + "?page=" + nextPage,
       loadData,
     );
   };
@@ -203,14 +211,20 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
   const loadPreviousResultsPage = () => {
     setLoading(true);
     getFromOpenElisServer(
-      "/rest/home-dashboard/" + selectedTile.type + "?page=" + previousPage,
+      getTileEndpoint(selectedTile.type) + "?page=" + previousPage,
       loadData,
     );
   };
 
   const loadCount = (data) => {
     if (componentMounted.current) {
-      setCounts(data);
+      setCounts((prev) => ({
+        ...data,
+        samplesToCollect:
+          prev.samplesToCollect > 0
+            ? prev.samplesToCollect
+            : data.samplesToCollect || 0,
+      }));
       setLoading(false);
     }
   };
@@ -384,6 +398,126 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
           <Link style={{ color: "blue" }}>{cell.value} </Link>
         </TableCell>
       );
+    } else if (cell.info.header === "patientId") {
+      const patientName =
+        data.find((item) => String(item.id) === String(row.id))?.patientName ||
+        "";
+      return (
+        <TableCell key={cell.id}>
+          <div className="dashboard-patient-cell">
+            {cell.value ? (
+              <span className="dashboard-patient-id">{cell.value}</span>
+            ) : null}
+            {patientName ? (
+              <span className="dashboard-patient-name">{patientName}</span>
+            ) : null}
+          </div>
+        </TableCell>
+      );
+    } else if (cell.info.header === "actions") {
+      const accessionNumber = row.cells.find(
+        (c) => c.info.header === "labNumber",
+      )?.value;
+
+      if (!accessionNumber) {
+        return <TableCell key={cell.id} />;
+      }
+
+      const resultUrl = getFullPath(
+        "/result?type=order&doRange=false&accessionNumber=" + accessionNumber,
+      );
+      const validationUrl = getFullPath(
+        "/validation?type=order&accessionNumber=" + accessionNumber,
+      );
+      const reportUrl =
+        config.serverBaseUrl +
+        "/ReportPrint?report=patientCILNSP_vreduit&type=patient&accessionDirect=" +
+        accessionNumber +
+        "&highAccessionDirect=" +
+        accessionNumber +
+        "&dateOfBirthSearchValue=&selPatient=&referringSiteId=&referringSiteDepartmentId=&onlyResults=false&_onlyResults=on&dateType=RESULT_DATE&lowerDateRange=&upperDateRange=";
+      const barcodeUrl =
+        config.serverBaseUrl +
+        "/LabelMakerServlet?labNo=" +
+        accessionNumber +
+        "&type=order&quantity=1";
+
+      return (
+        <TableCell key={cell.id}>
+          <div
+            style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}
+          >
+            <a
+              href={barcodeUrl}
+              style={{ display: "inline-flex", alignItems: "center" }}
+              title="Print Barcode"
+              aria-label="Print Barcode"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <img
+                src={barcodeIcon}
+                alt="Print Barcode"
+                style={{
+                  width: "1.1rem",
+                  height: "1.1rem",
+                  objectFit: "contain",
+                }}
+              />
+            </a>
+            <a
+              href={resultUrl}
+              style={{ display: "inline-flex", alignItems: "center" }}
+              title="Results"
+              aria-label="Results"
+            >
+              <img
+                src={resultIcon}
+                alt="Results"
+                style={{
+                  width: "1.1rem",
+                  height: "1.1rem",
+                  objectFit: "contain",
+                }}
+              />
+            </a>
+            <a
+              href={reportUrl}
+              style={{ display: "inline-flex", alignItems: "center" }}
+              title="Report"
+              aria-label="Report"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <img
+                src={reportIcon}
+                alt="Report"
+                style={{
+                  width: "1.1rem",
+                  height: "1.1rem",
+                  objectFit: "contain",
+                }}
+              />
+            </a>
+            <a
+              href={validationUrl}
+              style={{ display: "inline-flex", alignItems: "center" }}
+              title="Validate"
+              aria-label="Validate"
+            >
+              <img
+                src={validateIcon}
+                alt="Validate"
+                style={{
+                  width: "1.1rem",
+                  height: "1.1rem",
+                  objectFit: "contain",
+                }}
+              />
+            </a>
+          </div>
+        </TableCell>
+      );
     } else {
       return <TableCell key={cell.id}>{cell.value}</TableCell>;
     }
@@ -392,7 +526,7 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
   const orderHeaders = [
     {
       key: "priority",
-      header: <FormattedMessage id="eorder.priority" />,
+      header: <FormattedMessage id="dashboard.table.source" />,
     },
     {
       key: "orderDate",
@@ -410,6 +544,10 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
       key: "testName",
       header: <FormattedMessage id="eorder.test.name" />,
     },
+    {
+      key: "actions",
+      header: "Actions",
+    },
   ];
 
   const userHeaders = [
@@ -426,6 +564,89 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
       header: "Orders Entered",
     },
   ];
+
+  const showOrderSearch = Boolean(selectedTile);
+  const normalizedOrderSearch = orderSearch.trim().toLowerCase();
+  const sectionFilteredData = data.filter((item) =>
+    tilesWithTabs.includes(selectedTile?.type) && selectedTestSection !== "all"
+      ? item.testSection === selectedTestSection
+      : true,
+  );
+  const filteredOrderData =
+    showOrderSearch && normalizedOrderSearch
+      ? sectionFilteredData.filter((item) => {
+          const patientId = String(item.patientId ?? "").toLowerCase();
+          const patientName = String(item.patientName ?? "").toLowerCase();
+          const rawLabNumber = String(item.labNumber ?? "").toLowerCase();
+          const formattedLabNumber = item.labNumber
+            ? convertAlphaNumLabNumForDisplay(
+                String(item.labNumber),
+              ).toLowerCase()
+            : "";
+          return (
+            patientId.includes(normalizedOrderSearch) ||
+            patientName.includes(normalizedOrderSearch) ||
+            rawLabNumber.includes(normalizedOrderSearch) ||
+            formattedLabNumber.includes(normalizedOrderSearch)
+          );
+        })
+      : sectionFilteredData;
+  const showWorkflowCounters = selectedTile?.type === "ORDERS_IN_PROGRESS";
+  const workflowOrderCount = new Set(
+    sectionFilteredData
+      .map((item) => String(item.labNumber ?? item.id ?? ""))
+      .filter(Boolean),
+  ).size;
+  const workflowPatientCount = new Set(
+    sectionFilteredData
+      .map((item) => String(item.patientId ?? ""))
+      .filter(Boolean),
+  ).size;
+  const workflowTestCount = sectionFilteredData.reduce(
+    (total, item) =>
+      total + (Number(item.testCount) > 0 ? Number(item.testCount) : 1),
+    0,
+  );
+  const workflowCounters = showWorkflowCounters
+    ? [
+        {
+          label: intl.formatMessage({
+            id: "dashboard.in.progress.subtitle.label",
+          }),
+          value: workflowTestCount,
+        },
+        {
+          label: intl.formatMessage({
+            id: "dashboard.workflow.awaitingValidation",
+          }),
+          value: counts.ordersReadyForValidation ?? 0,
+        },
+        {
+          label: intl.formatMessage({ id: "dashboard.complete.orders.label" }),
+          value: counts.ordersCompletedToday ?? 0,
+        },
+        {
+          label: intl.formatMessage({ id: "dashboard.workflow.totalOrders" }),
+          value: workflowOrderCount,
+        },
+        {
+          label: intl.formatMessage({ id: "dashboard.workflow.totalPatients" }),
+          value: workflowPatientCount,
+        },
+      ]
+    : [];
+
+  const renderOrderSearchInput = (inputId: string) => (
+    <TextInput
+      id={inputId}
+      labelText=""
+      placeholder={intl.formatMessage({
+        id: "dashboard.orders.search.placeholder",
+      })}
+      value={orderSearch}
+      onChange={(e) => setOrderSearch(e.target.value)}
+    />
+  );
 
   return (
     <>
@@ -575,15 +796,41 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
                       </Column>
                     </Grid>
                   )}
+                  {showOrderSearch && (
+                    <Grid className="dashboard-table-toolbar">
+                      <Column lg={6} md={4} sm={4}>
+                        {renderOrderSearchInput("lab-dashboard-order-search")}
+                      </Column>
+                    </Grid>
+                  )}
+                  {showWorkflowCounters && workflowCounters.length > 0 && (
+                    <div
+                      className="dashboard-status-items"
+                      style={{
+                        display: "flex",
+                        gap: "1rem",
+                        flexWrap: "wrap",
+                        padding: "0.5rem 0",
+                      }}
+                    >
+                      {workflowCounters.map((counter) => (
+                        <span
+                          key={counter.label}
+                          className="dashboard-status-item"
+                        >
+                          {counter.label}:{" "}
+                          <strong className="dashboard-status-value">
+                            {counter.value}
+                          </strong>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <DataTable
-                    rows={data
-                      .filter((item) =>
-                        tilesWithTabs.includes(selectedTile.type) &&
-                        selectedTestSection != "all"
-                          ? item.testSection === selectedTestSection
-                          : true,
-                      )
-                      .slice((page - 1) * pageSize, page * pageSize)}
+                    rows={filteredOrderData.slice(
+                      (page - 1) * pageSize,
+                      page * pageSize,
+                    )}
                     headers={orderHeaders}
                     isSortable
                   >
@@ -606,9 +853,19 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
                             <>
                               {rows.map((row) => (
                                 <TableRow key={row.id}>
-                                  {row.cells.map((cell) =>
-                                    renderCell(cell, row),
-                                  )}
+                                  {headers.map((header) => {
+                                    const cell = row.cells.find(
+                                      (rowCell) =>
+                                        rowCell.info.header === header.key,
+                                    );
+                                    return cell ? (
+                                      renderCell(cell, row)
+                                    ) : (
+                                      <TableCell
+                                        key={`${row.id}-${header.key}`}
+                                      />
+                                    );
+                                  })}
                                 </TableRow>
                               ))}
                             </>
@@ -622,14 +879,7 @@ const LabDashboard: React.FC<DashBoardProps> = () => {
                     page={page}
                     pageSize={pageSize}
                     pageSizes={[10, 20, 30, 50, 100]}
-                    totalItems={
-                      data.filter((item) =>
-                        tilesWithTabs.includes(selectedTile.type) &&
-                        selectedTestSection != "all"
-                          ? item.testSection === selectedTestSection
-                          : true,
-                      ).length
-                    }
+                    totalItems={filteredOrderData.length}
                     forwardText={intl.formatMessage({
                       id: "pagination.forward",
                     })}

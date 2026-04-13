@@ -32,6 +32,7 @@ import SearchResultFormValues from "../formModel/innitialValues/SearchResultForm
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 import { NotificationContext } from "../layout/Layout";
 import SearchPatientForm from "../patient/SearchPatientForm";
+import PatientSummaryReadonly from "../patient/resultsViewer/patient-summary-readonly";
 import ReferredOutTests from "./resultsReferredOut/ReferredOutTests";
 import { ConfigurationContext } from "../layout/Layout";
 import config from "../../config.json";
@@ -39,6 +40,7 @@ import CustomDatePicker from "../common/CustomDatePicker";
 import AsyncAvatar from "../patient/photoManagement/photoAvatar/AyncAvatar";
 import CompactFileInput from "./fileUpload/FileInput";
 import StorageLocationSelector from "../storage/StorageLocationSelector";
+import "../patient/resultsViewer/results-viewer.styles.scss";
 import ResultMultiSelect from "../common/multiSelect";
 import CascadingMultiSelect from "../common/cascadingMultiSelect";
 import EQABadge from "../eqa/EQABadge";
@@ -179,8 +181,10 @@ export function SearchResultForm(props) {
     setPatient(patient);
   };
   useEffect(() => {
-    querySearch(searchFormValues);
-  }, [patient]);
+    if (searchBy.type === "patient" && patient.patientPK) {
+      querySearch(searchFormValues);
+    }
+  }, [patient, searchBy.type]);
 
   const querySearch = (values) => {
     setLoading(true);
@@ -699,12 +703,20 @@ export function SearchResultForm(props) {
           </Form>
         )}
       </Formik>
-      {searchBy.type === "patient" && (
+      {searchBy.type === "patient" && !patient.patientPK && (
         <Grid>
           <Column lg={16} md={8} sm={4}>
             <SearchPatientForm
               getSelectedPatient={getSelectedPatient}
             ></SearchPatientForm>
+          </Column>
+        </Grid>
+      )}
+
+      {searchBy.type === "patient" && patient.patientPK && (
+        <Grid fullWidth={true}>
+          <Column lg={16} md={8} sm={4}>
+            <PatientSummaryReadonly patient={patient} />
           </Column>
         </Grid>
       )}
@@ -796,6 +808,10 @@ export function SearchResults(props) {
   const { configurationProperties } = useContext(ConfigurationContext);
 
   const intl = useIntl();
+  const searchParams = new URLSearchParams(window.location.search);
+  const currentPath = stripBasePath(window.location.pathname);
+  const isReadOnlyView =
+    currentPath === "/PatientResults" && Boolean(searchParams.get("patientId"));
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
@@ -1008,6 +1024,14 @@ export function SearchResults(props) {
       width: "25rem",
     },
   ];
+
+  if (!isReadOnlyView) {
+    addRejectResult();
+  }
+
+  const displayedColumns = isReadOnlyView
+    ? columns.filter((col) => col.id !== "accept" && col.id !== "reject")
+    : columns;
 
   const renderCell = (row, index, column, id) => {
     let formatLabNum = configurationProperties.AccessionFormat === "ALPHANUM";
@@ -1930,7 +1954,6 @@ export function SearchResults(props) {
   return (
     <>
       {notificationVisible === true ? <AlertDialog /> : ""}
-      {addRejectResult()}
       <>
         {props.results?.testResult?.length > 0 && (
           <Grid style={{ marginTop: "20px" }} className="gridBoundary">
@@ -1974,9 +1997,9 @@ export function SearchResults(props) {
                   (page - 1) * pageSize,
                   page * pageSize,
                 )}
-                columns={columns}
+                columns={displayedColumns}
                 isSortable
-                expandableRows
+                expandableRows={!isReadOnlyView}
                 expandableRowsComponent={renderReferral}
               ></DataTable>
               <Pagination
@@ -2019,15 +2042,17 @@ export function SearchResults(props) {
                 }
               />
 
-              <Button
-                type="button"
-                id="saveResults"
-                onClick={handleSave}
-                style={{ marginTop: "16px" }}
-                disabled={isSubmitting}
-              >
-                <FormattedMessage id="label.button.save" />
-              </Button>
+              {!isReadOnlyView && (
+                <Button
+                  type="button"
+                  id="saveResults"
+                  onClick={handleSave}
+                  style={{ marginTop: "16px" }}
+                  disabled={isSubmitting}
+                >
+                  <FormattedMessage id="label.button.save" />
+                </Button>
+              )}
             </Form>
           )}
         </Formik>

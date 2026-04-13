@@ -729,8 +729,8 @@ export default function App() {
                 <SecureRoute
                   path="/PatientResults/:patientId"
                   exact
-                  component={() => <RoutedResultsViewer />}
-                  role={Roles.RECEPTION}
+                  component={RedirectPatientResultsRoute}
+                  role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
 
                 <SecureRoute
@@ -773,7 +773,7 @@ export default function App() {
                   path="/PatientResults"
                   exact
                   component={() => <ResultSearch />}
-                  role={Roles.RESULTS}
+                  role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/AccessionResults"
@@ -879,4 +879,18 @@ export default function App() {
       </UserSessionDetailsContext.Provider>
     </IntlProvider>
   );
+}
+
+function RedirectPatientResultsRoute(props) {
+  const patientId = props?.match?.params?.patientId;
+
+  useEffect(() => {
+    if (patientId) {
+      navigateTo(`/PatientResults?patientId=${patientId}`);
+    } else {
+      navigateTo("/PatientResults");
+    }
+  }, [patientId]);
+
+  return null;
 }

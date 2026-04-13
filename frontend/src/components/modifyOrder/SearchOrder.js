@@ -26,7 +26,7 @@ function SearchOrder() {
 
   const openPatientResults = (patientId) => {
     if (patientId) {
-       navigateTo("/ModifyOrder?patientId=" + patientId);
+      navigateTo("/ModifyOrder?patientId=" + patientId);
     }
   };
 

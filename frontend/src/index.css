@@ -1,8 +1,28 @@
+:root {
+  --oe-font-family:
+    "Segoe UI", "Noto Sans", "IBM Plex Sans", "Helvetica Neue", Arial,
+    sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+table,
+th,
+td {
+  font-family: var(--oe-font-family);
+}
+
 body {
   margin: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--oe-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
