@@ -11,17 +11,16 @@ import org.springframework.stereotype.Component;
 /**
  * Stateless pre-flight validator for {@link CatalogDefinitionRequest}.
  *
- * Called at the very top of the upsert pipeline — before any DB touch,
- * before any entity resolution. If this throws, nothing has been written.
+ * Called at the very top of the upsert pipeline — before any DB touch, before
+ * any entity resolution. If this throws, nothing has been written.
  *
- * Rules enforced:
- *  - At least one identifier (testUuid OR loincCode) must be present.
- *  - nameEnglish must be non-blank.
- *  - loincCode, when present, must be <= 10 characters (DB column constraint).
- *  - For tests: resultTypeName/resultTypeId must be present and resolve to a
- *    known ResultType — no silent fallback to ALPHA.
- *  - For panels: at least one sample type identifier must be present — no
- *    silent fallback to the default sample type on panel create.
+ * Rules enforced: - At least one identifier (testUuid OR loincCode) must be
+ * present. - nameEnglish must be non-blank. - loincCode, when present, must be
+ * <= 10 characters (DB column constraint). - For tests:
+ * resultTypeName/resultTypeId must be present and resolve to a known ResultType
+ * — no silent fallback to ALPHA. - For panels: at least one sample type
+ * identifier must be present — no silent fallback to the default sample type on
+ * panel create.
  */
 @Component
 public class CatalogRequestValidator {
@@ -30,19 +29,19 @@ public class CatalogRequestValidator {
     private static final int LOINC_MAX_LENGTH = 9;
 
     /**
-     * Validates the request. Collects ALL errors before throwing so the caller
-     * gets the full picture in one shot.
+     * Validates the request. Collects ALL errors before throwing so the caller gets
+     * the full picture in one shot.
      *
      * @throws CatalogValidationException if any rule is violated.
      */
     public void validate(CatalogDefinitionRequest request) {
-        
+
         cleanRequest(request);
 
         List<String> errors = new ArrayList<>();
 
         // --- Rule 1: at least one identifier ---
-        boolean hasUuid  = !GenericValidator.isBlankOrNull(request.getTestUuid());
+        boolean hasUuid = !GenericValidator.isBlankOrNull(request.getTestUuid());
         boolean hasLoinc = !GenericValidator.isBlankOrNull(request.getLoincCode());
         if (!hasUuid && !hasLoinc) {
             errors.add("At least one identifier is required: 'testUuid' or 'loincCode'");
@@ -55,9 +54,8 @@ public class CatalogRequestValidator {
 
         // --- Rule 3: LOINC length guard (varchar(10) in DB) ---
         if (hasLoinc && request.getLoincCode().length() > LOINC_MAX_LENGTH) {
-            errors.add("'loincCode' must be " + LOINC_MAX_LENGTH + " characters or fewer "
-                    + "(received " + request.getLoincCode().length() + " chars: '"
-                    + request.getLoincCode() + "')");
+            errors.add("'loincCode' must be " + LOINC_MAX_LENGTH + " characters or fewer " + "(received "
+                    + request.getLoincCode().length() + " chars: '" + request.getLoincCode() + "')");
         }
 
         if (request.isPanel()) {
@@ -71,19 +69,29 @@ public class CatalogRequestValidator {
         }
     }
 
-    //Rigorous trimming of all incoming identifiers.
+    // Rigorous trimming of all incoming identifiers.
 
     private void cleanRequest(CatalogDefinitionRequest request) {
-        if (request.getTestUuid() != null) request.setTestUuid(request.getTestUuid().trim());
-        if (request.getLoincCode() != null) request.setLoincCode(request.getLoincCode().trim());
-        if (request.getNameEnglish() != null) request.setNameEnglish(request.getNameEnglish().trim());
-        if (request.getNameFrench() != null) request.setNameFrench(request.getNameFrench().trim());
-        if (request.getReportNameEnglish() != null) request.setReportNameEnglish(request.getReportNameEnglish().trim());
-        if (request.getReportNameFrench() != null) request.setReportNameFrench(request.getReportNameFrench().trim());
-        if (request.getTestSectionName() != null) request.setTestSectionName(request.getTestSectionName().trim());
-        if (request.getUomName() != null) request.setUomName(request.getUomName().trim());
-        if (request.getResultTypeName() != null) request.setResultTypeName(request.getResultTypeName().trim());
-        if (request.getSampleTypeName() != null) request.setSampleTypeName(request.getSampleTypeName().trim());
+        if (request.getTestUuid() != null)
+            request.setTestUuid(request.getTestUuid().trim());
+        if (request.getLoincCode() != null)
+            request.setLoincCode(request.getLoincCode().trim());
+        if (request.getNameEnglish() != null)
+            request.setNameEnglish(request.getNameEnglish().trim());
+        if (request.getNameFrench() != null)
+            request.setNameFrench(request.getNameFrench().trim());
+        if (request.getReportNameEnglish() != null)
+            request.setReportNameEnglish(request.getReportNameEnglish().trim());
+        if (request.getReportNameFrench() != null)
+            request.setReportNameFrench(request.getReportNameFrench().trim());
+        if (request.getTestSectionName() != null)
+            request.setTestSectionName(request.getTestSectionName().trim());
+        if (request.getUomName() != null)
+            request.setUomName(request.getUomName().trim());
+        if (request.getResultTypeName() != null)
+            request.setResultTypeName(request.getResultTypeName().trim());
+        if (request.getSampleTypeName() != null)
+            request.setSampleTypeName(request.getSampleTypeName().trim());
 
         if (request.getSampleTypeNames() != null) {
             request.getSampleTypeNames().replaceAll(s -> s != null ? s.trim() : null);
@@ -102,7 +110,7 @@ public class CatalogRequestValidator {
 
     private void validatePanel(CatalogDefinitionRequest request, List<String> errors) {
         // Panel must have at least one sample type identifier — no silent fallback
-        boolean hasSampleTypeId   = !GenericValidator.isBlankOrNull(request.getSampleTypeId());
+        boolean hasSampleTypeId = !GenericValidator.isBlankOrNull(request.getSampleTypeId());
         boolean hasSampleTypeName = !GenericValidator.isBlankOrNull(request.getSampleTypeName());
         if (!hasSampleTypeId && !hasSampleTypeName) {
             errors.add("Panel request requires 'sampleTypeName' or 'sampleTypeId'");
@@ -115,8 +123,8 @@ public class CatalogRequestValidator {
 
     private void validateTest(CatalogDefinitionRequest request, List<String> errors) {
         // resultType must be present and must resolve to a known enum value.
-        
-        boolean hasResultTypeId   = !GenericValidator.isBlankOrNull(request.getResultTypeId());
+
+        boolean hasResultTypeId = !GenericValidator.isBlankOrNull(request.getResultTypeId());
         boolean hasResultTypeName = !GenericValidator.isBlankOrNull(request.getResultTypeName());
 
         if (!hasResultTypeId && !hasResultTypeName) {
@@ -125,8 +133,8 @@ public class CatalogRequestValidator {
         }
 
         if (hasResultTypeName && !isKnownResultType(request.getResultTypeName())) {
-            errors.add("Unknown 'resultTypeName': '" + request.getResultTypeName()
-                    + "'. Valid values: " + knownResultTypeNames());
+            errors.add("Unknown 'resultTypeName': '" + request.getResultTypeName() + "'. Valid values: "
+                    + knownResultTypeNames());
         }
     }
 
@@ -148,7 +156,8 @@ public class CatalogRequestValidator {
         TypeOfTestResultServiceImpl.ResultType[] values = TypeOfTestResultServiceImpl.ResultType.values();
         for (int i = 0; i < values.length; i++) {
             sb.append(values[i].name());
-            if (i < values.length - 1) sb.append(", ");
+            if (i < values.length - 1)
+                sb.append(", ");
         }
         return sb.toString();
     }

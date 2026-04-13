@@ -37,19 +37,16 @@ public class CatalogInboundRestController extends BaseRestController {
     private CatalogRequestValidator catalogRequestValidator;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CatalogResponse> upsertCatalog(
-            @RequestBody CatalogDefinitionRequest request,
+    public ResponseEntity<CatalogResponse> upsertCatalog(@RequestBody CatalogDefinitionRequest request,
             HttpServletRequest servletRequest) {
 
-        // --- Layer 1: pre-flight validation  ---
+        // --- Layer 1: pre-flight validation ---
         try {
             catalogRequestValidator.validate(request);
         } catch (CatalogValidationException e) {
             LogEvent.logWarn(this.getClass().getSimpleName(), "upsertCatalog",
                     "Validation failed for catalog request: " + e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(CatalogResponse.validationError(e.getErrors()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CatalogResponse.validationError(e.getErrors()));
         }
 
         // --- Layer 2: upsert ---
@@ -61,31 +58,27 @@ public class CatalogInboundRestController extends BaseRestController {
             // Resolver-level validation (second line of defence)
             LogEvent.logWarn(this.getClass().getSimpleName(), "upsertCatalog",
                     "Resolver validation failed: " + e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(CatalogResponse.validationError(e.getErrors()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CatalogResponse.validationError(e.getErrors()));
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "upsertCatalog",
                     "Unexpected error upserting catalog item: " + e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(CatalogResponse.error("Internal error processing catalog item"));
         }
     }
 
     // -------------------------------------------------------------------------
     // Jackson deserialization failure — e.g. price sent as a string
-    // Returns our standard CatalogResponse envelope instead of Spring's ProblemDetail
+    // Returns our standard CatalogResponse envelope instead of Spring's
+    // ProblemDetail
     // -------------------------------------------------------------------------
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<CatalogResponse> handleUnreadableMessage(HttpMessageNotReadableException ex) {
         LogEvent.logWarn(this.getClass().getSimpleName(), "upsertCatalog",
                 "Malformed request body: " + ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(CatalogResponse.validationError(
-                        List.of("Request body is malformed — check field types (e.g. 'price' must be a number, not a string)")));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CatalogResponse.validationError(List
+                .of("Request body is malformed — check field types (e.g. 'price' must be a number, not a string)")));
     }
 
     // -------------------------------------------------------------------------
@@ -113,23 +106,23 @@ public class CatalogInboundRestController extends BaseRestController {
 
         static CatalogResponse success(String guid) {
             CatalogResponse r = new CatalogResponse();
-            r.status  = "SUCCESS";
+            r.status = "SUCCESS";
             r.message = "Catalog item upserted";
-            r.guid    = guid;
+            r.guid = guid;
             return r;
         }
 
         static CatalogResponse validationError(List<String> errors) {
             CatalogResponse r = new CatalogResponse();
-            r.status  = "VALIDATION_ERROR";
+            r.status = "VALIDATION_ERROR";
             r.message = "Request failed validation";
-            r.errors  = errors;
+            r.errors = errors;
             return r;
         }
 
         static CatalogResponse error(String message) {
             CatalogResponse r = new CatalogResponse();
-            r.status  = "ERROR";
+            r.status = "ERROR";
             r.message = message;
             return r;
         }

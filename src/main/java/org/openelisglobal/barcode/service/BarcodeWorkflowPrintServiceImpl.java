@@ -116,6 +116,7 @@ public class BarcodeWorkflowPrintServiceImpl implements BarcodeWorkflowPrintServ
         String encodedAccession = URLEncoder.encode(accessionNumber == null ? "" : accessionNumber,
                 StandardCharsets.UTF_8);
         String encodedType = URLEncoder.encode(typeForUrl == null ? "" : typeForUrl, StandardCharsets.UTF_8);
-        return String.format("/LabelMakerServlet?labNo=%s&type=%s&quantity=%d&override=true", encodedAccession, encodedType, quantity);
+        return String.format("/LabelMakerServlet?labNo=%s&type=%s&quantity=%d&override=true", encodedAccession,
+                encodedType, quantity);
     }
 }

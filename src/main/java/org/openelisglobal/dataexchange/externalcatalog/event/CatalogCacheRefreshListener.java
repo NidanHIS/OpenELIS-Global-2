@@ -10,7 +10,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Refreshes in-memory caches AFTER the catalog upsert transaction has committed.
+ * Refreshes in-memory caches AFTER the catalog upsert transaction has
+ * committed.
  *
  * Using {@code AFTER_COMMIT} guarantees the cache is never updated against a
  * rolled-back DB state — previously refreshCaches() ran inside the transaction

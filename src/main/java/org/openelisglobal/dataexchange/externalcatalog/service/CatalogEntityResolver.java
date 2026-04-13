@@ -64,8 +64,8 @@ public class CatalogEntityResolver {
             all = new ArrayList<>();
 
         String finalTargetName = targetName;
-        Optional<TypeOfSample> match = all.stream()
-                .filter(t -> t.getDescription() != null && t.getDescription().trim().equalsIgnoreCase(finalTargetName.trim()))
+        Optional<TypeOfSample> match = all.stream().filter(
+                t -> t.getDescription() != null && t.getDescription().trim().equalsIgnoreCase(finalTargetName.trim()))
                 .findFirst();
 
         if (match.isPresent())
@@ -258,8 +258,8 @@ public class CatalogEntityResolver {
         // queries the description column, so "General test result" is the correct
         // value.
         if (dictionaryService.duplicateDictionaryExists(newDict)) {
-            Dictionary existing = dictionaryService.getDictionaryEntrysByNameAndCategoryDescription(
-                    name.trim(), "General test result");
+            Dictionary existing = dictionaryService.getDictionaryEntrysByNameAndCategoryDescription(name.trim(),
+                    "General test result");
             if (existing == null) {
                 // The duplicate check fired but the retrieval returned nothing — this means
                 // the entry exists in a different category. Log it so it's visible, but do
@@ -284,8 +284,7 @@ public class CatalogEntityResolver {
     private boolean isAbbreviationTaken(List<TypeOfSample> all, String abbrev) {
         if (all == null || abbrev == null)
             return false;
-        return all.stream()
-                .filter(t -> t.getLocalAbbreviation() != null)
+        return all.stream().filter(t -> t.getLocalAbbreviation() != null)
                 .anyMatch(t -> abbrev.equalsIgnoreCase(t.getLocalAbbreviation()));
     }
 }

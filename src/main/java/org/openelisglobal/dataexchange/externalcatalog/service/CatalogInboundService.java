@@ -128,30 +128,33 @@ public class CatalogInboundService {
     }
 
     private String createNewTest(CatalogDefinitionRequest request, String currentUserId) {
-        LogEvent.logInfo(this.getClass().getSimpleName(), "createNewTest", "Creating new test: " + request.getNameEnglish());
+        LogEvent.logInfo(this.getClass().getSimpleName(), "createNewTest",
+                "Creating new test: " + request.getNameEnglish());
 
         Localization nameLocalization = LocalizationServiceImpl.createNewLocalization(request.getNameEnglish(),
-                request.getNameFrench() != null ? request.getNameFrench() : request.getNameEnglish(), 
+                request.getNameFrench() != null ? request.getNameFrench() : request.getNameEnglish(),
                 LocalizationServiceImpl.LocalizationType.TEST_NAME);
         Localization reportLocalization = LocalizationServiceImpl.createNewLocalization(
                 request.getReportNameEnglish() != null ? request.getReportNameEnglish() : request.getNameEnglish(),
-                request.getReportNameFrench() != null ? request.getReportNameFrench() : 
-                        (request.getReportNameEnglish() != null ? request.getReportNameEnglish() : request.getNameEnglish()), 
+                request.getReportNameFrench() != null ? request.getReportNameFrench()
+                        : (request.getReportNameEnglish() != null ? request.getReportNameEnglish()
+                                : request.getNameEnglish()),
                 LocalizationServiceImpl.LocalizationType.REPORTING_TEST_NAME);
 
         List<TestSet> testSets = buildTestSets(request, currentUserId);
         testAddService.addTests(testSets, nameLocalization, reportLocalization, currentUserId);
 
-        eventPublisher.publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
+        eventPublisher
+                .publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
         return request.getTestUuid() != null ? request.getTestUuid() : testSets.get(0).test.getGuid();
     }
 
     private void updateExistingTest(Test existing, CatalogDefinitionRequest request, String currentUserId) {
         LogEvent.logInfo(this.getClass().getSimpleName(), "updateExistingTest", "Updating test: " + existing.getId());
 
-        
         existing.setUnitOfMeasure(entityResolver.resolveUOM(request.getUomId(), request.getUomName(), currentUserId));
-        // Only overwrite LOINC if the caller explicitly sent one — never wipe an existing value with null
+        // Only overwrite LOINC if the caller explicitly sent one — never wipe an
+        // existing value with null
         if (!GenericValidator.isBlankOrNull(request.getLoincCode())) {
             existing.setLoinc(request.getLoincCode());
         }
@@ -159,7 +162,8 @@ public class CatalogInboundService {
         existing.setNotifyResults(request.isNotifyResults());
         existing.setInLabOnly(request.isInLabOnly());
         existing.setAntimicrobialResistance(request.isAntimicrobialResistance());
-        existing.setTestSection(entityResolver.resolveTestSection(request.getTestSectionId(), request.getTestSectionName(), currentUserId));
+        existing.setTestSection(entityResolver.resolveTestSection(request.getTestSectionId(),
+                request.getTestSectionName(), currentUserId));
         existing.setIsActive(request.isActive() ? "Y" : "N");
         existing.setOrderable(request.isOrderable());
         existing.setSysUserId(currentUserId);
@@ -176,15 +180,14 @@ public class CatalogInboundService {
         syncPanelItems(existing, testSets, currentUserId);
         syncResultsAndLimits(existing, testSets, request, currentUserId);
 
-        eventPublisher.publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
+        eventPublisher
+                .publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
         eventPublisher.publishEvent(new org.openelisglobal.test.event.TestCreatedEvent(this, existing, true));
     }
 
     private void syncSampleTypes(Test test, List<TestSet> testSets, String currentUserId) {
         List<TypeOfSampleTest> existingStts = typeOfSampleTestService.getTypeOfSampleTestsForTest(test.getId());
-        List<String> payloadSampleTypeIds = testSets.stream()
-                .map(set -> set.typeOfSample.getId())
-                .toList();
+        List<String> payloadSampleTypeIds = testSets.stream().map(set -> set.typeOfSample.getId()).toList();
 
         // Remove those not in payload
         for (TypeOfSampleTest stt : existingStts) {
@@ -208,14 +211,10 @@ public class CatalogInboundService {
 
     private void syncPanelItems(Test test, List<TestSet> testSets, String currentUserId) {
         List<PanelItem> existingItems = panelItemService.getPanelItemByTestId(test.getId());
-        
+
         // Collect all desired panels from all test sets
-        List<String> payloadPanelIds = testSets.stream()
-                .flatMap(set -> set.panelItems.stream())
-                .filter(pi -> pi.getPanel() != null)
-                .map(pi -> pi.getPanel().getId())
-                .distinct()
-                .toList();
+        List<String> payloadPanelIds = testSets.stream().flatMap(set -> set.panelItems.stream())
+                .filter(pi -> pi.getPanel() != null).map(pi -> pi.getPanel().getId()).distinct().toList();
 
         // Remove old associations
         for (PanelItem item : existingItems) {
@@ -240,14 +239,13 @@ public class CatalogInboundService {
                 // Ensure sample type - panel association
                 if (panel != null) {
                     // Get all sample-type associations for THIS specific panel (not any panel)
-                    List<org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel> panelSampleTypes =
-                            typeOfSamplePanelService.getTypeOfSamplePanelsForPanel(panelId);
+                    List<org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel> panelSampleTypes = typeOfSamplePanelService
+                            .getTypeOfSamplePanelsForPanel(panelId);
                     for (TestSet set : testSets) {
                         boolean pairExists = panelSampleTypes.stream()
                                 .anyMatch(tosp -> tosp.getTypeOfSampleId().equals(set.typeOfSample.getId()));
                         if (!pairExists) {
-                            org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel tosp =
-                                    new org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel();
+                            org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel tosp = new org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel();
                             tosp.setPanelId(panelId);
                             tosp.setTypeOfSampleId(set.typeOfSample.getId());
                             tosp.setSysUserId(currentUserId);
@@ -259,9 +257,11 @@ public class CatalogInboundService {
         }
     }
 
-    private void syncResultsAndLimits(Test test, List<TestSet> testSets, CatalogDefinitionRequest request, String currentUserId) {
-        String resultTypeId = entityResolver.resolveResultTypeId(request.getResultTypeId(), request.getResultTypeName());
-        
+    private void syncResultsAndLimits(Test test, List<TestSet> testSets, CatalogDefinitionRequest request,
+            String currentUserId) {
+        String resultTypeId = entityResolver.resolveResultTypeId(request.getResultTypeId(),
+                request.getResultTypeName());
+
         if (TypeOfTestResultServiceImpl.ResultType.isNumericById(resultTypeId)) {
             syncNumericResults(test, testSets, resultTypeId, currentUserId);
         } else if (TypeOfTestResultServiceImpl.ResultType.isDictionaryVarientById(resultTypeId)) {
@@ -281,8 +281,8 @@ public class CatalogInboundService {
             testResultService.insert(desiredTr);
         } else {
             TestResult existingTr = existingResults.get(0);
-            if (isDifferent(existingTr.getSignificantDigits(), desiredTr.getSignificantDigits()) ||
-                isDifferent(existingTr.getTestResultType(), desiredTr.getTestResultType())) {
+            if (isDifferent(existingTr.getSignificantDigits(), desiredTr.getSignificantDigits())
+                    || isDifferent(existingTr.getTestResultType(), desiredTr.getTestResultType())) {
                 existingTr.setSignificantDigits(desiredTr.getSignificantDigits());
                 existingTr.setTestResultType(desiredTr.getTestResultType());
                 existingTr.setSysUserId(currentUserId);
@@ -296,11 +296,10 @@ public class CatalogInboundService {
 
         // Sync Limits
         List<ResultLimit> desiredLimits = testSets.get(0).resultLimits;
-        
+
         // Remove limits not in payload (match by gender, age range)
         for (ResultLimit existingLimit : existingLimits) {
-            boolean found = desiredLimits.stream().anyMatch(dl -> 
-                isSameRange(existingLimit, dl));
+            boolean found = desiredLimits.stream().anyMatch(dl -> isSameRange(existingLimit, dl));
             if (!found) {
                 existingLimit.setSysUserId(currentUserId);
                 resultLimitService.delete(existingLimit);
@@ -309,10 +308,8 @@ public class CatalogInboundService {
 
         // Add or Update limits
         for (ResultLimit dl : desiredLimits) {
-            ResultLimit match = existingLimits.stream()
-                    .filter(el -> isSameRange(el, dl))
-                    .findFirst().orElse(null);
-            
+            ResultLimit match = existingLimits.stream().filter(el -> isSameRange(el, dl)).findFirst().orElse(null);
+
             if (match == null) {
                 dl.setTestId(test.getId());
                 dl.setSysUserId(currentUserId);
@@ -336,12 +333,14 @@ public class CatalogInboundService {
         // This prevents a garbage payload from destroying real data.
         if (desiredResults.isEmpty()) {
             LogEvent.logInfo(this.getClass().getSimpleName(), "syncDictionaryResults",
-                    "No resolved dictionary entries for test " + test.getId() + " — skipping result sync to preserve existing answers");
+                    "No resolved dictionary entries for test " + test.getId()
+                            + " — skipping result sync to preserve existing answers");
             return;
         }
 
         // Sync TestResults (Coded Answers)
-        // Soft-delete (deactivate) rather than hard-delete — same as the normal UI flow.
+        // Soft-delete (deactivate) rather than hard-delete — same as the normal UI
+        // flow.
         // Hard-deleting TestResult rows breaks Test.default_test_result_id FK and
         // crashes Hibernate on next getAllTests() call.
         for (TestResult existingTr : existingResults) {
@@ -350,19 +349,20 @@ public class CatalogInboundService {
                 existingTr.setIsActive(false);
                 existingTr.setSysUserId(currentUserId);
                 testResultService.update(existingTr);
-                
-                // If we are deactivating the result that was the default, clear it from the test
-                if (test.getDefaultTestResult() != null && test.getDefaultTestResult().getId().equals(existingTr.getId())) {
+
+                // If we are deactivating the result that was the default, clear it from the
+                // test
+                if (test.getDefaultTestResult() != null
+                        && test.getDefaultTestResult().getId().equals(existingTr.getId())) {
                     test.setDefaultTestResult(null);
                 }
             }
         }
 
         for (TestResult dr : desiredResults) {
-            TestResult match = existingResults.stream()
-                    .filter(er -> isSameDictionaryEntry(er, dr))
-                    .findFirst().orElse(null);
-            
+            TestResult match = existingResults.stream().filter(er -> isSameDictionaryEntry(er, dr)).findFirst()
+                    .orElse(null);
+
             if (match == null) {
                 dr.setTest(test);
                 dr.setSysUserId(currentUserId);
@@ -371,9 +371,9 @@ public class CatalogInboundService {
                     test.setDefaultTestResult(dr);
                 }
             } else {
-                if (isDifferent(match.getDefault(), dr.getDefault()) || 
-                    isDifferent(match.getIsQuantifiable(), dr.getIsQuantifiable()) ||
-                    isDifferent(match.getSortOrder(), dr.getSortOrder())) {
+                if (isDifferent(match.getDefault(), dr.getDefault())
+                        || isDifferent(match.getIsQuantifiable(), dr.getIsQuantifiable())
+                        || isDifferent(match.getSortOrder(), dr.getSortOrder())) {
                     match.setDefault(dr.getDefault());
                     match.setIsQuantifiable(dr.getIsQuantifiable());
                     match.setSortOrder(dr.getSortOrder());
@@ -385,7 +385,7 @@ public class CatalogInboundService {
                 }
             }
         }
-        
+
         // Ensure default is flushed back to Test table
         testService.update(test);
 
@@ -413,26 +413,26 @@ public class CatalogInboundService {
     }
 
     private boolean isDifferent(Object o1, Object o2) {
-        if (o1 == null && o2 == null) return false;
-        if (o1 == null || o2 == null) return true;
+        if (o1 == null && o2 == null)
+            return false;
+        if (o1 == null || o2 == null)
+            return true;
         return !o1.equals(o2);
     }
 
     private boolean isSameRange(ResultLimit l1, ResultLimit l2) {
-        return isDifferent(l1.getGender(), l2.getGender()) == false &&
-               isDifferent(l1.getMinAge(), l2.getMinAge()) == false &&
-               isDifferent(l1.getMaxAge(), l2.getMaxAge()) == false;
+        return isDifferent(l1.getGender(), l2.getGender()) == false
+                && isDifferent(l1.getMinAge(), l2.getMinAge()) == false
+                && isDifferent(l1.getMaxAge(), l2.getMaxAge()) == false;
     }
 
     private boolean isLimitDifferent(ResultLimit l1, ResultLimit l2) {
-        return isDifferent(l1.getLowNormal(), l2.getLowNormal()) ||
-               isDifferent(l1.getHighNormal(), l2.getHighNormal()) ||
-               isDifferent(l1.getLowValid(), l2.getLowValid()) ||
-               isDifferent(l1.getHighValid(), l2.getHighValid()) ||
-               isDifferent(l1.getLowCritical(), l2.getLowCritical()) ||
-               isDifferent(l1.getHighCritical(), l2.getHighCritical()) ||
-               isDifferent(l1.getLowReportingRange(), l2.getLowReportingRange()) ||
-               isDifferent(l1.getHighReportingRange(), l2.getHighReportingRange());
+        return isDifferent(l1.getLowNormal(), l2.getLowNormal()) || isDifferent(l1.getHighNormal(), l2.getHighNormal())
+                || isDifferent(l1.getLowValid(), l2.getLowValid()) || isDifferent(l1.getHighValid(), l2.getHighValid())
+                || isDifferent(l1.getLowCritical(), l2.getLowCritical())
+                || isDifferent(l1.getHighCritical(), l2.getHighCritical())
+                || isDifferent(l1.getLowReportingRange(), l2.getLowReportingRange())
+                || isDifferent(l1.getHighReportingRange(), l2.getHighReportingRange());
     }
 
     private void updateLimitFields(ResultLimit target, ResultLimit source) {
@@ -453,8 +453,7 @@ public class CatalogInboundService {
     private void updateLocalizations(Test existing, CatalogDefinitionRequest request, String currentUserId) {
         Localization nameLoc = existing.getLocalizedTestName();
         if (nameLoc == null) {
-            nameLoc = LocalizationServiceImpl.createNewLocalization(
-                    request.getNameEnglish(),
+            nameLoc = LocalizationServiceImpl.createNewLocalization(request.getNameEnglish(),
                     request.getNameFrench() != null ? request.getNameFrench() : request.getNameEnglish(),
                     LocalizationServiceImpl.LocalizationType.TEST_NAME);
             nameLoc.setSysUserId(currentUserId);
@@ -463,17 +462,18 @@ public class CatalogInboundService {
         } else {
             // Set unconditionally — Hibernate handles the dirty check at flush time
             nameLoc.setLocalizedValue("en", request.getNameEnglish());
-            nameLoc.setLocalizedValue("fr", request.getNameFrench() != null ? request.getNameFrench() : request.getNameEnglish());
+            nameLoc.setLocalizedValue("fr",
+                    request.getNameFrench() != null ? request.getNameFrench() : request.getNameEnglish());
             nameLoc.setSysUserId(currentUserId);
             localizationService.update(nameLoc);
         }
 
         Localization reportLoc = existing.getLocalizedReportingName();
-        String reportEn = request.getReportNameEnglish() != null ? request.getReportNameEnglish() : request.getNameEnglish();
+        String reportEn = request.getReportNameEnglish() != null ? request.getReportNameEnglish()
+                : request.getNameEnglish();
         String reportFr = request.getReportNameFrench() != null ? request.getReportNameFrench() : reportEn;
         if (reportLoc == null) {
-            reportLoc = LocalizationServiceImpl.createNewLocalization(
-                    reportEn, reportFr,
+            reportLoc = LocalizationServiceImpl.createNewLocalization(reportEn, reportFr,
                     LocalizationServiceImpl.LocalizationType.REPORTING_TEST_NAME);
             reportLoc.setSysUserId(currentUserId);
             localizationService.insert(reportLoc);
@@ -490,13 +490,16 @@ public class CatalogInboundService {
         List<TestSet> testSets = new ArrayList<>();
 
         UnitOfMeasure uom = entityResolver.resolveUOM(request.getUomId(), request.getUomName(), currentUserId);
-        TestSection section = entityResolver.resolveTestSection(request.getTestSectionId(), request.getTestSectionName(), currentUserId);
-        String resultTypeId = entityResolver.resolveResultTypeId(request.getResultTypeId(), request.getResultTypeName());
+        TestSection section = entityResolver.resolveTestSection(request.getTestSectionId(),
+                request.getTestSectionName(), currentUserId);
+        String resultTypeId = entityResolver.resolveResultTypeId(request.getResultTypeId(),
+                request.getResultTypeName());
 
         List<String> resolvedSampleTypeIds = new ArrayList<>(request.getSampleTypeIds());
         for (String stName : request.getSampleTypeNames()) {
             TypeOfSample tos = entityResolver.resolveSampleType(null, stName, currentUserId);
-            if (tos != null) resolvedSampleTypeIds.add(tos.getId());
+            if (tos != null)
+                resolvedSampleTypeIds.add(tos.getId());
         }
 
         // Ensure at least one sample type or use default
@@ -506,7 +509,8 @@ public class CatalogInboundService {
 
         for (String sampleTypeId : resolvedSampleTypeIds) {
             TypeOfSample sampleType = typeOfSampleService.getTypeOfSampleById(sampleTypeId);
-            if (sampleType == null) continue;
+            if (sampleType == null)
+                continue;
 
             TestSet set = testAddController.new TestSet();
             set.typeOfSample = sampleType;
@@ -515,14 +519,14 @@ public class CatalogInboundService {
             test.setUnitOfMeasure(uom);
             test.setLoinc(request.getLoincCode());
             test.setPrice(roundPrice(request.getPrice()));
-            
+
             // Hibernate/DB limits: name=255, description=60
             String baseName = request.getNameEnglish();
             test.setName(baseName.length() > 255 ? baseName.substring(0, 255) : baseName);
-            
+
             String desc = baseName + "(" + sampleType.getDescription() + ")";
             test.setDescription(desc.length() > 60 ? desc.substring(0, 60) : desc);
-            
+
             test.setIsActive(request.isActive() ? "Y" : "N");
             test.setOrderable(request.isOrderable());
             test.setNotifyResults(request.isNotifyResults());
@@ -531,9 +535,10 @@ public class CatalogInboundService {
             test.setTestSection(section);
             test.setGuid(request.getTestUuid() != null ? request.getTestUuid() : UUID.randomUUID().toString());
             test.setSysUserId(currentUserId);
-            // sort_order must not be null — ResultsValidationUtility.sortByAccessionNumberAndOrder
+            // sort_order must not be null —
+            // ResultsValidationUtility.sortByAccessionNumberAndOrder
             // does Integer.parseInt(test.getSortOrder()) and crashes on null.
-            
+
             test.setSortOrder("0");
 
             set.test = test;
@@ -597,28 +602,40 @@ public class CatalogInboundService {
         set.testResults.add(tr);
 
         Double lowValid = config != null && config.getLowValid() != null
-                ? StringUtil.doubleWithInfinity(config.getLowValid()) : Double.NEGATIVE_INFINITY;
-        if (lowValid == null) lowValid = Double.NEGATIVE_INFINITY;
+                ? StringUtil.doubleWithInfinity(config.getLowValid())
+                : Double.NEGATIVE_INFINITY;
+        if (lowValid == null)
+            lowValid = Double.NEGATIVE_INFINITY;
 
         Double highValid = config != null && config.getHighValid() != null
-                ? StringUtil.doubleWithInfinity(config.getHighValid()) : Double.POSITIVE_INFINITY;
-        if (highValid == null) highValid = Double.POSITIVE_INFINITY;
+                ? StringUtil.doubleWithInfinity(config.getHighValid())
+                : Double.POSITIVE_INFINITY;
+        if (highValid == null)
+            highValid = Double.POSITIVE_INFINITY;
 
         Double lowCritical = config != null && config.getLowCritical() != null
-                ? StringUtil.doubleWithInfinity(config.getLowCritical()) : Double.NEGATIVE_INFINITY;
-        if (lowCritical == null) lowCritical = Double.NEGATIVE_INFINITY;
+                ? StringUtil.doubleWithInfinity(config.getLowCritical())
+                : Double.NEGATIVE_INFINITY;
+        if (lowCritical == null)
+            lowCritical = Double.NEGATIVE_INFINITY;
 
         Double highCritical = config != null && config.getHighCritical() != null
-                ? StringUtil.doubleWithInfinity(config.getHighCritical()) : Double.POSITIVE_INFINITY;
-        if (highCritical == null) highCritical = Double.POSITIVE_INFINITY;
+                ? StringUtil.doubleWithInfinity(config.getHighCritical())
+                : Double.POSITIVE_INFINITY;
+        if (highCritical == null)
+            highCritical = Double.POSITIVE_INFINITY;
 
         Double lowReporting = config != null && config.getLowReportingRange() != null
-                ? StringUtil.doubleWithInfinity(config.getLowReportingRange()) : Double.NEGATIVE_INFINITY;
-        if (lowReporting == null) lowReporting = Double.NEGATIVE_INFINITY;
+                ? StringUtil.doubleWithInfinity(config.getLowReportingRange())
+                : Double.NEGATIVE_INFINITY;
+        if (lowReporting == null)
+            lowReporting = Double.NEGATIVE_INFINITY;
 
         Double highReporting = config != null && config.getHighReportingRange() != null
-                ? StringUtil.doubleWithInfinity(config.getHighReportingRange()) : Double.POSITIVE_INFINITY;
-        if (highReporting == null) highReporting = Double.POSITIVE_INFINITY;
+                ? StringUtil.doubleWithInfinity(config.getHighReportingRange())
+                : Double.POSITIVE_INFINITY;
+        if (highReporting == null)
+            highReporting = Double.POSITIVE_INFINITY;
 
         if (config != null && !config.getLimits().isEmpty()) {
             for (CatalogDefinitionRequest.ResultLimitDTO limitDTO : config.getLimits()) {
@@ -659,17 +676,16 @@ public class CatalogInboundService {
         }
     }
 
-    private void mapDictionaryConfig(TestSet set, CatalogDefinitionRequest.DictionaryConfig config, String resultTypeId, String currentUserId) {
-        if (config == null) return;
+    private void mapDictionaryConfig(TestSet set, CatalogDefinitionRequest.DictionaryConfig config, String resultTypeId,
+            String currentUserId) {
+        if (config == null)
+            return;
 
         String characterValue = typeOfTestResultService.getResultTypeById(resultTypeId).getCharacterValue();
         int sortOrder = 10;
         for (CatalogDefinitionRequest.DictionaryEntryDTO entryDTO : config.getEntries()) {
-            Dictionary dict = entityResolver.resolveDictionaryEntry(
-                    entryDTO.getDictionaryId(),
-                    entryDTO.getDictionaryUuid(),
-                    entryDTO.getDictionaryLoincCode(),
-                    entryDTO.getDictionaryName(),
+            Dictionary dict = entityResolver.resolveDictionaryEntry(entryDTO.getDictionaryId(),
+                    entryDTO.getDictionaryUuid(), entryDTO.getDictionaryLoincCode(), entryDTO.getDictionaryName(),
                     currentUserId);
             if (dict != null) {
                 TestResult tr = new TestResult();
@@ -684,12 +700,8 @@ public class CatalogInboundService {
             }
         }
 
-        Dictionary refDict = entityResolver.resolveDictionaryEntry(
-                config.getDictionaryReferenceId(),
-                null,
-                null,
-                config.getDictionaryReferenceName(),
-                currentUserId);
+        Dictionary refDict = entityResolver.resolveDictionaryEntry(config.getDictionaryReferenceId(), null, null,
+                config.getDictionaryReferenceName(), currentUserId);
         if (refDict != null) {
             ResultLimit limit = new ResultLimit();
             limit.setResultTypeId(resultTypeId);
@@ -720,23 +732,25 @@ public class CatalogInboundService {
     }
 
     private String createNewPanel(CatalogDefinitionRequest request, String currentUserId) {
-        LogEvent.logInfo(this.getClass().getSimpleName(), "createNewPanel", "Creating new panel: " + request.getNameEnglish());
+        LogEvent.logInfo(this.getClass().getSimpleName(), "createNewPanel",
+                "Creating new panel: " + request.getNameEnglish());
 
-        // Fall back to English if French is not provided — localization_value.value is NOT NULL
+        // Fall back to English if French is not provided — localization_value.value is
+        // NOT NULL
         String panelNameFr = request.getNameFrench() != null ? request.getNameFrench() : request.getNameEnglish();
-        Localization localization = LocalizationServiceImpl.createNewLocalization(request.getNameEnglish(),
-                panelNameFr, LocalizationServiceImpl.LocalizationType.PANEL_NAME);
+        Localization localization = LocalizationServiceImpl.createNewLocalization(request.getNameEnglish(), panelNameFr,
+                LocalizationServiceImpl.LocalizationType.PANEL_NAME);
 
         Panel panel = new Panel();
         // Hibernate limits: name=20, description=60, loinc=10
         String baseName = request.getNameEnglish();
         panel.setPanelName(baseName.length() > 20 ? baseName.substring(0, 20) : baseName);
         panel.setDescription(baseName.length() > 60 ? baseName.substring(0, 60) : baseName);
-        
+
         panel.setIsActive("N");
         panel.setSortOrderInt(Integer.MAX_VALUE);
         panel.setSysUserId(currentUserId);
-        
+
         String loinc = request.getLoincCode();
         if (!GenericValidator.isBlankOrNull(loinc)) {
             panel.setLoinc(loinc.length() > 10 ? loinc.substring(0, 10) : loinc);
@@ -755,14 +769,16 @@ public class CatalogInboundService {
         RoleModule resultRM = createRoleModule(currentUserId, resultModule, resultsRole);
         RoleModule validationRM = createRoleModule(currentUserId, validationModule, validationRole);
 
-        TypeOfSample sampleType = entityResolver.resolveSampleType(request.getSampleTypeId(), request.getSampleTypeName(), currentUserId);
+        TypeOfSample sampleType = entityResolver.resolveSampleType(request.getSampleTypeId(),
+                request.getSampleTypeName(), currentUserId);
 
-        panelCreateService.insert(localization, panel, workplanModule, resultModule, validationModule,
-                workplanRM, resultRM, validationRM, sampleType.getId(), currentUserId);
+        panelCreateService.insert(localization, panel, workplanModule, resultModule, validationModule, workplanRM,
+                resultRM, validationRM, sampleType.getId(), currentUserId);
 
         assignPanelMembers(panel, request, currentUserId);
 
-        eventPublisher.publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
+        eventPublisher
+                .publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
         return panel.getGuid();
     }
 
@@ -770,7 +786,7 @@ public class CatalogInboundService {
         LogEvent.logInfo(this.getClass().getSimpleName(), "updateExistingPanel", "Updating panel: " + existing.getId());
 
         // Apply all scalar fields unconditionally — Hibernate dirty detection handles
-        
+
         if (!GenericValidator.isBlankOrNull(request.getNameEnglish())) {
             String baseName = request.getNameEnglish();
             // Hibernate limits: panelName=20, description=60
@@ -789,7 +805,8 @@ public class CatalogInboundService {
                 localizationService.update(loc);
             }
         }
-        // Only overwrite LOINC if the caller explicitly sent one — never wipe an existing value with null
+        // Only overwrite LOINC if the caller explicitly sent one — never wipe an
+        // existing value with null
         if (!GenericValidator.isBlankOrNull(request.getLoincCode())) {
             String loinc = request.getLoincCode();
             // Hibernate limits: loinc=10
@@ -803,7 +820,8 @@ public class CatalogInboundService {
         panelService.update(existing);
 
         assignPanelMembers(existing, request, currentUserId);
-        eventPublisher.publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
+        eventPublisher
+                .publishEvent(new org.openelisglobal.dataexchange.externalcatalog.event.CatalogUpsertedEvent(this));
         eventPublisher.publishEvent(new PanelCreatedOrUpdatedEvent(this, existing));
     }
 
@@ -813,8 +831,10 @@ public class CatalogInboundService {
 
         // If the panel is being explicitly deactivated, clear all desired tests
         if (!request.isActive()) {
-            LogEvent.logInfo(this.getClass().getSimpleName(), "assignPanelMembers", "Deactivating panel " + panel.getId() + ". Clearing all member tests.");
-            // No tests are desired, so the existing sync logic will remove all current members
+            LogEvent.logInfo(this.getClass().getSimpleName(), "assignPanelMembers",
+                    "Deactivating panel " + panel.getId() + ". Clearing all member tests.");
+            // No tests are desired, so the existing sync logic will remove all current
+            // members
         } else {
             for (String testUuid : request.getMemberTestUuids()) {
                 Test test = testService.getTestByGUID(testUuid);
@@ -884,13 +904,15 @@ public class CatalogInboundService {
     }
 
     /**
-     * Converts age in years (decimal OK — e.g. 0.5 = 6 months) to days.
-     * OE stores and compares all age limits in days internally.
-     * Infinity passes through unchanged.
+     * Converts age in years (decimal OK — e.g. 0.5 = 6 months) to days. OE stores
+     * and compares all age limits in days internally. Infinity passes through
+     * unchanged.
      */
     private double yearsToDays(double years) {
-        if (years == Double.POSITIVE_INFINITY) return Double.POSITIVE_INFINITY;
-        if (years == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+        if (years == Double.POSITIVE_INFINITY)
+            return Double.POSITIVE_INFINITY;
+        if (years == Double.NEGATIVE_INFINITY)
+            return Double.NEGATIVE_INFINITY;
         return years * 365.25;
     }
 
@@ -899,10 +921,10 @@ public class CatalogInboundService {
         // Hibernate limits: name=32, description=80
         String moduleName = type + ":" + name;
         sm.setSystemModuleName(moduleName.length() > 32 ? moduleName.substring(0, 32) : moduleName);
-        
+
         String desc = type + "=>panel=>" + name;
         sm.setDescription(desc.length() > 80 ? desc.substring(0, 80) : desc);
-        
+
         sm.setSysUserId(userId);
         sm.setHasAddFlag("Y");
         sm.setHasDeleteFlag("Y");

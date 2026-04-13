@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Thrown when an inbound catalog request fails pre-flight validation.
- * Carries a list of human-readable error messages so the controller can
- * return them all at once in a structured 400 response.
+ * Thrown when an inbound catalog request fails pre-flight validation. Carries a
+ * list of human-readable error messages so the controller can return them all
+ * at once in a structured 400 response.
  */
 public class CatalogValidationException extends RuntimeException {
 

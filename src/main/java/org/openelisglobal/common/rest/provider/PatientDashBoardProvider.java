@@ -197,7 +197,8 @@ public class PatientDashBoardProvider {
                         Patient patient = sampleHumanService.getPatientForSample(sample);
                         orderBean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                         orderBean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                        orderBean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                        orderBean.setPatientId(
+                                patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                         orderBean.setPatientName(getPatientName(patient));
                     }
                     orderBean.setOrderDate(analysis.getStartedDateForDisplay());
