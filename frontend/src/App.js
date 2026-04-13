@@ -79,7 +79,6 @@ import ProgramDashboard from "./components/program/programDashboard.jsx";
 import ProgramCaseView from "./components/program/programCaseView.jsx";
 import SampleManagement from "./components/sampleManagement/SampleManagement";
 import { getFullPath } from "./components/utils/Navigation";
-import LabDashboard from "./components/home/LabDashboard.tsx";
 import IncomingOrders from "./components/incomingOrders/Index";
 import ShipmentReport from "./components/shipment/ShipmentReport";
 import ShipmentSettings from "./components/shipment/ShipmentSettings";

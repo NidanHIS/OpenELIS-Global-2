@@ -1000,7 +1000,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       key: "orderDate",
       header: <FormattedMessage id="sample.label.orderdate" />,
     },
-    { key: "patientId", header: <FormattedMessage id="patient.id" /> },
     {
       key: "patientName",
       header: <FormattedMessage id="incomingOrders.table.patientName" />,
@@ -1027,7 +1026,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       key: "orderDate",
       header: <FormattedMessage id="sample.label.orderdate" />,
     },
-    { key: "patientId", header: <FormattedMessage id="patient.id" /> },
     {
       key: "patientName",
       header: <FormattedMessage id="incomingOrders.table.patientName" />,
@@ -1616,25 +1614,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         </>
                       ) : (
                         <>
-                          <div
-                            className="split-summary-strip"
-                            style={{ marginBottom: "1rem", flexWrap: "wrap" }}
-                          >
-                            {leftBacklogSummaryCards.map((c) => (
-                              <div key={c.label} className="split-summary-pill">
-                                <span
-                                  className="split-summary-dot"
-                                  style={{ background: c.color }}
-                                />
-                                <span className="split-summary-label">
-                                  {c.label}
-                                </span>
-                                <strong className="split-summary-value">
-                                  {c.value}
-                                </strong>
-                              </div>
-                            ))}
-                          </div>
                           <DataTable
                             rows={backlogOrders
                               .filter((bo) => {
