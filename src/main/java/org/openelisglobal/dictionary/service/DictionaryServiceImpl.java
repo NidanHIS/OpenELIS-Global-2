@@ -211,4 +211,22 @@ public class DictionaryServiceImpl extends AuditableBaseObjectServiceImpl<Dictio
     public Dictionary getDataForId(String dictId) {
         return getBaseObjectDAO().getDataForId(dictId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Dictionary getDictionaryByGuid(String guid) {
+        return getBaseObjectDAO().getDictionaryByGuid(guid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Dictionary getDictionaryByLoincCode(String loincCode) {
+        return getBaseObjectDAO().getDictionaryByLoincCode(loincCode);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Dictionary getDictionaryByDictEntryIgnoreCase(String name) {
+        return getBaseObjectDAO().getDictionaryByDictEntryIgnoreCase(name);
+    }
 }
