@@ -13,6 +13,7 @@ import {
   postToOpenElisServerJsonResponse,
 } from "../utils/Utils";
 import OrderEntryAdditionalQuestions from "./OrderEntryAdditionalQuestions";
+import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import OrderSuccessMessage from "./OrderSuccessMessage";
 import { FormattedMessage, useIntl } from "react-intl";
 import OrderEntryValidationSchema from "../formModel/validationSchema/OrderEntryValidationSchema";
@@ -74,6 +75,7 @@ const Index = () => {
   const { notificationVisible, setNotificationVisible, addNotification } =
     useContext(NotificationContext);
   const { configurationProperties } = useContext(ConfigurationContext);
+  const { userSessionDetails } = useContext(UserSessionDetailsContext);
 
   useEffect(() => {
     if (configurationProperties.ACCEPT_EXTERNAL_ORDERS === "true") {
@@ -139,8 +141,30 @@ const Index = () => {
         const mappedSamples = mapSamplesFromXml(form.sampleXML);
         const initialSamples =
           mappedSamples.length > 0 ? mappedSamples : [sampleObject];
-        setSamples(initialSamples);
-        resolveIncomingSampleNames(initialSamples);
+
+        // Always override collection time with the live current time at the
+        // moment the user clicks Collect, and collector with the logged-in user.
+        // We deliberately do NOT use configurationProperties.currentTimeAsText
+        // because that value is a stale snapshot taken at app-load time.
+        const collectorName =
+          (userSessionDetails?.firstName || "") +
+          (userSessionDetails?.firstName && userSessionDetails?.lastName ? " " : "") +
+          (userSessionDetails?.lastName || "");
+        const _now = new Date();
+        const currentTime = `${String(_now.getHours()).padStart(2, "0")}:${String(_now.getMinutes()).padStart(2, "0")}`;
+        const overriddenSamples = initialSamples.map((s) => ({
+          ...s,
+          sampleXML: s.sampleXML
+            ? {
+                ...s.sampleXML,
+                collectionTime: currentTime,
+                collector: collectorName,
+              }
+            : s.sampleXML,
+        }));
+
+        setSamples(overriddenSamples);
+        resolveIncomingSampleNames(overriddenSamples);
         setPage(orderPageNumber);
       },
     );
