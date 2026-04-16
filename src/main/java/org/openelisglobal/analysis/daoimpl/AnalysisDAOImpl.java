@@ -984,6 +984,28 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
 
     @Override
     @Transactional(readOnly = true)
+    public List<Analysis> getAnalysesForStatusIds(List<String> statusIds) throws LIMSRuntimeException {
+        if (statusIds == null || statusIds.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+
+        try {
+            List<Integer> intIds = statusIds.stream()
+                    .map(Integer::parseInt)
+                    .collect(java.util.stream.Collectors.toList());
+            String sql = "from Analysis a where a.statusId in (:statusList)";
+            Query<Analysis> query = entityManager.unwrap(Session.class).createQuery(sql, Analysis.class);
+            query.setParameterList("statusList", intIds);
+            return query.list();
+        } catch (HibernateException e) {
+            handleException(e, "getAnalysesForStatusIds");
+        }
+
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Analysis> getAnalysisStartedOnExcludedByStatusId(Date collectionDate, Set<Integer> statusIds)
             throws LIMSRuntimeException {
         if (statusIds == null || statusIds.isEmpty()) {

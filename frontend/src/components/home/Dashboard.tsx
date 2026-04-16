@@ -24,7 +24,7 @@ import {
 } from "@carbon/react";
 import "./Dashboard.css";
 import { Minimize, Maximize, ArrowLeft, ArrowRight } from "@carbon/react/icons";
-import { Copy } from "@carbon/icons-react";
+import { Copy, CheckmarkFilled } from "@carbon/icons-react";
 import {
   useState,
   useEffect,
@@ -506,26 +506,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const loadOngoingOrdersData = async (seq: number) => {
     try {
+      // ORDERS-All-Grouped returns NotStarted + TechnicalAcceptance + Finalized
+      // so completed records persist in the dashboard after validation.
       const orders = await fetchAllGroupedPages(
-        "/rest/home-dashboard/ORDERS-Grouped",
+        "/rest/home-dashboard/ORDERS-All-Grouped",
       );
-      if (hasPendingValidationField(orders?.displayItems)) {
-        loadData(orders, true, seq);
-        return;
-      }
-      const validation = await fetchAllGroupedPages(
-        "/rest/home-dashboard/VALIDATION-Grouped",
-      );
-      loadData(
-        {
-          displayItems: mergeGroupedDisplayItems(
-            orders?.displayItems,
-            validation?.displayItems,
-          ),
-        },
-        true,
-        seq,
-      );
+      loadData(orders, true, seq);
     } catch {
       loadData({ displayItems: [] }, true, seq);
     }
@@ -958,6 +944,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       data.find((item) => String(item.id) === String(row.id))?.patientName ||
       "";
     const isInBacklog = false; // backlog is now date-derived, not id-tracked
+    const isCompleted =
+      data.find((item) => String(item.id) === String(row.id))?.completed ===
+      true;
 
     if (cell.info.header === "labNumber" && cell.value) {
       return (
@@ -1144,6 +1133,20 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           >
             {cell.value}
           </div>
+        </TableCell>
+      );
+    } else if (cell.info.header === "testCount") {
+      return (
+        <TableCell key={cell.id}>
+          {isCompleted ? (
+            <CheckmarkFilled
+              size={16}
+              style={{ color: "#24a148" }}
+              title="Completed"
+            />
+          ) : (
+            cell.value
+          )}
         </TableCell>
       );
     } else {
