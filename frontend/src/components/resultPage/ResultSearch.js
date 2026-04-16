@@ -7,6 +7,10 @@ import PageBreadCrumb from "../common/PageBreadCrumb";
 
 function ResultSearch() {
   const [source, setSource] = useState("");
+  const isPatientReadOnly =
+    window.location.pathname.endsWith("/PatientResults") &&
+    Boolean(new URLSearchParams(window.location.search).get("patientId"));
+
   useEffect(() => {
     let sourceFromUrl = new URLSearchParams(window.location.search).get(
       "source",
@@ -22,27 +26,31 @@ function ResultSearch() {
   }, []);
   return (
     <>
-      <PageBreadCrumb
-        breadcrumbs={
-          source
-            ? [
-                { label: "home.label", link: "/" },
-                {
-                  label: "banner.menu.workplan",
-                  link: `/${source}`,
-                },
-              ]
-            : [{ label: "home.label", link: "/" }]
-        }
-      />
+      {!isPatientReadOnly && (
+        <PageBreadCrumb
+          breadcrumbs={
+            source
+              ? [
+                  { label: "home.label", link: "/" },
+                  {
+                    label: "banner.menu.workplan",
+                    link: `/${source}`,
+                  },
+                ]
+              : [{ label: "home.label", link: "/" }]
+          }
+        />
+      )}
 
       <Grid fullWidth={true}>
         <Column lg={16} md={8} sm={4}>
           <Section>
             <Section>
-              <Heading>
-                <FormattedMessage id="sidenav.label.results" />
-              </Heading>
+              {!isPatientReadOnly && (
+                <Heading>
+                  <FormattedMessage id="sidenav.label.results" />
+                </Heading>
+              )}
             </Section>
           </Section>
         </Column>

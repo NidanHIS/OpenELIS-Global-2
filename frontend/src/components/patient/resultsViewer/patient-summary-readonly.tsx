@@ -124,7 +124,7 @@ const ReadonlyField = ({ id, labelText, value = "" }: ReadonlyFieldProps) => (
     className="patientReadonlyField"
     labelText={labelText}
     value={value}
-    readOnly
+    disabled
   />
 );
 
@@ -189,11 +189,12 @@ const PatientSummaryReadonly: React.FC<PatientSummaryReadonlyProps> = ({
           <TextInput
             id="patient-summary-name"
             className="patientReadonlyField"
-            labelText={intl.formatMessage({ id: "patient.name" }, {
+            labelText={intl.formatMessage({
+              id: "patient.name",
               defaultMessage: "Full Name",
-            } as any)}
+            })}
             value={patientName}
-            readOnly
+            disabled
           />
         </Column>
 
@@ -207,7 +208,7 @@ const PatientSummaryReadonly: React.FC<PatientSummaryReadonlyProps> = ({
               { PHONE_FORMAT: "" },
             )}
             value={patient.primaryPhone ?? ""}
-            readOnly
+            disabled
           />
         </Column>
 
@@ -241,7 +242,7 @@ const PatientSummaryReadonly: React.FC<PatientSummaryReadonlyProps> = ({
             className="patientReadonlyField"
             labelText={intl.formatMessage({ id: "patient.dob" })}
             value={patient.birthDateForDisplay ?? ""}
-            readOnly
+            disabled
           />
         </Column>
       </Grid>
@@ -251,56 +252,110 @@ const PatientSummaryReadonly: React.FC<PatientSummaryReadonlyProps> = ({
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "0.5rem",
-          alignItems: "center",
-          marginTop: "1rem",
+          gap: "1rem",
+          alignItems: "flex-start",
+          marginTop: "1.25rem",
+          paddingTop: "1rem",
+          borderTop: "1px solid #e0e0e0",
         }}
       >
-        <Button kind="primary" size="sm" onClick={openAllReports}>
-          <FormattedMessage
-            id="report.all.client"
-            defaultMessage="All Reports"
-          />
-        </Button>
-
-        <Button
-          kind="tertiary"
-          size="sm"
-          onClick={() => {
-            setLabNoOpen((v) => !v);
-            setLabNoVal("");
-          }}
+        {/* All Reports button with description */}
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
         >
-          <FormattedMessage id="report.by.labno" defaultMessage="By Lab No" />
-        </Button>
-
-        {labNoOpen && (
-          <>
-            <TextInput
-              id="patient-summary-labno-input"
-              labelText=""
-              hideLabel
-              placeholder="Accession / Lab No"
-              size="sm"
-              value={labNoVal}
-              onChange={(e) => setLabNoVal(e.target.value)}
-              onKeyDown={(e: React.KeyboardEvent) => {
-                if (e.key === "Enter" && labNoVal.trim()) openLabNoReport();
-              }}
-              style={{ width: "160px" }}
+          <Button kind="primary" size="md" onClick={openAllReports}>
+            <FormattedMessage
+              id="report.all.client"
+              defaultMessage="All Reports"
             />
-            <Button
-              kind="secondary"
-              size="sm"
-              disabled={!labNoVal.trim()}
-              onClick={openLabNoReport}
+          </Button>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              color: "#525252",
+              maxWidth: "180px",
+              lineHeight: "1.3",
+            }}
+          >
+            <FormattedMessage
+              id="report.all.client.description"
+              defaultMessage="Generate all recorded lab results for this patient"
+            />
+          </span>
+        </div>
+
+        {/* By Lab No button with description */}
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+        >
+          <Button
+            kind="tertiary"
+            size="md"
+            onClick={() => {
+              setLabNoOpen((v) => !v);
+              setLabNoVal("");
+            }}
+          >
+            <FormattedMessage id="report.by.labno" defaultMessage="By Lab No" />
+          </Button>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              color: "#525252",
+              maxWidth: "180px",
+              lineHeight: "1.3",
+            }}
+          >
+            <FormattedMessage
+              id="report.by.labno.description"
+              defaultMessage="Print report for a specific accession number"
+            />
+          </span>
+        </div>
+
+        {/* Inline lab number input — shown only when toggled */}
+        {labNoOpen && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.25rem",
+              alignSelf: "flex-start",
+            }}
+          >
+            <div
+              style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}
             >
-              <FormattedMessage
-                id="label.button.print"
-                defaultMessage="Print"
+              <TextInput
+                id="patient-summary-labno-input"
+                labelText={intl.formatMessage({
+                  id: "report.enter.labNumber.headline",
+                  defaultMessage: "Accession / Lab No",
+                })}
+                placeholder="e.g. mberDEV01260000000000015"
+                size="md"
+                value={labNoVal}
+                onChange={(e) =>
+                  setLabNoVal((e.target as HTMLInputElement).value)
+                }
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" && labNoVal.trim()) openLabNoReport();
+                }}
+                style={{ width: "240px" }}
               />
-            </Button>
-          </>
+              <Button
+                kind="primary"
+                size="md"
+                disabled={!labNoVal.trim()}
+                onClick={openLabNoReport}
+              >
+                <FormattedMessage
+                  id="label.button.print"
+                  defaultMessage="Print"
+                />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </Tile>

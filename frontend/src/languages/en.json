@@ -2601,6 +2601,7 @@
   "patient.label.primaryphone": "Primary phone:{PHONE_FORMAT}",
   "patient.label.sex": "Sex",
   "patient.last.name": "Last Name",
+  "patient.name": "Full Name",
   "patient.male": "Male",
   "patient.maritalstatus": "Marital Status",
   "patient.merge.activeOrders": "Active Orders",
