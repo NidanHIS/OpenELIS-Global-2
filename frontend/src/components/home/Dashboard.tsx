@@ -60,20 +60,6 @@ interface Tile {
   id?: number;
 }
 
-interface BacklogOrder {
-  orderId: string;
-  labNumber: string;
-  patientName: string;
-  patientId: string;
-  movedToBacklogDate: string;
-  orderDate: string;
-  lastActivityDate: string;
-  priority?: string;
-  pendingResultCount?: number;
-  pendingValidationCount?: number;
-  testCount?: number;
-}
-
 type MetricType =
   | "ORDERS_IN_PROGRESS"
   | "ON_GOING_ORDERS"
@@ -127,7 +113,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const [data, setData] = useState([]);
   const [incomingOrdersData, setIncomingOrdersData] = useState<any[]>([]);
-  const [backlogOrders, setBacklogOrders] = useState<BacklogOrder[]>([]);
   const [testSections, setTestSections] = useState([]);
   const [selectedTestSection, setSelectedTestSection] = useState("");
   const [loading, setLoading] = useState(true);
@@ -149,7 +134,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
   const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
-  const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("LEFT");
+  const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
 
   const componentMounted = useRef(true);
   const tileLoadSequence = useRef(0);
@@ -163,122 +148,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const isSplitLayout = (type?: MetricType | null) =>
     type === "ON_GOING_ORDERS" || type === "ORDERS_IN_PROGRESS";
-
-  // ── BACKLOG HELPERS ──────────────────────────────────────────────────────────
-  const loadBacklogOrders = useCallback(() => {
-    const saved = localStorage.getItem("lab_backlog_orders");
-    if (saved) {
-      try {
-        setBacklogOrders(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load backlog orders", e);
-      }
-    }
-  }, []);
-
-  const saveBacklogOrders = useCallback((orders: BacklogOrder[]) => {
-    localStorage.setItem("lab_backlog_orders", JSON.stringify(orders));
-    setBacklogOrders(orders);
-  }, []);
-
-  const isOrderInactive = useCallback((order: any) => {
-    const lastActivity = order.lastActivityDate || order.orderDate;
-    if (!lastActivity) return false;
-    const secondsDiff =
-      (new Date().getTime() - new Date(lastActivity).getTime()) / 1000;
-    return secondsDiff >= 86400;
-  }, []);
-
-  const autoMoveToBacklog = useCallback(() => {
-    if (data.length === 0) return;
-    const currentBacklogIds = new Set(backlogOrders.map((bo) => bo.orderId));
-    const ordersToMove = data.filter((order) => {
-      const orderDateOk = order.orderDate
-        ? (new Date().getTime() - new Date(order.orderDate).getTime()) / 1000 >=
-          86400
-        : true;
-      return (
-        isOrderInactive(order) &&
-        orderDateOk &&
-        !currentBacklogIds.has(order.id) &&
-        order.status !== "COMPLETED" &&
-        order.status !== "REJECTED"
-      );
-    });
-    if (ordersToMove.length > 0) {
-      const newBacklogOrders = ordersToMove.map((order) => ({
-        ...order,
-        orderId: order.id,
-        labNumber: order.labNumber,
-        patientName: order.patientName || "",
-        patientId: order.patientId || "",
-        movedToBacklogDate: new Date().toISOString(),
-        orderDate: order.orderDate,
-        lastActivityDate: order.lastActivityDate || order.orderDate,
-        priority: order.priority || order.source || "",
-        pendingResultCount: order.pendingResultCount ?? 0,
-        pendingValidationCount: order.pendingValidationCount ?? 0,
-        testCount: order.testCount ?? 0,
-      }));
-      saveBacklogOrders([...backlogOrders, ...newBacklogOrders]);
-      addNotification?.({
-        kind: NotificationKinds.info,
-        title: "Orders Moved to Backlog",
-        message: `${newBacklogOrders.length} order(s) moved due to 24 h inactivity.`,
-      });
-    }
-  }, [
-    data,
-    backlogOrders,
-    isOrderInactive,
-    saveBacklogOrders,
-    addNotification,
-  ]);
-
-  const removeFromBacklog = useCallback(
-    (orderId: string) => {
-      saveBacklogOrders(backlogOrders.filter((bo) => bo.orderId !== orderId));
-      addNotification?.({
-        kind: NotificationKinds.success,
-        title: "Order Returned to Queue",
-        message: "Order removed from backlog.",
-      });
-    },
-    [backlogOrders, saveBacklogOrders, addNotification],
-  );
-
-  useEffect(() => {
-    loadBacklogOrders();
-  }, [loadBacklogOrders]);
-  useEffect(() => {
-    if (data.length > 0) autoMoveToBacklog();
-  }, [data, autoMoveToBacklog]);
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        if (data.length > 0) autoMoveToBacklog();
-      },
-      60 * 60 * 1000,
-    );
-    return () => clearInterval(interval);
-  }, [data, autoMoveToBacklog]);
-
-  // Enrich backlog patient names if missing
-  useEffect(() => {
-    if (!backlogOrders.length) return;
-    let updated = false;
-    const newBacklog = backlogOrders.map((backlogItem) => {
-      const matchingOrder = data.find(
-        (order) => order.id === backlogItem.orderId,
-      );
-      if (matchingOrder?.patientName && !backlogItem.patientName) {
-        updated = true;
-        return { ...backlogItem, patientName: matchingOrder.patientName };
-      }
-      return backlogItem;
-    });
-    if (updated) saveBacklogOrders(newBacklog);
-  }, [data, backlogOrders, saveBacklogOrders]);
 
   // ── DATA FETCHING ────────────────────────────────────────────────────────────
   const usesInProgressView = (type?: MetricType | null) =>
@@ -827,21 +696,35 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   };
 
   // ── MEMOISED DATA ─────────────────────────────────────────────────────────────
-  const backlogIds = useMemo(
-    () => new Set(backlogOrders.map((bo) => bo.orderId)),
-    [backlogOrders],
+
+  // Today = orderDate matches today's calendar date.
+  // Backlog = orderDate is before today (any prior calendar day).
+  // Derived purely from server data — no localStorage, no timers.
+  const todayDateStr = useMemo(() => {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${mm}/${dd}/${d.getFullYear()}`;
+  }, []);
+
+  const isToday = useCallback(
+    (orderDate?: string) => {
+      if (!orderDate) return true; // no date → show in Today so nothing is lost
+      return orderDate.trim() === todayDateStr;
+    },
+    [todayDateStr],
   );
 
   const sectionFilteredData = useMemo(() => {
     return data.filter(
       (item) =>
-        !backlogIds.has(item.id) &&
+        isToday(item.orderDate) &&
         (tilesWithTabs.includes(selectedTile?.type) &&
         selectedTestSection !== "all"
           ? item.testSection === selectedTestSection
           : true),
     );
-  }, [data, selectedTile?.type, selectedTestSection, backlogIds]);
+  }, [data, selectedTile?.type, selectedTestSection, isToday]);
 
   const filteredRightData = useMemo(() => {
     const q = rightSearch.trim().toLowerCase();
@@ -864,19 +747,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const backlogTableData = useMemo(
     () =>
-      backlogOrders.map((bo) => ({
-        id: bo.orderId,
-        priority: bo.priority || "",
-        orderDate: bo.orderDate || "",
-        patientId: bo.patientId,
-        patientName: bo.patientName,
-        labNumber: bo.labNumber,
-        movedToBacklogDate: new Date(bo.movedToBacklogDate).toLocaleString(),
-        pendingResultCount: (bo as any).pendingResultCount ?? 0,
-        pendingValidationCount: (bo as any).pendingValidationCount ?? 0,
-        testCount: (bo as any).testCount ?? 0,
-      })),
-    [backlogOrders],
+      data.filter(
+        (item) =>
+          !isToday(item.orderDate) &&
+          (tilesWithTabs.includes(selectedTile?.type) &&
+          selectedTestSection !== "all"
+            ? item.testSection === selectedTestSection
+            : true),
+      ),
+    [data, selectedTile?.type, selectedTestSection, isToday],
   );
 
   const filteredBacklogData = useMemo(() => {
@@ -884,9 +763,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     if (!q) return backlogTableData;
     return backlogTableData.filter(
       (item) =>
-        item.labNumber.toLowerCase().includes(q) ||
-        item.patientName.toLowerCase().includes(q) ||
-        item.patientId.toLowerCase().includes(q),
+        String(item.labNumber ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(item.patientName ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(item.patientId ?? "")
+          .toLowerCase()
+          .includes(q),
     );
   }, [backlogTableData, rightSearch]);
 
@@ -953,12 +838,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   );
 
   const leftBacklogOrderCount = useMemo(
-    () => backlogOrders.length,
-    [backlogOrders],
+    () => backlogTableData.length,
+    [backlogTableData],
   );
   const leftBacklogPatientCount = useMemo(
-    () => new Set(backlogOrders.map((bo) => bo.patientId).filter(Boolean)).size,
-    [backlogOrders],
+    () =>
+      new Set(backlogTableData.map((item) => item.patientId).filter(Boolean))
+        .size,
+    [backlogTableData],
   );
   const leftBacklogSummaryCards = [
     { label: "Backlog Orders", value: leftBacklogOrderCount, color: "#5f7fa3" },
@@ -1070,7 +957,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     const rowPatientName =
       data.find((item) => String(item.id) === String(row.id))?.patientName ||
       "";
-    const isInBacklog = backlogIds.has(row.id);
+    const isInBacklog = false; // backlog is now date-derived, not id-tracked
 
     if (cell.info.header === "labNumber" && cell.value) {
       return (
@@ -1664,27 +1551,35 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       ) : (
                         <>
                           <DataTable
-                            rows={backlogOrders
-                              .filter((bo) => {
+                            rows={incomingOrdersData
+                              .filter((item) => {
+                                // Left panel backlog: incoming orders received before today
+                                const received = item.receivedTimestamp
+                                  ? new Date(item.receivedTimestamp)
+                                  : null;
+                                const isBeforeToday = received
+                                  ? received <
+                                    new Date(new Date().setHours(0, 0, 0, 0))
+                                  : false;
+                                if (!isBeforeToday) return false;
                                 const q = leftSearch.trim().toLowerCase();
                                 if (!q) return true;
                                 return (
-                                  bo.labNumber.toLowerCase().includes(q) ||
-                                  bo.patientName.toLowerCase().includes(q) ||
-                                  bo.patientId.toLowerCase().includes(q)
+                                  String(item.patientName ?? "")
+                                    .toLowerCase()
+                                    .includes(q) ||
+                                  String(item.source ?? "")
+                                    .toLowerCase()
+                                    .includes(q) ||
+                                  String(item.externalOrderNumber ?? "")
+                                    .toLowerCase()
+                                    .includes(q)
                                 );
                               })
                               .slice(
                                 (leftPage - 1) * leftPageSize,
                                 leftPage * leftPageSize,
-                              )
-                              .map((bo) => ({
-                                ...bo,
-                                id: bo.orderId,
-                                movedToBacklogDate: new Date(
-                                  bo.movedToBacklogDate,
-                                ).toLocaleString(),
-                              }))}
+                              )}
                             headers={incomingOrderHeaders}
                             isSortable
                           >
@@ -1696,7 +1591,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             }) => (
                               <TableContainer
                                 title=""
-                                description="Orders inactive 24+ hours"
+                                description="Incoming orders received before today"
                               >
                                 <Table {...getTableProps()}>
                                   <TableHead>
@@ -1727,124 +1622,34 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                         <TableRow key={row.id}>
                                           {headers.map((h) => {
                                             if (h.key === "actions") {
-                                              const bo = backlogOrders.find(
-                                                (b) => b.orderId === row.id,
+                                              const collectUrl = getFullPath(
+                                                "/SamplePatientEntry?incomingOrderNumber=" +
+                                                  encodeURIComponent(row.id),
                                               );
-                                              const accNum = bo?.labNumber;
-                                              if (!accNum)
-                                                return (
-                                                  <TableCell
-                                                    key={`${row.id}-actions`}
-                                                  />
-                                                );
-                                              const resultUrl = getFullPath(
-                                                "/result?type=order&doRange=false&accessionNumber=" +
-                                                  accNum,
-                                              );
-                                              const validationUrl = getFullPath(
-                                                "/validation?type=order&accessionNumber=" +
-                                                  accNum,
-                                              );
-                                              const reportUrl =
-                                                config.serverBaseUrl +
-                                                "/ReportPrint?report=patientCILNSP_vreduit&type=patient&accessionDirect=" +
-                                                accNum +
-                                                "&highAccessionDirect=" +
-                                                accNum +
-                                                "&dateOfBirthSearchValue=&selPatient=&referringSiteId=&referringSiteDepartmentId=&onlyResults=false&_onlyResults=on&dateType=RESULT_DATE&lowerDateRange=&upperDateRange=";
-                                              const barcodeUrl =
-                                                config.serverBaseUrl +
-                                                "/LabelMakerServlet?labNo=" +
-                                                accNum +
-                                                "&type=order&quantity=1";
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
-                                                  <div
+                                                  <a
+                                                    href={collectUrl}
                                                     style={{
-                                                      display: "flex",
-                                                      gap: "0.75rem",
+                                                      display: "inline-flex",
                                                       alignItems: "center",
+                                                      gap: "0.35rem",
+                                                      padding:
+                                                        "0.35rem 0.85rem",
+                                                      borderRadius: "1rem",
+                                                      background: "#0f62fe",
+                                                      color: "#fff",
+                                                      fontSize: "0.78rem",
+                                                      fontWeight: 600,
+                                                      textDecoration: "none",
+                                                      letterSpacing: "0.3px",
+                                                      whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    <a
-                                                      href={barcodeUrl}
-                                                      title="Print Barcode"
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      style={{
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                      }}
-                                                    >
-                                                      <img
-                                                        src={barcodeIcon}
-                                                        alt="Print Barcode"
-                                                        style={{
-                                                          width: "1.1rem",
-                                                          height: "1.1rem",
-                                                        }}
-                                                      />
-                                                    </a>
-                                                    <a
-                                                      href={resultUrl}
-                                                      title="Results"
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      style={{
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                      }}
-                                                    >
-                                                      <img
-                                                        src={resultIcon}
-                                                        alt="Results"
-                                                        style={{
-                                                          width: "1.1rem",
-                                                          height: "1.1rem",
-                                                        }}
-                                                      />
-                                                    </a>
-                                                    <a
-                                                      href={reportUrl}
-                                                      title="Report"
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      style={{
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                      }}
-                                                    >
-                                                      <img
-                                                        src={reportIcon}
-                                                        alt="Report"
-                                                        style={{
-                                                          width: "1.1rem",
-                                                          height: "1.1rem",
-                                                        }}
-                                                      />
-                                                    </a>
-                                                    <a
-                                                      href={validationUrl}
-                                                      title="Validate"
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      style={{
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                      }}
-                                                    >
-                                                      <img
-                                                        src={validateIcon}
-                                                        alt="Validate"
-                                                        style={{
-                                                          width: "1.1rem",
-                                                          height: "1.1rem",
-                                                        }}
-                                                      />
-                                                    </a>
-                                                  </div>
+                                                    Collect
+                                                  </a>
                                                 </TableCell>
                                               );
                                             }
@@ -1878,7 +1683,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={leftPage}
                             pageSize={leftPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={backlogOrders.length}
+                            totalItems={
+                              incomingOrdersData.filter((item) => {
+                                const received = item.receivedTimestamp
+                                  ? new Date(item.receivedTimestamp)
+                                  : null;
+                                return received
+                                  ? received <
+                                      new Date(new Date().setHours(0, 0, 0, 0))
+                                  : false;
+                              }).length
+                            }
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
