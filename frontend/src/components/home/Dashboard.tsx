@@ -326,7 +326,23 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
     getFromOpenElisServer("/rest/incoming-orders", (res) => {
       if (!componentMounted.current) return;
-      const list = Array.isArray(res) ? res : [];
+      const raw = Array.isArray(res) ? res : [];
+      // Normalize field names to match table header keys + set row id
+      const list = raw.map((item) => ({
+        ...item,
+        id: item.externalOrderNumber,
+        received: item.receivedTimestamp
+          ? new Date(item.receivedTimestamp).toLocaleString([], {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+        tests: item.testCount != null ? String(item.testCount) : "—",
+        source: item.source ?? "—",
+      }));
       setIncomingOrdersData(list);
       setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
     });
@@ -1546,6 +1562,39 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             const cell = row.cells.find(
                                               (c) => c.info.header === h.key,
                                             );
+                                            if (h.key === "actions") {
+                                              // row.id IS the externalOrderNumber
+                                              const collectUrl = getFullPath(
+                                                "/SamplePatientEntry?incomingOrderNumber=" +
+                                                  encodeURIComponent(row.id),
+                                              );
+                                              return (
+                                                <TableCell
+                                                  key={`${row.id}-actions`}
+                                                >
+                                                  <a
+                                                    href={collectUrl}
+                                                    style={{
+                                                      display: "inline-flex",
+                                                      alignItems: "center",
+                                                      gap: "0.35rem",
+                                                      padding:
+                                                        "0.35rem 0.85rem",
+                                                      borderRadius: "1rem",
+                                                      background: "#0f62fe",
+                                                      color: "#fff",
+                                                      fontSize: "0.78rem",
+                                                      fontWeight: 600,
+                                                      textDecoration: "none",
+                                                      letterSpacing: "0.3px",
+                                                      whiteSpace: "nowrap",
+                                                    }}
+                                                  >
+                                                    Collect
+                                                  </a>
+                                                </TableCell>
+                                              );
+                                            }
                                             return (
                                               <TableCell
                                                 key={
