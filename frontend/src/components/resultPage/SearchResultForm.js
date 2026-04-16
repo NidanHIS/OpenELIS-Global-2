@@ -1955,7 +1955,7 @@ export function SearchResults(props) {
     <>
       {notificationVisible === true ? <AlertDialog /> : ""}
       <>
-        {props.results?.testResult?.length > 0 && (
+        {!isReadOnlyView && props.results?.testResult?.length > 0 && (
           <Grid style={{ marginTop: "20px" }} className="gridBoundary">
             <Column lg={3} />
             <Column lg={7} sm={4}>

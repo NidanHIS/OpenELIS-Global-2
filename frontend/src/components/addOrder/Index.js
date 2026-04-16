@@ -148,7 +148,9 @@ const Index = () => {
         // because that value is a stale snapshot taken at app-load time.
         const collectorName =
           (userSessionDetails?.firstName || "") +
-          (userSessionDetails?.firstName && userSessionDetails?.lastName ? " " : "") +
+          (userSessionDetails?.firstName && userSessionDetails?.lastName
+            ? " "
+            : "") +
           (userSessionDetails?.lastName || "");
         const _now = new Date();
         const currentTime = `${String(_now.getHours()).padStart(2, "0")}:${String(_now.getMinutes()).padStart(2, "0")}`;
