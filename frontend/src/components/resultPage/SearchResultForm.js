@@ -1235,6 +1235,14 @@ export function SearchResults(props) {
                 labelText=""
                 rows={1}
                 onChange={(e) => handleChange(e, row.id)}
+                style={
+                  row.isModified === "true" &&
+                  row.shadowResultValue &&
+                  String(row.shadowResultValue).trim() !== "" &&
+                  String(row.shadowResultValue).trim() !== "0"
+                    ? { outline: "2px solid red", borderRadius: "2px" }
+                    : undefined
+                }
               ></TextArea>
               <div
                 className="note"

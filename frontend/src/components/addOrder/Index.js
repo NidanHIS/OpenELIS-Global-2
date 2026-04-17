@@ -18,7 +18,6 @@ import OrderSuccessMessage from "./OrderSuccessMessage";
 import { FormattedMessage, useIntl } from "react-intl";
 import OrderEntryValidationSchema from "../formModel/validationSchema/OrderEntryValidationSchema";
 import config from "../../config.json";
-import PageBreadCrumb from "../common/PageBreadCrumb";
 let breadcrumbs = [
   { label: "home.label", link: "/" },
   { label: "sidenav.label.addorder", link: "/SamplePatientEntry" },
@@ -1082,7 +1081,6 @@ const Index = () => {
 
   return (
     <>
-      <PageBreadCrumb breadcrumbs={breadcrumbs} />
       <Stack gap={10}>
         <div className="pageContent">
           {notificationVisible === true ? <AlertDialog /> : ""}

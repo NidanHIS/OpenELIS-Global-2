@@ -3,7 +3,6 @@ import "../Style.css";
 import { injectIntl, FormattedMessage, useIntl } from "react-intl";
 import ResultSearchPage from "./SearchResultForm";
 import { Heading, Grid, Column, Section } from "@carbon/react";
-import PageBreadCrumb from "../common/PageBreadCrumb";
 
 function ResultSearch() {
   const [source, setSource] = useState("");
@@ -26,21 +25,6 @@ function ResultSearch() {
   }, []);
   return (
     <>
-      {!isPatientReadOnly && (
-        <PageBreadCrumb
-          breadcrumbs={
-            source
-              ? [
-                  { label: "home.label", link: "/" },
-                  {
-                    label: "banner.menu.workplan",
-                    link: `/${source}`,
-                  },
-                ]
-              : [{ label: "home.label", link: "/" }]
-          }
-        />
-      )}
 
       <Grid fullWidth={true}>
         <Column lg={16} md={8} sm={4}>
