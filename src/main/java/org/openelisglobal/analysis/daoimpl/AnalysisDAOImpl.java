@@ -1589,8 +1589,9 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
     public List<Analysis> getPageAnalysisByStatusFromAccession(List<Integer> analysisStatusList,
             List<Integer> sampleStatusList, String accessionNumber) {
 
-        String sql = "From Analysis a WHERE a.sampleItem.sample.accessionNumber >= :accessionNumber" //
-                + " AND length(a.sampleItem.sample.accessionNumber) = length(:accessionNumber)" //
+        // Fixed: was >= (range query) which returned all accessions >= the given one.
+        // Changed to = for exact accession match, scoping results to one order only.
+        String sql = "From Analysis a WHERE a.sampleItem.sample.accessionNumber = :accessionNumber" //
                 + " AND a.statusId IN (:analysisStatusList)" //
                 + " AND a.sampleItem.sample.statusId IN (:sampleStatusList)" //
                 + " ORDER BY a.sampleItem.sample.accessionNumber"; //

@@ -1031,7 +1031,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         config.serverBaseUrl +
         "/LabelMakerServlet?labNo=" +
         accessionNumber +
-        "&type=order&quantity=1";
+        "&type=order&quantity=1&override=true";
       return (
         <TableCell key={cell.id}>
           <div

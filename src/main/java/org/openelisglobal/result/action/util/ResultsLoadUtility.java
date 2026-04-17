@@ -1126,4 +1126,27 @@ public class ResultsLoadUtility {
         return analysisService.getCountAnalysisByStatusFromAccession(analysisStatusList, sampleStatusList,
                 accessionNumber);
     }
+
+    /**
+     * Returns ALL test result items for a given accession number regardless of status,
+     * including Finalized tests. Used by the result entry page when accessed from the
+     * dashboard so that completed orders still show their results.
+     */
+    public List<TestResultItem> getAllTestResultItemsByAccession(String accessionNumber) {
+        // Build a status list that includes every analysis status so nothing is filtered out
+        List<Integer> allStatuses = new java.util.ArrayList<>();
+        IStatusService statusService = SpringContext.getBean(IStatusService.class);
+        for (AnalysisStatus status : AnalysisStatus.values()) {
+            try {
+                String id = statusService.getStatusID(status);
+                if (id != null && !id.trim().isEmpty() && !id.equals("-1")) {
+                    allStatuses.add(Integer.parseInt(id));
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        List<Analysis> analysisList = analysisService.getPageAnalysisByStatusFromAccession(
+                allStatuses, sampleStatusList, accessionNumber);
+        return getGroupedTestsForAnalysisList(analysisList, SORT_FORWARD);
+    }
 }

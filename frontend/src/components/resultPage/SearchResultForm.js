@@ -1936,6 +1936,35 @@ export function SearchResults(props) {
     if (isSubmitting) {
       return;
     }
+
+    // Mandatory note: every modified result (except the very first entry on a
+    // blank result) must have a note explaining the change.
+    const missingNotes = (props.results?.testResult || []).filter((result) => {
+      if (!result.isModified) return false;
+      // First-time entry: resultValue was blank before (no shadowResultValue or
+      // shadowResultValue is empty). No note required for initial entry.
+      const isFirstEntry =
+        !result.shadowResultValue ||
+        String(result.shadowResultValue).trim() === "" ||
+        String(result.shadowResultValue).trim() === "0";
+      if (isFirstEntry) return false;
+      // Existing result being changed — note is mandatory
+      return !result.note || String(result.note).trim() === "";
+    });
+
+    if (missingNotes.length > 0) {
+      addNotification({
+        title: intl.formatMessage({ id: "notification.title" }),
+        message: intl.formatMessage({
+          id: "result.note.required",
+          defaultMessage:
+            "A note is required when modifying an existing result. Please add a note for each changed result.",
+        }),
+        kind: NotificationKinds.error,
+      });
+      setNotificationVisible(true);
+      return;
+    }
     setIsSubmitting(true);
     values.status = saveStatus;
     var searchEndPoint = "/rest/LogbookResults";
