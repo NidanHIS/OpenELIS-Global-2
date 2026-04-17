@@ -1255,10 +1255,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           >
             <div className="split-dashboard-header__left">
               <div className="split-dashboard-title-group">
-                <h2 className="split-dashboard-title">{selectedTile.title}</h2>
-                <p className="split-dashboard-subtitle">
-                  {selectedTile.subTitle}
-                </p>
+                <h2 className="split-dashboard-title">DASHBOARD</h2>
               </div>
             </div>
             <div className="split-summary-strip">
