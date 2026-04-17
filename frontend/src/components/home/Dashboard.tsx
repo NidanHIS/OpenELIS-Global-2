@@ -407,39 +407,21 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       const prc = Number(item.pendingResultCount);
       const pvc = Number(item.pendingValidationCount);
       const tc = Number(item.testCount);
-      if (Number.isFinite(prc) || Number.isFinite(pvc)) {
-        const pendingResultCount = Number.isFinite(prc) ? prc : 0;
-        const pendingValidationCount = Number.isFinite(pvc) ? pvc : 0;
-        const testCount =
-          pendingResultCount + pendingValidationCount > 0
-            ? pendingResultCount + pendingValidationCount
-            : Number.isFinite(tc)
-              ? tc
-              : 0;
-        return {
-          ...item,
-          pendingResultCount,
-          pendingValidationCount,
-          testCount,
-        };
-      }
-      if (tileType === "ORDERS_READY_FOR_VALIDATION") {
-        return {
-          ...item,
-          pendingResultCount: 0,
-          pendingValidationCount: Number.isFinite(tc) ? tc : 0,
-          testCount: Number.isFinite(tc) ? tc : 0,
-        };
-      }
-      if (usesInProgressView(tileType)) {
-        return {
-          ...item,
-          pendingResultCount: Number.isFinite(tc) ? tc : 0,
-          pendingValidationCount: 0,
-          testCount: Number.isFinite(tc) ? tc : 0,
-        };
-      }
-      return item;
+      const pendingResultCount = Number.isFinite(prc) ? prc : 0;
+      const pendingValidationCount = Number.isFinite(pvc) ? pvc : 0;
+      // Always trust the backend's testCount — it is the real total of ALL
+      // analyses for the sample regardless of status. Only fall back to
+      // prc+pvc if the backend didn't send a valid count.
+      const testCount =
+        Number.isFinite(tc) && tc > 0
+          ? tc
+          : pendingResultCount + pendingValidationCount;
+      return {
+        ...item,
+        pendingResultCount,
+        pendingValidationCount,
+        testCount,
+      };
     });
 
   const mergeGroupedDisplayItems = (pending = [], validation = []) => {
@@ -453,9 +435,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           id: item.id || key,
           pendingResultCount: Number(item.pendingResultCount) || 0,
           pendingValidationCount: Number(item.pendingValidationCount) || 0,
-          testCount:
-            (Number(item.pendingResultCount) || 0) +
-            (Number(item.pendingValidationCount) || 0),
+          testCount: Number(item.testCount) || 0,
         });
       },
     );
@@ -470,6 +450,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       const pvc =
         (Number(ex?.pendingValidationCount) || 0) +
         (Number(item.pendingValidationCount) || 0);
+      // Use the backend testCount from whichever side has it; fall back to prc+pvc.
+      const tc = Number(ex?.testCount) || Number(item.testCount) || prc + pvc;
       merged.set(key, {
         ...ex,
         ...item,
@@ -482,7 +464,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         testSection: ex?.testSection || item.testSection,
         pendingResultCount: prc,
         pendingValidationCount: pvc,
-        testCount: prc + pvc,
+        testCount: tc,
       });
     });
     return Array.from(merged.values());
@@ -1061,6 +1043,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
+              onClick={(e) => {
+                e.preventDefault();
+                window.open(resultUrl, "_blank");
+              }}
             >
               <img
                 src={resultIcon}
@@ -1087,6 +1073,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
+              onClick={(e) => {
+                e.preventDefault();
+                window.open(validationUrl, "_blank");
+              }}
             >
               <img
                 src={validateIcon}

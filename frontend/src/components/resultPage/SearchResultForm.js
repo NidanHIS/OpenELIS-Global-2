@@ -1989,13 +1989,14 @@ export function SearchResults(props) {
         kind: NotificationKinds.success,
       });
       if (props.refreshOnSubmit) {
-        window.location.href = getFullPath(
-          "/result?type=" +
-            props.searchBy.type +
-            "&doRange=" +
-            props.searchBy.doRange +
-            props.extraParams,
-        );
+        // Refresh the parent dashboard tab (if opened via window.open) then
+        // close this tab. Falls back to navigating home if no opener exists.
+        if (window.opener && !window.opener.closed) {
+          window.opener.location.reload();
+          window.close();
+        } else {
+          window.location.href = getFullPath("/");
+        }
       }
     } else {
       addNotification({
