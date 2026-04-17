@@ -1128,11 +1128,11 @@ public class ResultsLoadUtility {
     }
 
     /**
-     * Returns ALL test result items for a given accession number regardless of status,
-     * including Finalized tests. Used by the result entry page when accessed from the
-     * dashboard so that completed orders still show their results.
-     * Uses all analysis statuses AND all sample/order statuses (including Finished)
-     * so that fully validated orders are not filtered out.
+     * Returns ALL test result items for a given accession number regardless of
+     * status, including Finalized tests. Used by the result entry page when
+     * accessed from the dashboard so that completed orders still show their
+     * results. Uses all analysis statuses AND all sample/order statuses (including
+     * Finished) so that fully validated orders are not filtered out.
      */
     public List<TestResultItem> getAllTestResultItemsByAccession(String accessionNumber) {
         IStatusService statusService = SpringContext.getBean(IStatusService.class);
@@ -1162,8 +1162,8 @@ public class ResultsLoadUtility {
             }
         }
 
-        List<Analysis> analysisList = analysisService.getPageAnalysisByStatusFromAccession(
-                allAnalysisStatuses, allSampleStatuses, accessionNumber);
+        List<Analysis> analysisList = analysisService.getPageAnalysisByStatusFromAccession(allAnalysisStatuses,
+                allSampleStatuses, accessionNumber);
         return getGroupedTestsForAnalysisList(analysisList, SORT_FORWARD);
     }
 }

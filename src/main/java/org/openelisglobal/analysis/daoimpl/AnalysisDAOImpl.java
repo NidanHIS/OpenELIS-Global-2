@@ -990,8 +990,7 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
         }
 
         try {
-            List<Integer> intIds = statusIds.stream()
-                    .map(Integer::parseInt)
+            List<Integer> intIds = statusIds.stream().map(Integer::parseInt)
                     .collect(java.util.stream.Collectors.toList());
             String sql = "from Analysis a where a.statusId in (:statusList)";
             Query<Analysis> query = entityManager.unwrap(Session.class).createQuery(sql, Analysis.class);

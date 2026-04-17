@@ -527,9 +527,10 @@ public class PatientDashBoardProvider {
     }
 
     /**
-     * Returns all grouped orders regardless of status (NotStarted, TechnicalAcceptance,
-     * Finalized) so the dashboard can persist completed records. Finalized orders are
-     * marked with completed=true so the frontend can render a "Completed" badge.
+     * Returns all grouped orders regardless of status (NotStarted,
+     * TechnicalAcceptance, Finalized) so the dashboard can persist completed
+     * records. Finalized orders are marked with completed=true so the frontend can
+     * render a "Completed" badge.
      */
     @GetMapping(value = "home-dashboard/ORDERS-All-Grouped", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -581,9 +582,11 @@ public class PatientDashBoardProvider {
             if (finalizedAnalyses != null) {
                 Map<String, OrderDisplayBean> finalizedMap = new LinkedHashMap<>();
                 for (Analysis analysis : finalizedAnalyses) {
-                    if (analysis == null) continue;
-                    org.openelisglobal.sample.valueholder.Sample sample =
-                            analysis.getSampleItem() != null ? analysis.getSampleItem().getSample() : null;
+                    if (analysis == null)
+                        continue;
+                    org.openelisglobal.sample.valueholder.Sample sample = analysis.getSampleItem() != null
+                            ? analysis.getSampleItem().getSample()
+                            : null;
                     String labNumber = sample != null ? sample.getAccessionNumber() : null;
                     String key = labNumber != null ? labNumber : analysis.getId();
 
@@ -596,11 +599,12 @@ public class PatientDashBoardProvider {
                         OrderDisplayBean bean = new OrderDisplayBean();
                         bean.setId(analysis.getId());
                         if (sample != null) {
-                            org.openelisglobal.patient.valueholder.Patient patient =
-                                    sampleHumanService.getPatientForSample(sample);
+                            org.openelisglobal.patient.valueholder.Patient patient = sampleHumanService
+                                    .getPatientForSample(sample);
                             bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                             bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                            bean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                            bean.setPatientId(
+                                    patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                             bean.setPatientName(getPatientName(patient));
                         }
                         bean.setOrderDate(analysis.getStartedDateForDisplay());
@@ -617,12 +621,16 @@ public class PatientDashBoardProvider {
             // We combine active + finalized to cover every accession in the result set.
             Map<String, String> accessionToSampleId = new LinkedHashMap<>();
             List<Analysis> allAnalyses = new ArrayList<>();
-            if (activeAnalyses != null) allAnalyses.addAll(activeAnalyses);
-            if (finalizedAnalyses != null) allAnalyses.addAll(finalizedAnalyses);
+            if (activeAnalyses != null)
+                allAnalyses.addAll(activeAnalyses);
+            if (finalizedAnalyses != null)
+                allAnalyses.addAll(finalizedAnalyses);
             for (Analysis a : allAnalyses) {
-                if (a == null) continue;
-                org.openelisglobal.sample.valueholder.Sample s =
-                        a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
+                if (a == null)
+                    continue;
+                org.openelisglobal.sample.valueholder.Sample s = a.getSampleItem() != null
+                        ? a.getSampleItem().getSample()
+                        : null;
                 if (s != null && s.getAccessionNumber() != null && s.getId() != null) {
                     accessionToSampleId.putIfAbsent(s.getAccessionNumber().trim(), s.getId());
                 }
