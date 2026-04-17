@@ -567,15 +567,38 @@ public class PatientDashBoardProvider {
             }
             orderDisplayBeans = convertAnalysesToGroupedOrderBean(pendingResult, pendingValidation);
 
-            // Add finalized orders — grouped by accession, marked completed=true
+            // Collect accession numbers already represented by active beans so we
+            // can skip adding a duplicate finalized bean for mixed-state orders
+            // (e.g. 24 finalized + 4 still pending in the same accession).
+            Set<String> activeAccessions = new HashSet<>();
+            for (OrderDisplayBean b : orderDisplayBeans) {
+                if (b.getLabNumber() != null && !b.getLabNumber().trim().isEmpty()) {
+                    activeAccessions.add(b.getLabNumber().trim());
+                }
+            }
+
+            // Add finalized orders — only for accessions NOT already in the active list.
+            // Also count the actual number of finalized analyses per accession so
+            // testCount reflects the real total rather than 0.
             if (finalizedAnalyses != null) {
                 Map<String, OrderDisplayBean> finalizedMap = new LinkedHashMap<>();
+                Map<String, Integer> finalizedCountMap = new LinkedHashMap<>();
                 for (Analysis analysis : finalizedAnalyses) {
                     if (analysis == null) continue;
                     org.openelisglobal.sample.valueholder.Sample sample =
                             analysis.getSampleItem() != null ? analysis.getSampleItem().getSample() : null;
                     String labNumber = sample != null ? sample.getAccessionNumber() : null;
                     String key = labNumber != null ? labNumber : analysis.getId();
+
+                    // Skip: this accession already has an active bean — no duplicate
+                    if (activeAccessions.contains(key)) {
+                        // Still count finalized tests so the active bean's testCount
+                        // can be updated to reflect the full order size below
+                        finalizedCountMap.merge(key, 1, Integer::sum);
+                        continue;
+                    }
+
+                    finalizedCountMap.merge(key, 1, Integer::sum);
                     finalizedMap.computeIfAbsent(key, k -> {
                         OrderDisplayBean bean = new OrderDisplayBean();
                         bean.setId(analysis.getId());
@@ -593,6 +616,23 @@ public class PatientDashBoardProvider {
                         return bean;
                     });
                 }
+
+                // Set real testCount on fully-finalized beans
+                for (OrderDisplayBean bean : finalizedMap.values()) {
+                    String key = bean.getLabNumber() != null ? bean.getLabNumber().trim() : "";
+                    int count = finalizedCountMap.getOrDefault(key, 0);
+                    bean.setTestCount(count);
+                }
+
+                // Update active beans: add finalized test count to their total
+                for (OrderDisplayBean bean : orderDisplayBeans) {
+                    String key = bean.getLabNumber() != null ? bean.getLabNumber().trim() : "";
+                    int finCount = finalizedCountMap.getOrDefault(key, 0);
+                    if (finCount > 0) {
+                        bean.setTestCount(bean.getTestCount() + finCount);
+                    }
+                }
+
                 orderDisplayBeans.addAll(finalizedMap.values());
             }
 

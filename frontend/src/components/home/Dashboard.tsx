@@ -816,9 +816,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const workflowTestCount = useMemo(
     () =>
       sectionFilteredData.reduce((t, i) => {
+        const tc = Number(i.testCount);
         const prc = Number(i.pendingResultCount) || 0;
         const pvc = Number(i.pendingValidationCount) || 0;
-        return t + (Number(i.testCount) || prc + pvc || 1);
+        // Use testCount if it's a real positive number (covers both active and
+        // completed orders now that the backend sets it correctly).
+        // Fall back to prc+pvc for legacy data that may lack testCount.
+        // No || 1 fallback — a 0 count is valid and should show as 0.
+        return t + (Number.isFinite(tc) && tc > 0 ? tc : prc + pvc);
       }, 0),
     [sectionFilteredData],
   );
