@@ -36,6 +36,7 @@ import org.openelisglobal.odoo.client.OdooConnection;
 import org.openelisglobal.odoo.config.TestProductMapping;
 import org.openelisglobal.organization.service.OrganizationTypeService;
 import org.openelisglobal.referral.fhir.service.FhirReferralService;
+import org.openelisglobal.shipment.fhir.ShippingBoxFhirTransform;
 import org.openelisglobal.reports.service.WHONetReportServiceImpl;
 import org.openelisglobal.requester.service.RequesterTypeService;
 import org.openelisglobal.result.controller.AnalyzerResultsController;
@@ -83,7 +84,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
         "org.openelisglobal.analyzerimport", "org.openelisglobal.analyzer", "org.openelisglobal.plugin",
         "org.openelisglobal.testanalyte", "org.openelisglobal.observationhistory",
         "org.openelisglobal.systemusersection", "org.openelisglobal.citystatezip", "org.openelisglobal.typeofsample",
-        "org.openelisglobal.siteinformation", "org.openelisglobal.config", "org.openelisglobal.image",
+        "org.openelisglobal.siteinformation", "org.openelisglobal.image",
         "org.openelisglobal.testresult", "org.openelisglobal.barcode", "org.openelisglobal.referral",
         "org.openelisglobal.qaevent", "org.openelisglobal.project", "org.openelisglobal.sampleqaevent",
         "org.openelisglobal.patientrelation", "org.openelisglobal.inventory", "org.openelisglobal.testcodes",
@@ -241,6 +242,12 @@ public class AppTestConfig implements WebMvcConfigurer {
     @Profile("test")
     public FhirReferralService fhirReferralService() {
         return Mockito.mock(FhirReferralService.class);
+    }
+
+    @Bean
+    @Profile("test")
+    public ShippingBoxFhirTransform shippingBoxFhirTransform() {
+        return mock(ShippingBoxFhirTransform.class);
     }
 
     @Bean()
