@@ -1,4 +1,4 @@
-name: OpenELIS-Global-2 CI Build
+name: OpenELIS-Global-2 Format Check
 on:
   push:
     branches: [nidan-dev]
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  checkFormat-build-unitTest-and-run:
+  check-format:
     runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 21
