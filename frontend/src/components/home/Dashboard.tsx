@@ -675,13 +675,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     return `${mm}/${dd}/${d.getFullYear()}`;
   }, []);
 
-  const isToday = useCallback(
-    (orderDate?: string) => {
-      if (!orderDate) return true; // no date → show in Today so nothing is lost
-      return orderDate.trim() === todayDateStr;
-    },
-    [todayDateStr],
-  );
+  const isToday = useCallback((orderDate?: string) => {
+    if (!orderDate) return true;           // no date → show in Today (safe default)
+    const today = new Date();
+    const parsed = new Date(orderDate);
+    if (isNaN(parsed.getTime())) return true; // unparseable → show in Today
+    return (
+      parsed.getFullYear() === today.getFullYear() &&
+      parsed.getMonth() === today.getMonth() &&
+      parsed.getDate() === today.getDate()
+    );
+  }, []);
 
   const sectionFilteredData = useMemo(() => {
     return data.filter(
@@ -1021,8 +1025,21 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         "&type=order&quantity=1&override=true";
       // Inside renderCell, for actions header
       return (
+
         <TableCell key={cell.id}>
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            {/* 1. Print (barcode) icon - LAST */}
+
+            <a
+              href={barcodeUrl}
+              title="Print Barcode"
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
+              <img src={barcodeIcon} alt="Print Barcode" style={{ width: "1.1rem", height: "1.1rem" }} />
+            </a>
+
             {/* 1. Results icon */}
             <a
               href={resultUrl}
@@ -1036,17 +1053,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               }}
             >
               <img src={resultIcon} alt="Results" style={{ width: "1.1rem", height: "1.1rem" }} />
-            </a>
-
-            {/* 2. Report icon */}
-            <a
-              href={reportUrl}
-              title="Report"
-              target="_blank"
-              rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
-              <img src={reportIcon} alt="Report" style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
 
             {/* 3. Validate icon */}
@@ -1064,15 +1070,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               <img src={validateIcon} alt="Validate" style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
 
-            {/* 4. Print (barcode) icon - LAST */}
+            {/* 2. Report icon */}
             <a
-              href={barcodeUrl}
-              title="Print Barcode"
+              href={reportUrl}
+              title="Report"
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
             >
-              <img src={barcodeIcon} alt="Print Barcode" style={{ width: "1.1rem", height: "1.1rem" }} />
+              <img src={reportIcon} alt="Report" style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
           </div>
         </TableCell>

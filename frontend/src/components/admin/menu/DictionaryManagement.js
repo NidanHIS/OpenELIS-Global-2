@@ -59,6 +59,10 @@ function DictionaryManagement() {
   const [isActive, setIsActive] = useState("");
   const [loincCode, setLoincCode] = useState("");
 
+  // ── INLINE VALIDATION ERRORS ─────────────────────────────────────────────────
+  const [localAbbreviationError, setLocalAbbreviationError] = useState("");
+  const [loincCodeError, setLoincCodeError] = useState("");
+
   const [fromRecordCount, setFromRecordCount] = useState("1");
   const [toRecordCount, setToRecordCount] = useState("");
   const [totalRecordCount, setTotalRecordCount] = useState("");
@@ -118,21 +122,14 @@ function DictionaryManagement() {
   };
 
   const yesOrNo = [
-    {
-      id: "Y",
-      value: "Y",
-    },
-    {
-      id: "N",
-      value: "N",
-    },
+    { id: "Y", value: "Y" },
+    { id: "N", value: "N" },
   ];
 
   const handlePageChange = (pageInfo) => {
     if (page != pageInfo.page) {
       setPage(pageInfo.page);
     }
-
     if (pageSize != pageInfo.pageSize) {
       setPageSize(pageInfo.pageSize);
     }
@@ -262,27 +259,60 @@ function DictionaryManagement() {
     window.location.reload();
   }
 
+  // ── CLEAR ALL ERRORS (called on modal close / open) ──────────────────────────
+  const clearModalErrors = () => {
+    setLocalAbbreviationError("");
+    setLoincCodeError("");
+  };
+
+  // ── VALIDATE REQUIRED FIELDS ─────────────────────────────────────────────────
+  const validateModalFields = () => {
+    let hasError = false;
+
+    if (!localAbbreviation.trim()) {
+      setLocalAbbreviationError("Local Abbreviation is required.");
+      hasError = true;
+    } else {
+      setLocalAbbreviationError("");
+    }
+
+    if (!loincCode.trim()) {
+      setLoincCodeError("LOINC Code is required.");
+      hasError = true;
+    } else {
+      setLoincCodeError("");
+    }
+
+    return !hasError;
+  };
+
+  // ── SUBMIT (ADD) ─────────────────────────────────────────────────────────────
   const handleSubmitModal = (e) => {
     e.preventDefault();
+
+    if (!validateModalFields()) return; // stop — inline errors shown
+
     postToOpenElisServerFullResponse(
       "/rest/Dictionary",
       JSON.stringify(postData),
       displayStatus,
     );
     setOpen(false);
+    clearModalErrors();
   };
 
+  // ── SUBMIT (UPDATE / EDIT) ───────────────────────────────────────────────────
   const handleUpdateModal = (e) => {
     e.preventDefault();
+
+    if (!validateModalFields()) return; // stop — inline errors shown
 
     if (!componentMounted.current[dictionaryEntry]) {
       dirtyFieldsRef.current.add("dictEntry");
     }
-
     if (!componentMounted.current[isActive]) {
       dirtyFieldsRef.current.add("isActive");
     }
-
     if (!componentMounted.current[localAbbreviation]) {
       dirtyFieldsRef.current.add("localAbbreviation");
     }
@@ -308,6 +338,7 @@ function DictionaryManagement() {
       displayStatus,
     );
     setOpen(false);
+    clearModalErrors();
   };
 
   const renderCell = (cell, row) => {
@@ -376,6 +407,7 @@ function DictionaryManagement() {
         setLocalAbbreviation(selectedItem.localAbbreviation);
         setIsActive(yesOrNo.find((item) => item.id === selectedItem.isActive));
         setLoincCode(selectedItem.loincCode);
+        clearModalErrors();
         setOpen(true);
         setEditMode(false);
       }
@@ -480,7 +512,6 @@ function DictionaryManagement() {
                   style={{ width: isMobile ? "100%" : "auto" }}
                   disabled={!editMode}
                   onClick={() => {
-                    // Reset form state for new entry
                     setDictionaryNumber("");
                     setCategory("");
                     setDictionaryEntry("");
@@ -488,6 +519,7 @@ function DictionaryManagement() {
                     setIsActive(yesOrNo.find((item) => item.id === "Y"));
                     setLoincCode("");
                     dirtyFieldsRef.current = new Set();
+                    clearModalErrors();
                     setEditMode(true);
                     setOpen(true);
                   }}
@@ -496,6 +528,7 @@ function DictionaryManagement() {
                     id: "admin.page.configuration.formEntryConfigMenu.button.add",
                   })}
                 </Button>
+
                 <Button
                   data-cy="modifyButton"
                   style={{ width: isMobile ? "100%" : "auto" }}
@@ -505,10 +538,15 @@ function DictionaryManagement() {
                 >
                   <FormattedMessage id="admin.page.configuration.formEntryConfigMenu.button.modify" />
                 </Button>
+
+                {/* ── MODAL ── */}
                 <Modal
                   open={open}
                   size="sm"
-                  onRequestClose={() => setOpen(false)}
+                  onRequestClose={() => {
+                    setOpen(false);
+                    clearModalErrors();
+                  }}
                   modalHeading={editMode ? "Add Dictionary" : "Edit Dictionary"}
                   primaryButtonText={editMode ? "Add" : "Update"}
                   secondaryButtonText="Cancel"
@@ -516,6 +554,7 @@ function DictionaryManagement() {
                     editMode ? handleSubmitModal : handleUpdateModal
                   }
                 >
+                  {/* Dictionary Number */}
                   <TextInput
                     data-modal-primary-focus
                     id="dictNumber"
@@ -523,10 +562,10 @@ function DictionaryManagement() {
                     disabled
                     value={dictionaryNumber}
                     onChange={(e) => setDictionaryNumber(e.target.value)}
-                    style={{
-                      marginBottom: "1rem",
-                    }}
+                    style={{ marginBottom: "1rem" }}
                   />
+
+                  {/* Dictionary Category */}
                   <Dropdown
                     id="description"
                     label=""
@@ -534,24 +573,22 @@ function DictionaryManagement() {
                     items={categoryDescription}
                     titleText="Dictionary Category"
                     itemToString={(item) => (item ? item.description : "")}
-                    onChange={({ selectedItem }) => {
-                      setCategory(selectedItem);
-                    }}
+                    onChange={({ selectedItem }) => setCategory(selectedItem)}
                     selectedItem={category}
                     size="md"
-                    style={{
-                      marginBottom: "1rem",
-                    }}
+                    style={{ marginBottom: "1rem" }}
                   />
+
+                  {/* Dictionary Entry */}
                   <TextInput
                     id="dictEntry"
                     labelText="Dictionary Entry"
                     value={dictionaryEntry}
                     onChange={(e) => setDictionaryEntry(e.target.value)}
-                    style={{
-                      marginBottom: "1rem",
-                    }}
+                    style={{ marginBottom: "1rem" }}
                   />
+
+                  {/* Is Active */}
                   <Dropdown
                     id="isActive"
                     type="default"
@@ -559,39 +596,50 @@ function DictionaryManagement() {
                     items={yesOrNo}
                     titleText="Is Active"
                     itemToString={(item) => (item ? item.id : "")}
-                    onChange={({ selectedItem }) => {
-                      setIsActive(selectedItem);
-                    }}
+                    onChange={({ selectedItem }) => setIsActive(selectedItem)}
                     selectedItem={isActive}
                     size="md"
-                    style={{
-                      marginBottom: "1rem",
-                    }}
-                  />
-                  <TextInput
-                    id="localAbbrev"
-                    labelText="Local Abbreviation"
-                    value={localAbbreviation}
-                    onChange={(e) => setLocalAbbreviation(e.target.value)}
-                    style={{
-                      marginBottom: "1rem",
-                    }}
+                    style={{ marginBottom: "1rem" }}
                   />
 
+                  {/* Local Abbreviation — REQUIRED with inline error */}
+                  <TextInput
+                    id="localAbbrev"
+                    labelText={
+                      <>
+                        Local Abbreviation{" "}
+                        <span style={{ color: "#da1e28" }}>*</span>
+                      </>
+                    }
+                    value={localAbbreviation}
+                    onChange={(e) => {
+                      setLocalAbbreviation(e.target.value);
+                      if (e.target.value.trim()) setLocalAbbreviationError("");
+                    }}
+                    invalid={!!localAbbreviationError}
+                    invalidText={localAbbreviationError}
+                    style={{ marginBottom: "1rem" }}
+                  />
+
+                  {/* LOINC Code — REQUIRED with inline error */}
                   <TextInput
                     id="loincCode"
-                    labelText="LOINC Code"
+                    labelText={
+                      <>
+                        LOINC Code <span style={{ color: "#da1e28" }}>*</span>
+                      </>
+                    }
                     value={loincCode}
-                    onChange={(e) => setLoincCode(e.target.value)}
-                    // invalid={!/^(?!-)(?:\d+-)*\d*$/.test(loincCode)}
-                    // invalidText={
-                    //   <FormattedMessage id="dictionary.loincCode.invalid" />
-                    // }
-                    style={{
-                      marginBottom: "1rem",
+                    onChange={(e) => {
+                      setLoincCode(e.target.value);
+                      if (e.target.value.trim()) setLoincCodeError("");
                     }}
+                    invalid={!!loincCodeError}
+                    invalidText={loincCodeError}
+                    style={{ marginBottom: "1rem" }}
                   />
                 </Modal>
+
                 <Button
                   data-cy="deactivateButton"
                   style={{ width: isMobile ? "100%" : "auto" }}
@@ -665,6 +713,7 @@ function DictionaryManagement() {
           </Section>
         </Column>
       </Grid>
+
       <div className="orderLegendBody">
         <Grid>
           <Column lg={16} md={8} sm={4}>
@@ -678,7 +727,7 @@ function DictionaryManagement() {
                 })}
                 onChange={handlePanelSearchChange}
                 value={panelSearchTerm || ""}
-              ></Search>
+              />
             </Section>
           </Column>
         </Grid>
@@ -690,13 +739,13 @@ function DictionaryManagement() {
               rows={
                 isSearching
                   ? searchedMenuList.slice(
-                      (page - 1) * pageSize,
-                      page * pageSize,
-                    )
+                    (page - 1) * pageSize,
+                    page * pageSize,
+                  )
                   : dictionaryMenuList.slice(
-                      (page - 1) * pageSize,
-                      page * pageSize,
-                    )
+                    (page - 1) * pageSize,
+                    page * pageSize,
+                  )
               }
               headers={[
                 {
@@ -727,7 +776,6 @@ function DictionaryManagement() {
                     id: "dictionary.category.isActive",
                   }),
                 },
-
                 {
                   key: "loincCode",
                   header: "LOINC",
@@ -735,34 +783,32 @@ function DictionaryManagement() {
               ]}
               isSortable
             >
-              {({ rows, headers, getHeaderProps, getTableProps }) => {
-                return (
-                  <TableContainer title="" description="">
-                    <Table {...getTableProps()}>
-                      <TableHead>
-                        <TableRow>
-                          {headers.map((header) => (
-                            <TableHeader
-                              key={header.key}
-                              {...getHeaderProps({ header })}
-                            >
-                              {header.header}
-                            </TableHeader>
-                          ))}
-                          <TableHeader />
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {rows.map((row) => (
-                          <TableRow key={row.id}>
-                            {row.cells.map((cell) => renderCell(cell, row))}
-                          </TableRow>
+              {({ rows, headers, getHeaderProps, getTableProps }) => (
+                <TableContainer title="" description="">
+                  <Table {...getTableProps()}>
+                    <TableHead>
+                      <TableRow>
+                        {headers.map((header) => (
+                          <TableHeader
+                            key={header.key}
+                            {...getHeaderProps({ header })}
+                          >
+                            {header.header}
+                          </TableHeader>
                         ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                );
-              }}
+                        <TableHeader />
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.cells.map((cell) => renderCell(cell, row))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </DataTable>
             <Pagination
               onChange={handlePageChange}
@@ -780,17 +826,14 @@ function DictionaryManagement() {
               itemRangeText={(min, max, total) =>
                 intl.formatMessage(
                   { id: "pagination.item-range" },
-                  { min: min, max: max, total: total },
+                  { min, max, total },
                 )
               }
               itemsPerPageText={intl.formatMessage({
                 id: "pagination.items-per-page",
               })}
               itemText={(min, max) =>
-                intl.formatMessage(
-                  { id: "pagination.item" },
-                  { min: min, max: max },
-                )
+                intl.formatMessage({ id: "pagination.item" }, { min, max })
               }
               pageNumberText={intl.formatMessage({
                 id: "pagination.page-number",
@@ -798,7 +841,7 @@ function DictionaryManagement() {
               pageRangeText={(_current, total) =>
                 intl.formatMessage(
                   { id: "pagination.page-range" },
-                  { total: total },
+                  { total },
                 )
               }
               pageText={(page, pagesUnknown) =>
