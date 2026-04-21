@@ -50,7 +50,7 @@ import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 
-interface DashBoardProps {}
+interface DashBoardProps { }
 
 interface Tile {
   title: string | JSX.Element;
@@ -202,12 +202,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         id: item.externalOrderNumber,
         received: item.receivedTimestamp
           ? new Date(item.receivedTimestamp).toLocaleString([], {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "—",
         tests: item.testCount != null ? String(item.testCount) : "—",
         source: item.source ?? "—",
@@ -688,7 +688,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       (item) =>
         isToday(item.orderDate) &&
         (tilesWithTabs.includes(selectedTile?.type) &&
-        selectedTestSection !== "all"
+          selectedTestSection !== "all"
           ? item.testSection === selectedTestSection
           : true),
     );
@@ -719,7 +719,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (item) =>
           !isToday(item.orderDate) &&
           (tilesWithTabs.includes(selectedTile?.type) &&
-          selectedTestSection !== "all"
+            selectedTestSection !== "all"
             ? item.testSection === selectedTestSection
             : true),
       ),
@@ -953,18 +953,18 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               renderIcon={Copy}
             />
             {usesInProgressView(selectedTile.type) ||
-            selectedTile.type === "ORDERS_READY_FOR_VALIDATION" ? (
+              selectedTile.type === "ORDERS_READY_FOR_VALIDATION" ? (
               <Link
                 style={{ color: "blue" }}
                 href={
                   usesInProgressView(selectedTile.type)
                     ? getFullPath(
-                        "/result?type=order&doRange=false&accessionNumber=" +
-                          cell.value,
-                      )
+                      "/result?type=order&doRange=false&accessionNumber=" +
+                      cell.value,
+                    )
                     : getFullPath(
-                        "/validation?type=order&accessionNumber=" + cell.value,
-                      )
+                      "/validation?type=order&accessionNumber=" + cell.value,
+                    )
                 }
               >
                 <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
@@ -1019,24 +1019,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         "/LabelMakerServlet?labNo=" +
         accessionNumber +
         "&type=order&quantity=1&override=true";
+      // Inside renderCell, for actions header
       return (
         <TableCell key={cell.id}>
-          <div
-            style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}
-          >
-            <a
-              href={barcodeUrl}
-              title="Print Barcode"
-              target="_blank"
-              rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
-              <img
-                src={barcodeIcon}
-                alt="Print Barcode"
-                style={{ width: "1.1rem", height: "1.1rem" }}
-              />
-            </a>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            {/* 1. Results icon */}
             <a
               href={resultUrl}
               title="Results"
@@ -1048,12 +1035,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 window.open(resultUrl, "_blank");
               }}
             >
-              <img
-                src={resultIcon}
-                alt="Results"
-                style={{ width: "1.1rem", height: "1.1rem" }}
-              />
+              <img src={resultIcon} alt="Results" style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
+
+            {/* 2. Report icon */}
             <a
               href={reportUrl}
               title="Report"
@@ -1061,12 +1046,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
             >
-              <img
-                src={reportIcon}
-                alt="Report"
-                style={{ width: "1.1rem", height: "1.1rem" }}
-              />
+              <img src={reportIcon} alt="Report" style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
+
+            {/* 3. Validate icon */}
             <a
               href={validationUrl}
               title="Validate"
@@ -1078,15 +1061,23 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 window.open(validationUrl, "_blank");
               }}
             >
-              <img
-                src={validateIcon}
-                alt="Validate"
-                style={{ width: "1.1rem", height: "1.1rem" }}
-              />
+              <img src={validateIcon} alt="Validate" style={{ width: "1.1rem", height: "1.1rem" }} />
+            </a>
+
+            {/* 4. Print (barcode) icon - LAST */}
+            <a
+              href={barcodeUrl}
+              title="Print Barcode"
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
+              <img src={barcodeIcon} alt="Print Barcode" style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
           </div>
         </TableCell>
       );
+
     } else if (cell.info.header === "countOfOrdersEntered" && cell.value) {
       return (
         <TableCell key={cell.id}>
@@ -1448,7 +1439,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                               // row.id IS the externalOrderNumber
                                               const collectUrl = getFullPath(
                                                 "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
+                                                encodeURIComponent(row.id),
                                               );
                                               return (
                                                 <TableCell
@@ -1554,7 +1545,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                   : null;
                                 const isBeforeToday = received
                                   ? received <
-                                    new Date(new Date().setHours(0, 0, 0, 0))
+                                  new Date(new Date().setHours(0, 0, 0, 0))
                                   : false;
                                 if (!isBeforeToday) return false;
                                 const q = leftSearch.trim().toLowerCase();
@@ -1619,7 +1610,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             if (h.key === "actions") {
                                               const collectUrl = getFullPath(
                                                 "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
+                                                encodeURIComponent(row.id),
                                               );
                                               return (
                                                 <TableCell
@@ -1685,7 +1676,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                   : null;
                                 return received
                                   ? received <
-                                      new Date(new Date().setHours(0, 0, 0, 0))
+                                  new Date(new Date().setHours(0, 0, 0, 0))
                                   : false;
                               }).length
                             }
@@ -1827,8 +1818,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         placeholder={
                           rightPanelView === "ACTIVE"
                             ? intl.formatMessage({
-                                id: "dashboard.orders.search.placeholder",
-                              })
+                              id: "dashboard.orders.search.placeholder",
+                            })
                             : "Search backlog by lab number, patient…"
                         }
                         value={rightSearch}
@@ -1846,11 +1837,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             )}
                             headers={
                               usesInProgressView(selectedTile.type) ||
-                              selectedTile.type ===
+                                selectedTile.type ===
                                 "ORDERS_READY_FOR_VALIDATION"
                                 ? groupedOrderHeaders
                                 : selectedTile.type !==
-                                    "ORDERS_ENTERED_BY_USER_TODAY"
+                                  "ORDERS_ENTERED_BY_USER_TODAY"
                                   ? orderHeaders
                                   : userHeaders
                             }
@@ -2204,7 +2195,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       selectedTile.type === "ORDERS_ENTERED_BY_USER_TODAY"
                         ? userHeaders
                         : usesInProgressView(selectedTile.type) ||
-                            selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
+                          selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
                           ? groupedOrderHeaders
                           : orderHeaders
                     }
