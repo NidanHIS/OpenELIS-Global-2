@@ -1,18 +1,28 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, { createContext, useState, useEffect, useContext, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import { Content, Theme } from "@carbon/react";
 import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import { getFromOpenElisServer } from "../utils/Utils";
-import { useSideNavPreference } from "./useSideNavPreference";
 import {
   languages as defaultLanguages,
   buildLanguagesFromConfig,
 } from "../../languages";
+import {
+  hasPermission,
+  PERMISSIONS,
+} from "../security/rbacPermissions";
 
 export const ConfigurationContext = createContext(null);
 export const NotificationContext = createContext(null);
+
+// Side‑nav mode constants – must match what Header expects
+const SIDENAV_MODES = {
+  CLOSE: "close",
+  SHOW: "show",
+  LOCK: "lock",
+};
 
 export default function Layout(props) {
   const {
@@ -28,8 +38,12 @@ export default function Layout(props) {
   const [notifications, setNotifications] = useState([]);
   const [supportedLocales, setSupportedLocales] = useState([]);
   const [enabledLanguages, setEnabledLanguages] = useState(defaultLanguages);
+  const isFetchingRef = useRef(false);
 
-  // Determine layout config from props or route-based fallbacks
+  // Side‑nav mode state (real, not dummy)
+  const [mode, setMode] = useState(SIDENAV_MODES.CLOSE);
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const isStorageContext =
     location.pathname.startsWith("/Storage") ||
     location.pathname.startsWith("/FreezerMonitoring");
@@ -46,23 +60,12 @@ export default function Layout(props) {
         : isAnalyzerContext
           ? "analyzer"
           : "main",
-    // Storage and analyzer workflows benefit from locked (persistent) sidenav
-    // All other routes default to collapsed (rail) mode
     defaultMode: pageDefaultMode
       ? pageDefaultMode
       : isStorageContext || isAnalyzerContext
-        ? "lock"
-        : "close",
+        ? SIDENAV_MODES.LOCK
+        : SIDENAV_MODES.CLOSE,
   };
-
-  // Lock mode support - push content when sidenav is locked
-  const { mode, isExpanded, toggle, setMode, SIDENAV_MODES } =
-    useSideNavPreference(layoutConfig);
-  // Only push content when sidenav is actually present (authenticated UX).
-  // Otherwise, a persisted LOCK mode would incorrectly shift unauthenticated pages
-  // like /login to the right (no sidenav toggle available there).
-  const isLocked =
-    userSessionDetails.authenticated && mode === SIDENAV_MODES.LOCK;
 
   const addNotification = (notificationBody) => {
     setNotifications([...notifications, notificationBody]);
@@ -78,22 +81,36 @@ export default function Layout(props) {
     setConfigurationProperties(res);
   };
 
-  useEffect(() => {
-    if (userSessionDetails.authenticated) {
-      getFromOpenElisServer(
-        "/rest/configuration-properties",
-        fetchConfigurationProperties,
-      );
-    } else {
-      getFromOpenElisServer(
-        "/rest/open-configuration-properties",
-        fetchConfigurationProperties,
-      );
-    }
-    setResetConfig(false);
-  }, [userSessionDetails.authenticated, resetConfig]);
+  const fetchConfig = () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
 
-  // Fetch supported locales from backend
+    const endpoint = userSessionDetails?.authenticated
+      ? "/rest/configuration-properties"
+      : "/rest/open-configuration-properties";
+
+    getFromOpenElisServer(endpoint, (res) => {
+      fetchConfigurationProperties(res);
+      isFetchingRef.current = false;
+    });
+  };
+
+  // Fetch when authentication changes
+  useEffect(() => {
+    if (userSessionDetails) {
+      fetchConfig();
+    }
+  }, [userSessionDetails?.authenticated]);
+
+  // Handle manual reload
+  useEffect(() => {
+    if (resetConfig) {
+      fetchConfig();
+      setResetConfig(false);
+    }
+  }, [resetConfig]);
+
+  // Fetch supported locales
   useEffect(() => {
     getFromOpenElisServer("/rest/supportedlocales/active", (response) => {
       if (response && Array.isArray(response)) {
@@ -104,13 +121,24 @@ export default function Layout(props) {
     });
   }, []);
 
+  const isSystemAdmin = userSessionDetails && hasPermission(userSessionDetails, PERMISSIONS.SYSTEM_ADMIN);
+
+  // Simple toggle: cycle CLOSE → SHOW → LOCK → CLOSE (or custom logic)
+  const toggleSideNav = () => {
+    if (mode === SIDENAV_MODES.CLOSE) {
+      setMode(SIDENAV_MODES.SHOW);
+    } else if (mode === SIDENAV_MODES.SHOW) {
+      setMode(SIDENAV_MODES.LOCK);
+    } else {
+      setMode(SIDENAV_MODES.CLOSE);
+    }
+  };
+
   return (
     <ConfigurationContext.Provider
       value={{
         configurationProperties: configurationProperties,
-        reloadConfiguration: () => {
-          setResetConfig(true);
-        },
+        reloadConfiguration: () => setResetConfig(true),
         supportedLocales: supportedLocales,
         enabledLanguages: enabledLanguages,
       }}
@@ -129,22 +157,31 @@ export default function Layout(props) {
             onChangeLanguage={props.onChangeLanguage}
             mode={mode}
             isExpanded={isExpanded}
-            toggleSideNav={toggle}
+            toggleSideNav={toggleSideNav}
             setMode={setMode}
             SIDENAV_MODES={SIDENAV_MODES}
             defaultMode={layoutConfig.defaultMode}
             storageKeyPrefix={layoutConfig.storageKeyPrefix}
+            showSideNavToggle={isSystemAdmin}
           />
-          {/* Theme wrapper creates white theme zone for content area */}
-          {/* Global SCSS theme = blue header/nav, this = light content */}
-          <Theme theme="white">
-            <Content
-              data-testid="content-wrapper"
-              className={isLocked ? "content-nav-locked" : ""}
-            >
-              {children}
-            </Content>
-          </Theme>
+
+          <div className="d-flex flex-grow-1">
+            <Theme theme="white">
+              <Content
+                data-testid="content-wrapper"
+                style={{
+                  flex: 1,
+                  width: '100%',
+                  maxWidth: '100%',
+                  marginLeft: 0,
+                  padding: '1rem'
+                }}
+              >
+                {children}
+              </Content>
+            </Theme>
+          </div>
+
           <Footer />
         </div>
       </NotificationContext.Provider>

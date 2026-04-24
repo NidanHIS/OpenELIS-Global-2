@@ -30,7 +30,6 @@ import {
 } from "../../layout/Layout.js";
 import {
   getFromOpenElisServer,
-  postToOpenElisServer,
   postToOpenElisServerJsonResponse,
 } from "../../utils/Utils.js";
 import CustomDatePicker from "../../common/CustomDatePicker.js";
@@ -46,7 +45,8 @@ const breadcrumbs = [
   },
 ];
 
-const passwordPatternRegex = /^(?=.*[*$#!])(?=.*[a-zA-Z0-9]).{7,}$/;
+// Strict password regex: only letters, numbers, * $ # !, at least 7 chars, at least one special from *$#!
+const passwordPatternRegex = /^(?=.*[*$#!])(?=.*[a-zA-Z0-9])[a-zA-Z0-9*$#!]{7,}$/;
 const loginNameRegex = /^[a-zA-Z]+$/;
 const nameRegex = /^(?=.*[a-zA-Z])[a-zA-Z .'_@-]*$/;
 
@@ -86,6 +86,9 @@ function UserAddModify() {
     userPassword: false,
     confirmPassword: false,
   });
+  // Inline error message states
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
+  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = useState('');
 
   const location = useLocation();
   const ID = (() => {
@@ -419,21 +422,23 @@ function UserAddModify() {
     const value = e.target.value.trim();
     const isValid = passwordPatternRegex.test(value);
 
+    let errorMsg = '';
     if (value && !isValid) {
-      if (!notificationVisible) {
-        setNotificationVisible(true);
-        addNotification({
-          title: intl.formatMessage({ id: "notification.title" }),
-          message: intl.formatMessage({
-            id: "notification.invalid.password",
-          }),
-          kind: NotificationKinds.info,
-        });
+      if (value.length < 7) {
+        errorMsg = intl.formatMessage({ id: "password.error.minLength" });
+      } else if (!/[*$#!]/.test(value)) {
+        errorMsg = intl.formatMessage({ id: "password.error.specialChar" });
+      } else if (!/[a-zA-Z0-9]/.test(value)) {
+        errorMsg = intl.formatMessage({ id: "password.error.alphanumeric" });
+      } else if (!/^[a-zA-Z0-9*$#!]+$/.test(value)) {
+        errorMsg = intl.formatMessage({ id: "password.error.invalidChar" });
+      } else {
+        errorMsg = intl.formatMessage({ id: "password.error.invalid" });
       }
       setSaveButton(true);
       setValidation({ ...validation, password: false });
     } else {
-      setNotificationVisible(false);
+      errorMsg = '';
       setSaveButton(false);
       setValidation({ ...validation, password: true });
       setUserDataPost((prevUserDataPost) => ({
@@ -441,7 +446,7 @@ function UserAddModify() {
         userPassword: value,
       }));
     }
-
+    setPasswordErrorMessage(errorMsg);
     setUserDataShow((prevUserData) => ({
       ...prevUserData,
       userPassword: value,
@@ -454,23 +459,29 @@ function UserAddModify() {
       confirmPassword: true,
     }));
     const value = e.target.value.trim();
-    const isValid = passwordPatternRegex.test(value);
+    const userPassword = userDataShow?.userPassword || '';
 
-    if (value && !isValid) {
-      if (!notificationVisible) {
-        setNotificationVisible(true);
-        addNotification({
-          title: intl.formatMessage({ id: "notification.title" }),
-          message: intl.formatMessage({
-            id: "notification.invalid.confirm.password",
-          }),
-          kind: NotificationKinds.info,
-        });
+    let errorMsg = '';
+    if (value && value !== userPassword) {
+      errorMsg = intl.formatMessage({ id: "password.error.mismatch" });
+      setSaveButton(true);
+      setValidation({ ...validation, password2: false });
+    } else if (value && !passwordPatternRegex.test(value)) {
+      if (value.length < 7) {
+        errorMsg = intl.formatMessage({ id: "password.error.minLength" });
+      } else if (!/[*$#!]/.test(value)) {
+        errorMsg = intl.formatMessage({ id: "password.error.specialChar" });
+      } else if (!/[a-zA-Z0-9]/.test(value)) {
+        errorMsg = intl.formatMessage({ id: "password.error.alphanumeric" });
+      } else if (!/^[a-zA-Z0-9*$#!]+$/.test(value)) {
+        errorMsg = intl.formatMessage({ id: "password.error.invalidChar" });
+      } else {
+        errorMsg = intl.formatMessage({ id: "password.error.invalid" });
       }
       setSaveButton(true);
       setValidation({ ...validation, password2: false });
     } else {
-      setNotificationVisible(false);
+      errorMsg = '';
       setSaveButton(false);
       setValidation({ ...validation, password2: true });
       setUserDataPost((prevUserDataPost) => ({
@@ -478,7 +489,7 @@ function UserAddModify() {
         confirmPassword: value,
       }));
     }
-
+    setConfirmPasswordErrorMessage(errorMsg);
     setUserDataShow((prevUserData) => ({
       ...prevUserData,
       confirmPassword: value,
@@ -796,11 +807,7 @@ function UserAddModify() {
         <div className="orderLegendBody">
           <Grid fullWidth={true}>
             <Column lg={16} md={8} sm={4}>
-              <Form
-              // onSubmit={handleSubmit}
-              // onChange={setSaveButton(false)}
-              // onBlur={handleBlur}
-              >
+              <Form>
                 <Grid fullWidth={true}>
                   <Column lg={8} md={4} sm={4}>
                     <>
@@ -822,7 +829,6 @@ function UserAddModify() {
                         userDataShow.userLoginName &&
                         !loginNameRegex.test(userDataShow.userLoginName)
                       }
-                      // invalidText={errors.order}
                       required={true}
                       value={
                         userDataShow && userDataShow.userLoginName
@@ -877,13 +883,8 @@ function UserAddModify() {
                         id: "login.login.password",
                       })}
                       required={true}
-                      invalid={
-                        passwordTouched.userPassword &&
-                        userDataShow &&
-                        userDataShow.userPassword &&
-                        !passwordPatternRegex.test(userDataShow.userPassword)
-                      }
-                      // invalidText={errors.order}
+                      invalid={passwordTouched.userPassword && passwordErrorMessage !== ''}
+                      invalidText={passwordErrorMessage}
                       value={
                         userDataShow && userDataShow.userPassword
                           ? userDataShow.userPassword
@@ -911,19 +912,8 @@ function UserAddModify() {
                         id: "login.login.repeat.password",
                       })}
                       required={true}
-                      invalid={
-                        (passwordTouched.confirmPassword &&
-                          userDataShow &&
-                          userDataShow.userPassword &&
-                          userDataShow.confirmPassword &&
-                          !passwordPatternRegex.test(
-                            userDataShow.confirmPassword,
-                          )) ||
-                        (passwordTouched.confirmPassword &&
-                          userDataShow.confirmPassword !==
-                            userDataShow.userPassword)
-                      }
-                      // invalidText={errors.order}
+                      invalid={passwordTouched.confirmPassword && confirmPasswordErrorMessage !== ''}
+                      invalidText={confirmPasswordErrorMessage}
                       value={
                         userDataShow && userDataShow.confirmPassword
                           ? userDataShow.confirmPassword
@@ -957,7 +947,6 @@ function UserAddModify() {
                         userDataShow.userFirstName &&
                         !nameRegex.test(userDataShow.userFirstName)
                       }
-                      // invalidText={errors.order}
                       value={
                         userDataShow && userDataShow.userFirstName
                           ? userDataShow.userFirstName
@@ -990,7 +979,6 @@ function UserAddModify() {
                         userDataShow.userLastName &&
                         !nameRegex.test(userDataShow.userLastName)
                       }
-                      // invalidText={errors.order}
                       value={
                         userDataShow && userDataShow.userLastName
                           ? userDataShow.userLastName
@@ -1044,8 +1032,6 @@ function UserAddModify() {
                       required={true}
                       labelText=""
                       min={0}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
                       value={
                         userDataShow && userDataShow.timeout
                           ? userDataShow.timeout
@@ -1232,8 +1218,8 @@ function UserAddModify() {
                     <br />
                     <FormGroup legendId="globalRules" legendText="">
                       {userDataShow &&
-                      userDataShow.globalRoles &&
-                      userDataShow.globalRoles.length > 0 ? (
+                        userDataShow.globalRoles &&
+                        userDataShow.globalRoles.length > 0 ? (
                         userDataShow.globalRoles.map((section) => (
                           <Checkbox
                             key={section.elementID}
@@ -1278,11 +1264,11 @@ function UserAddModify() {
                           noLabel={true}
                           defaultValue={
                             userDataShow &&
-                            userDataShow.testSections &&
-                            userDataShow.testSections.length > 0
+                              userDataShow.testSections &&
+                              userDataShow.testSections.length > 0
                               ? userDataShow.testSections.find(
-                                  (section) => section.id === key,
-                                )?.id || userDataShow.testSections[0].id
+                                (section) => section.id === key,
+                              )?.id || userDataShow.testSections[0].id
                               : ""
                           }
                           onChange={(e) =>
@@ -1290,8 +1276,8 @@ function UserAddModify() {
                           }
                         >
                           {userDataShow &&
-                          userDataShow.testSections &&
-                          userDataShow.testSections.length > 0 ? (
+                            userDataShow.testSections &&
+                            userDataShow.testSections.length > 0 ? (
                             userDataShow.testSections
                               .filter(
                                 (section) =>
@@ -1358,8 +1344,8 @@ function UserAddModify() {
                           legendText=""
                         >
                           {userDataShow &&
-                          userDataShow.labUnitRoles &&
-                          userDataShow.labUnitRoles.length > 0 ? (
+                            userDataShow.labUnitRoles &&
+                            userDataShow.labUnitRoles.length > 0 ? (
                             userDataShow.labUnitRoles.map((section) => (
                               <Checkbox
                                 key={`${section.elementID}-${key}`}

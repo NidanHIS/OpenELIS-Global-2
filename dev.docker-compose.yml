@@ -113,10 +113,10 @@ services:
     #          - source: hapi_application.yaml 
 
     frontend.openelis.org:
-        build:
-            context: ./frontend
-            dockerfile: Dockerfile
-        image: itechuw/openelis-global-2-frontend-dev:develop
+        # build:
+        #     context: ./frontend
+        #     dockerfile: Dockerfile
+        image: abi-latest:frontman
         container_name: openelisglobal-front-end
         # platform: linux/amd64
         networks:
@@ -135,11 +135,11 @@ services:
         tty: true
 
     proxy:
-        image: nginx:alpine
-        build:
-            context: ./nginx-proxy
-            dockerfile: Dockerfile
-        container_name: openelisglobal-proxy
+        image: abi-latest:gigachad
+        # build:
+        #     context: ./nginx-proxy
+        #     dockerfile: Dockerfile
+        # container_name: openelisglobal-proxy
         # platform: linux/amd64
         ports:
             - 80:80 # avoid conflict with Nidan gateway (80)

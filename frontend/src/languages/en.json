@@ -4125,5 +4125,11 @@
   "workplan.title": "Workplan",
   "workplan.unit.title": "Workplan By Unit",
   "workplan.unit.types": "Unit Type",
-  "yes.option": "Yes"
+  "yes.option": "Yes",
+  "password.error.minLength": "Password must be at least 7 characters.",
+  "password.error.specialChar": "Password must contain at least one of: *, $, #, !",
+  "password.error.alphanumeric": "Password must contain letters or numbers.",
+  "password.error.invalidChar": "Password may only contain letters, numbers, and * $ # !",
+  "password.error.mismatch": "Passwords do not match.",
+  "password.error.invalid": "Password does not meet requirements."
 }

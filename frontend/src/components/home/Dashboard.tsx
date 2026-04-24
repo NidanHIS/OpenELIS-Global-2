@@ -191,34 +191,63 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
   }, [counts.ordersInProgress]);
 
+  // Force refresh when local date crosses midnight
   useEffect(() => {
-    getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
-    getFromOpenElisServer("/rest/incoming-orders", (res) => {
-      if (!componentMounted.current) return;
-      const raw = Array.isArray(res) ? res : [];
-      // Normalize field names to match table header keys + set row id
-      const list = raw.map((item) => ({
-        ...item,
-        id: item.externalOrderNumber,
-        received: item.receivedTimestamp
-          ? new Date(item.receivedTimestamp).toLocaleString([], {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          : "—",
-        tests: item.testCount != null ? String(item.testCount) : "—",
-        source: item.source ?? "—",
-      }));
-      setIncomingOrdersData(list);
-      setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
-    });
-    return () => {
-      componentMounted.current = false;
+    let timeoutId: NodeJS.Timeout;
+    const checkMidnight = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setDate(now.getDate() + 1);
+      nextMidnight.setHours(0, 0, 0, 0);
+      const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+      timeoutId = setTimeout(() => {
+        // Date changed – reload all data
+        getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
+        getFromOpenElisServer("/rest/incoming-orders", (res) => {
+          if (!componentMounted.current) return;
+          const raw = Array.isArray(res) ? res : [];
+          const list = raw.map((item) => ({
+            ...item,
+            id: item.externalOrderNumber,
+            received: item.receivedTimestamp
+              ? new Date(item.receivedTimestamp).toLocaleString([], {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+              : "—",
+            tests: item.testCount != null ? String(item.testCount) : "—",
+            source: item.source ?? "—",
+          }));
+          setIncomingOrdersData(list);
+          setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
+        });
+        // Also refresh the currently selected tile data if any
+        if (selectedTile) {
+          const seq = ++tileLoadSequence.current;
+          if (selectedTile.type === "AVERAGE_TURN_AROUND_TIME") {
+            getFromOpenElisServer(getTileEndpoint(selectedTile), (d) =>
+              loadTimeMetrics(d, seq)
+            );
+          } else if (isSplitLayout(selectedTile.type)) {
+            loadOngoingOrdersData(seq);
+          } else {
+            getFromOpenElisServer(getTileEndpoint(selectedTile), (res) =>
+              loadData(res, false, seq)
+            );
+          }
+        }
+        // Re-run the check for next midnight
+        checkMidnight();
+      }, msUntilMidnight);
     };
-  }, []);
+
+    checkMidnight();
+    return () => clearTimeout(timeoutId);
+  }, [selectedTile]); // re-run if selectedTile changes so that fresh data loads
 
   useEffect(() => {
     if (selectedTile == null) return;
@@ -1056,15 +1085,26 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             </a>
 
             {/* 3. Validate icon */}
+            {/* Validate icon - now shows permission denied for non‑admins */}
             <a
-              href={validationUrl}
+              href="#"
               title="Validate"
-              target="_blank"
-              rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                window.open(validationUrl, "_blank");
+                // Check if user is allowed to validate (example: only Global Administrators)
+                if (!hasRole(userSessionDetails, "Global Administrator")) {
+                  // Show "Validation – Permission Denied" notification
+                  addNotification({
+                    kind: NotificationKinds.error,
+                    title: "Validation",
+                    message: "Permission denied – You are not authorized to validate orders.",
+                  });
+                  setNotificationVisible(true);
+                } else {
+                  // If admin, open validation page as before
+                  window.open(validationUrl, "_blank");
+                }
               }}
             >
               <img src={validateIcon} alt="Validate" style={{ width: "1.1rem", height: "1.1rem" }} />
