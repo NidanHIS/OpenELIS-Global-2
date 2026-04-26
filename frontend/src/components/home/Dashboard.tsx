@@ -1,3 +1,4 @@
+// HomeDashBoard.tsx
 import React from "react";
 import {
   Tile,
@@ -20,7 +21,6 @@ import {
   Tab,
   Tabs,
   TabList,
-  Tag,
 } from "@carbon/react";
 import "./Dashboard.css";
 import { Minimize, Maximize, ArrowLeft, ArrowRight } from "@carbon/react/icons";
@@ -50,7 +50,7 @@ import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 
-interface DashBoardProps { }
+type DashBoardProps = Record<string, never>;
 
 interface Tile {
   title: string | JSX.Element;
@@ -149,7 +149,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const isSplitLayout = (type?: MetricType | null) =>
     type === "ON_GOING_ORDERS" || type === "ORDERS_IN_PROGRESS";
 
-  // ── DATA FETCHING ────────────────────────────────────────────────────────────
   const usesInProgressView = (type?: MetricType | null) =>
     type === "ORDERS_IN_PROGRESS" || type === "ON_GOING_ORDERS";
 
@@ -171,13 +170,102 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     return `${endpoint}${sep}page=${targetPage}`;
   };
 
+  const isSameLocalDay = useCallback((left: Date, right = new Date()) => {
+    return (
+      left.getFullYear() === right.getFullYear() &&
+      left.getMonth() === right.getMonth() &&
+      left.getDate() === right.getDate()
+    );
+  }, []);
+
+  const parseDisplayDate = useCallback(
+    (value?: unknown) => {
+      if (value == null || value === "") return null;
+
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+
+      if (typeof value === "number") {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      const raw = String(value).trim();
+      if (!raw) return null;
+
+      if (/^\d+$/.test(raw)) {
+        const parsed = new Date(Number(raw));
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      const direct = new Date(raw);
+      if (!Number.isNaN(direct.getTime())) return direct;
+
+      const dateToken = raw.split(/\s+/)[0];
+      const slashMatch = dateToken.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (!slashMatch) return null;
+
+      const first = Number(slashMatch[1]);
+      const second = Number(slashMatch[2]);
+      const yearValue = Number(slashMatch[3]);
+      const year = slashMatch[3].length === 2 ? 2000 + yearValue : yearValue;
+      const preferMonthFirst = /(^|[-_])(en-US|en_US)([-_]|$)/i.test(
+        String(intl.locale ?? ""),
+      );
+
+      const buildCandidate = (month: number, day: number) => {
+        const candidate = new Date(year, month - 1, day);
+        return candidate.getFullYear() === year &&
+          candidate.getMonth() === month - 1 &&
+          candidate.getDate() === day
+          ? candidate
+          : null;
+      };
+
+      const monthFirst = buildCandidate(first, second);
+      const dayFirst = buildCandidate(second, first);
+
+      if (monthFirst && !dayFirst) return monthFirst;
+      if (dayFirst && !monthFirst) return dayFirst;
+      if (monthFirst && dayFirst) {
+        return preferMonthFirst ? monthFirst : dayFirst;
+      }
+
+      return null;
+    },
+    [intl.locale],
+  );
+
+  const parseIncomingOrderTimestamp = useCallback(
+    (timestamp?: any) => {
+      return parseDisplayDate(timestamp);
+    },
+    [parseDisplayDate],
+  );
+
+  const formatIncomingOrderTimestamp = useCallback(
+    (timestamp?: any) => {
+      const parsed = parseIncomingOrderTimestamp(timestamp);
+      if (!parsed) return "-";
+
+      return parsed.toLocaleString([], {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+    [parseIncomingOrderTimestamp],
+  );
+
   useEffect(() => {
     setNextPage(null);
     setPreviousPage(null);
     setPagination(false);
   }, []);
 
-  // Auto-land on "On Going Orders" as the default view
   useEffect(() => {
     if (selectedTile == null) {
       setSelectedTile({
@@ -191,7 +279,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
   }, [counts.ordersInProgress]);
 
-  // Force refresh when local date crosses midnight
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     const checkMidnight = () => {
@@ -202,7 +289,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       const msUntilMidnight = nextMidnight.getTime() - now.getTime();
 
       timeoutId = setTimeout(() => {
-        // Date changed – reload all data
+        if (!componentMounted.current) return;
         getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
         getFromOpenElisServer("/rest/incoming-orders", (res) => {
           if (!componentMounted.current) return;
@@ -210,44 +297,34 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           const list = raw.map((item) => ({
             ...item,
             id: item.externalOrderNumber,
-            received: item.receivedTimestamp
-              ? new Date(item.receivedTimestamp).toLocaleString([], {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-              : "—",
-            tests: item.testCount != null ? String(item.testCount) : "—",
-            source: item.source ?? "—",
+            received: formatIncomingOrderTimestamp(item.receivedTimestamp),
+            tests: item.testCount != null ? String(item.testCount) : "-",
+            source: item.source ?? "-",
           }));
           setIncomingOrdersData(list);
           setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
         });
-        // Also refresh the currently selected tile data if any
         if (selectedTile) {
           const seq = ++tileLoadSequence.current;
           if (selectedTile.type === "AVERAGE_TURN_AROUND_TIME") {
             getFromOpenElisServer(getTileEndpoint(selectedTile), (d) =>
-              loadTimeMetrics(d, seq)
+              loadTimeMetrics(d, seq),
             );
           } else if (isSplitLayout(selectedTile.type)) {
             loadOngoingOrdersData(seq);
           } else {
             getFromOpenElisServer(getTileEndpoint(selectedTile), (res) =>
-              loadData(res, false, seq)
+              loadData(res, false, seq),
             );
           }
         }
-        // Re-run the check for next midnight
         checkMidnight();
       }, msUntilMidnight);
     };
 
     checkMidnight();
     return () => clearTimeout(timeoutId);
-  }, [selectedTile]); // re-run if selectedTile changes so that fresh data loads
+  }, [formatIncomingOrderTimestamp, selectedTile]);
 
   useEffect(() => {
     if (selectedTile == null) return;
@@ -292,6 +369,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   useEffect(() => {
     setRightPage(1);
   }, [rightSearch, rightPanelView]);
+
   useEffect(() => {
     setLeftPage(1);
   }, [leftSearch, leftPanelView]);
@@ -332,13 +410,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       setLoading(false);
     }
   };
-
-  const hasPendingValidationField = (items = []) =>
-    items.some((i) =>
-      Object.prototype.hasOwnProperty.call(i ?? {}, "pendingValidationCount"),
-    );
-
-  const getGroupedItemKey = (item) => String(item?.labNumber ?? item?.id ?? "");
 
   const formatPatientName = (last?: string, first?: string) =>
     [last, first]
@@ -431,16 +502,13 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     );
   };
 
-  const normalizeGroupedDisplayItems = (items = [], tileType?: MetricType) =>
+  const normalizeGroupedDisplayItems = (items = []) =>
     items.map((item) => {
       const prc = Number(item.pendingResultCount);
       const pvc = Number(item.pendingValidationCount);
       const tc = Number(item.testCount);
       const pendingResultCount = Number.isFinite(prc) ? prc : 0;
       const pendingValidationCount = Number.isFinite(pvc) ? pvc : 0;
-      // Always trust the backend's testCount — it is the real total of ALL
-      // analyses for the sample regardless of status. Only fall back to
-      // prc+pvc if the backend didn't send a valid count.
       const testCount =
         Number.isFinite(tc) && tc > 0
           ? tc
@@ -452,52 +520,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         testCount,
       };
     });
-
-  const mergeGroupedDisplayItems = (pending = [], validation = []) => {
-    const merged = new Map();
-    normalizeGroupedDisplayItems(pending, "ORDERS_IN_PROGRESS").forEach(
-      (item) => {
-        const key = getGroupedItemKey(item);
-        if (!key) return;
-        merged.set(key, {
-          ...item,
-          id: item.id || key,
-          pendingResultCount: Number(item.pendingResultCount) || 0,
-          pendingValidationCount: Number(item.pendingValidationCount) || 0,
-          testCount: Number(item.testCount) || 0,
-        });
-      },
-    );
-    normalizeGroupedDisplayItems(
-      validation,
-      "ORDERS_READY_FOR_VALIDATION",
-    ).forEach((item) => {
-      const key = getGroupedItemKey(item);
-      if (!key) return;
-      const ex = merged.get(key);
-      const prc = Number(ex?.pendingResultCount) || 0;
-      const pvc =
-        (Number(ex?.pendingValidationCount) || 0) +
-        (Number(item.pendingValidationCount) || 0);
-      // Use the backend testCount from whichever side has it; fall back to prc+pvc.
-      const tc = Number(ex?.testCount) || Number(item.testCount) || prc + pvc;
-      merged.set(key, {
-        ...ex,
-        ...item,
-        id: ex?.id || item.id || key,
-        labNumber: ex?.labNumber || item.labNumber,
-        orderDate: ex?.orderDate || item.orderDate,
-        patientId: ex?.patientId || item.patientId,
-        patientName: ex?.patientName || item.patientName,
-        priority: ex?.priority || item.priority,
-        testSection: ex?.testSection || item.testSection,
-        pendingResultCount: prc,
-        pendingValidationCount: pvc,
-        testCount: tc,
-      });
-    });
-    return Array.from(merged.values());
-  };
 
   const fetchAllGroupedPages = async (endpoint: string) => {
     const first = await getFromOpenElisServerV2(endpoint);
@@ -517,8 +539,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const loadOngoingOrdersData = async (seq: number) => {
     try {
-      // ORDERS-All-Grouped returns NotStarted + TechnicalAcceptance + Finalized
-      // so completed records persist in the dashboard after validation.
       const orders = await fetchAllGroupedPages(
         "/rest/home-dashboard/ORDERS-All-Grouped",
       );
@@ -535,7 +555,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   ) => {
     if (seq !== tileLoadSequence.current) return;
     const normalised = Array.isArray(res?.displayItems)
-      ? normalizeGroupedDisplayItems(res.displayItems, selectedTile?.type)
+      ? normalizeGroupedDisplayItems(res.displayItems)
       : [];
     if (normalised.length > 0) {
       setData(normalised);
@@ -574,7 +594,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     setLoading(false);
   };
 
-  // ── TILE LIST ────────────────────────────────────────────────────────────────
   const tileList: Array<Tile> = [
     {
       title: <FormattedMessage id="dashboard.in.progress.label" />,
@@ -637,7 +656,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const tilesWithTabs = ["ORDERS_COMPLETED_TODAY", "ORDERS_FOR_USER"];
 
-  // ── HANDLERS ─────────────────────────────────────────────────────────────────
   const handleMinimizeClick = () => {
     setSelectedTile(null);
     hasRole(userSessionDetails, "Global Administrator")
@@ -692,29 +710,24 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     });
   };
 
-  // ── MEMOISED DATA ─────────────────────────────────────────────────────────────
+  const isToday = useCallback(
+    (orderDate?: string) => {
+      if (!orderDate) return true;
+      const parsed = parseDisplayDate(orderDate);
+      if (!parsed) return true;
+      return isSameLocalDay(parsed);
+    },
+    [isSameLocalDay, parseDisplayDate],
+  );
 
-  // Today = orderDate matches today's calendar date.
-  // Backlog = orderDate is before today (any prior calendar day).
-  // Derived purely from server data — no localStorage, no timers.
-  const todayDateStr = useMemo(() => {
-    const d = new Date();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${mm}/${dd}/${d.getFullYear()}`;
-  }, []);
-
-  const isToday = useCallback((orderDate?: string) => {
-    if (!orderDate) return true;           // no date → show in Today (safe default)
-    const today = new Date();
-    const parsed = new Date(orderDate);
-    if (isNaN(parsed.getTime())) return true; // unparseable → show in Today
-    return (
-      parsed.getFullYear() === today.getFullYear() &&
-      parsed.getMonth() === today.getMonth() &&
-      parsed.getDate() === today.getDate()
-    );
-  }, []);
+  const isReceivedToday = useCallback(
+    (receivedTimestamp?: string) => {
+      const received = parseIncomingOrderTimestamp(receivedTimestamp);
+      if (!received) return false;
+      return isSameLocalDay(received);
+    },
+    [isSameLocalDay, parseIncomingOrderTimestamp],
+  );
 
   const sectionFilteredData = useMemo(() => {
     return data.filter(
@@ -778,8 +791,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const filteredLeftData = useMemo(() => {
     const q = leftSearch.trim().toLowerCase();
-    if (!q) return incomingOrdersData;
-    return incomingOrdersData.filter(
+    let filtered = incomingOrdersData;
+    if (leftPanelView === "ACTIVE") {
+      filtered = incomingOrdersData.filter((item) =>
+        isReceivedToday(item.receivedTimestamp),
+      );
+    }
+    if (!q) return filtered;
+    return filtered.filter(
       (item) =>
         String(item.patientName ?? "")
           .toLowerCase()
@@ -791,9 +810,28 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           .toLowerCase()
           .includes(q),
     );
-  }, [incomingOrdersData, leftSearch]);
+  }, [incomingOrdersData, leftSearch, leftPanelView, isReceivedToday]);
 
-  // Workflow summary counters
+  const leftBacklogData = useMemo(() => {
+    const q = leftSearch.trim().toLowerCase();
+    const filtered = incomingOrdersData.filter(
+      (item) => !isReceivedToday(item.receivedTimestamp),
+    );
+    if (!q) return filtered;
+    return filtered.filter(
+      (item) =>
+        String(item.patientName ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(item.source ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(item.labNumber ?? "")
+          .toLowerCase()
+          .includes(q),
+    );
+  }, [incomingOrdersData, leftSearch, isReceivedToday]);
+
   const workflowOrderCount = useMemo(
     () =>
       new Set(
@@ -803,6 +841,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       ).size,
     [sectionFilteredData],
   );
+
   const workflowPatientCount = useMemo(
     () =>
       new Set(
@@ -812,6 +851,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       ).size,
     [sectionFilteredData],
   );
+
   const workflowPendingResultCount = useMemo(
     () =>
       sectionFilteredData.reduce(
@@ -820,6 +860,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       ),
     [sectionFilteredData],
   );
+
   const workflowPendingValidationCount = useMemo(
     () =>
       sectionFilteredData.reduce(
@@ -828,44 +869,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       ),
     [sectionFilteredData],
   );
+
   const workflowTestCount = useMemo(
     () =>
       sectionFilteredData.reduce((t, i) => {
         const tc = Number(i.testCount);
         const prc = Number(i.pendingResultCount) || 0;
         const pvc = Number(i.pendingValidationCount) || 0;
-        // Use testCount if it's a real positive number (covers both active and
-        // completed orders now that the backend sets it correctly).
-        // Fall back to prc+pvc for legacy data that may lack testCount.
-        // No || 1 fallback — a 0 count is valid and should show as 0.
         return t + (Number.isFinite(tc) && tc > 0 ? tc : prc + pvc);
       }, 0),
     [sectionFilteredData],
   );
-
-  const leftBacklogOrderCount = useMemo(
-    () => backlogTableData.length,
-    [backlogTableData],
-  );
-  const leftBacklogPatientCount = useMemo(
-    () =>
-      new Set(backlogTableData.map((item) => item.patientId).filter(Boolean))
-        .size,
-    [backlogTableData],
-  );
-  const leftBacklogSummaryCards = [
-    { label: "Backlog Orders", value: leftBacklogOrderCount, color: "#5f7fa3" },
-    {
-      label: "Patients in Backlog",
-      value: leftBacklogPatientCount,
-      color: "#6c8b74",
-    },
-    {
-      label: "Total Backlog Items",
-      value: leftBacklogOrderCount,
-      color: "#7f7b96",
-    },
-  ];
 
   const summaryCards = [
     {
@@ -902,7 +916,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     },
   ];
 
-  // ── TABLE HEADERS ─────────────────────────────────────────────────────────────
   const groupedOrderHeaders = [
     { key: "priority", header: "Priority" },
     {
@@ -958,12 +971,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     { key: "countOfOrdersEntered", header: "Orders Entered" },
   ];
 
-  // ── CELL RENDERER ─────────────────────────────────────────────────────────────
   const renderCell = (cell, row) => {
     const rowPatientName =
       data.find((item) => String(item.id) === String(row.id))?.patientName ||
       "";
-    const isInBacklog = false; // backlog is now date-derived, not id-tracked
     const isCompleted =
       data.find((item) => String(item.id) === String(row.id))?.completed ===
       true;
@@ -1004,11 +1015,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               </Link>
             ) : (
               <>{convertAlphaNumLabNumForDisplay(cell.value)}</>
-            )}
-            {isInBacklog && (
-              <Tag type="red" size="sm" style={{ marginLeft: "0.5rem" }}>
-                Backlog
-              </Tag>
             )}
           </div>
         </TableCell>
@@ -1052,13 +1058,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         "/LabelMakerServlet?labNo=" +
         accessionNumber +
         "&type=order&quantity=1&override=true";
-      // Inside renderCell, for actions header
       return (
-
         <TableCell key={cell.id}>
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            {/* 1. Print (barcode) icon - LAST */}
-
+          <div
+            style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}
+          >
             <a
               href={barcodeUrl}
               title="Print Barcode"
@@ -1066,10 +1070,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
             >
-              <img src={barcodeIcon} alt="Print Barcode" style={{ width: "1.1rem", height: "1.1rem" }} />
+              <img
+                src={barcodeIcon}
+                alt="Print Barcode"
+                style={{ width: "1.1rem", height: "1.1rem" }}
+              />
             </a>
-
-            {/* 1. Results icon */}
             <a
               href={resultUrl}
               title="Results"
@@ -1081,36 +1087,37 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 window.open(resultUrl, "_blank");
               }}
             >
-              <img src={resultIcon} alt="Results" style={{ width: "1.1rem", height: "1.1rem" }} />
+              <img
+                src={resultIcon}
+                alt="Results"
+                style={{ width: "1.1rem", height: "1.1rem" }}
+              />
             </a>
-
-            {/* 3. Validate icon */}
-            {/* Validate icon - now shows permission denied for non‑admins */}
             <a
               href="#"
               title="Validate"
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                // Check if user is allowed to validate (example: only Global Administrators)
                 if (!hasRole(userSessionDetails, "Global Administrator")) {
-                  // Show "Validation – Permission Denied" notification
                   addNotification({
                     kind: NotificationKinds.error,
                     title: "Validation",
-                    message: "Permission denied – You are not authorized to validate orders.",
+                    message:
+                      "Permission denied – You are not authorized to validate orders.",
                   });
                   setNotificationVisible(true);
                 } else {
-                  // If admin, open validation page as before
                   window.open(validationUrl, "_blank");
                 }
               }}
             >
-              <img src={validateIcon} alt="Validate" style={{ width: "1.1rem", height: "1.1rem" }} />
+              <img
+                src={validateIcon}
+                alt="Validate"
+                style={{ width: "1.1rem", height: "1.1rem" }}
+              />
             </a>
-
-            {/* 2. Report icon */}
             <a
               href={reportUrl}
               title="Report"
@@ -1118,12 +1125,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
             >
-              <img src={reportIcon} alt="Report" style={{ width: "1.1rem", height: "1.1rem" }} />
+              <img
+                src={reportIcon}
+                alt="Report"
+                style={{ width: "1.1rem", height: "1.1rem" }}
+              />
             </a>
           </div>
         </TableCell>
       );
-
     } else if (cell.info.header === "countOfOrdersEntered" && cell.value) {
       return (
         <TableCell key={cell.id}>
@@ -1186,49 +1196,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
   };
 
-  // ── PANEL TOGGLE COMPONENT ────────────────────────────────────────────────────
-  const PanelToggle = ({
-    view,
-    setView,
-    activeCount,
-    backlogCount,
-  }: {
-    view: PanelView;
-    setView: (v: PanelView) => void;
-    activeCount: number;
-    backlogCount?: number;
-  }) => (
-    <div className="dashboard-table-toggle" role="group">
-      <button
-        type="button"
-        className={`dashboard-table-toggle-btn${view === "ACTIVE" ? " dashboard-table-toggle-btn--active" : ""}`}
-        onClick={() => setView("ACTIVE")}
-      >
-        Active
-        {view === "ACTIVE" && (
-          <span className="dashboard-table-toggle-count">{activeCount}</span>
-        )}
-      </button>
-      <button
-        type="button"
-        className={`dashboard-table-toggle-btn${view === "BACKLOG" ? " dashboard-table-toggle-btn--active" : ""}`}
-        onClick={() => setView("BACKLOG")}
-      >
-        Backlog
-        {(backlogCount ?? 0) > 0 && view !== "BACKLOG" ? (
-          <span className="dashboard-table-toggle-count--badge dashboard-table-toggle-count">
-            {backlogCount}
-          </span>
-        ) : view === "BACKLOG" ? (
-          <span className="dashboard-table-toggle-count">
-            {backlogCount ?? 0}
-          </span>
-        ) : null}
-      </button>
-    </div>
-  );
-
-  // ── RENDER ───────────────────────────────────────────────────────────────────
   return (
     <>
       {loading && <Loading description="Loading Dashboard..." />}
@@ -1284,7 +1251,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           </Tile>
         </div>
       ) : isSplitLayout(selectedTile.type) ? (
-        /* ── SPLIT-PANEL LAYOUT ── */
         <div className="dashboard-page-shell">
           <div
             className="split-dashboard-header"
@@ -1415,7 +1381,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             </div>
 
             <div className="tab-panel-content">
-              {/* LEFT PANEL — Tests / Incoming Orders */}
               {dashboardTab === "LEFT" && (
                 <div className="split-panel split-panel--left">
                   <div className="split-panel-inner">
@@ -1482,7 +1447,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                               (c) => c.info.header === h.key,
                                             );
                                             if (h.key === "actions") {
-                                              // row.id IS the externalOrderNumber
                                               const collectUrl = getFullPath(
                                                 "/SamplePatientEntry?incomingOrderNumber=" +
                                                 encodeURIComponent(row.id),
@@ -1583,35 +1547,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       ) : (
                         <>
                           <DataTable
-                            rows={incomingOrdersData
-                              .filter((item) => {
-                                // Left panel backlog: incoming orders received before today
-                                const received = item.receivedTimestamp
-                                  ? new Date(item.receivedTimestamp)
-                                  : null;
-                                const isBeforeToday = received
-                                  ? received <
-                                  new Date(new Date().setHours(0, 0, 0, 0))
-                                  : false;
-                                if (!isBeforeToday) return false;
-                                const q = leftSearch.trim().toLowerCase();
-                                if (!q) return true;
-                                return (
-                                  String(item.patientName ?? "")
-                                    .toLowerCase()
-                                    .includes(q) ||
-                                  String(item.source ?? "")
-                                    .toLowerCase()
-                                    .includes(q) ||
-                                  String(item.externalOrderNumber ?? "")
-                                    .toLowerCase()
-                                    .includes(q)
-                                );
-                              })
-                              .slice(
-                                (leftPage - 1) * leftPageSize,
-                                leftPage * leftPageSize,
-                              )}
+                            rows={leftBacklogData.slice(
+                              (leftPage - 1) * leftPageSize,
+                              leftPage * leftPageSize,
+                            )}
                             headers={incomingOrderHeaders}
                             isSortable
                           >
@@ -1715,17 +1654,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={leftPage}
                             pageSize={leftPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={
-                              incomingOrdersData.filter((item) => {
-                                const received = item.receivedTimestamp
-                                  ? new Date(item.receivedTimestamp)
-                                  : null;
-                                return received
-                                  ? received <
-                                  new Date(new Date().setHours(0, 0, 0, 0))
-                                  : false;
-                              }).length
-                            }
+                            totalItems={leftBacklogData.length}
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
@@ -1770,7 +1699,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 </div>
               )}
 
-              {/* RIGHT PANEL — Active Orders / Backlog */}
               {dashboardTab === "RIGHT" && (
                 <div className="split-panel split-panel--right">
                   <div className="split-panel-inner">
@@ -2114,7 +2042,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           </div>
         </div>
       ) : (
-        /* ── STANDARD SINGLE-PANEL DETAIL VIEW ── */
         <div className="dashboard-view">
           <Tile className="dashboard-tile">
             <Grid>

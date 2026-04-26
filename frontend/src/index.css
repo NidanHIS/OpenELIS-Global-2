@@ -183,11 +183,123 @@ code {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
+}
+
+/* 1. Force Carbon Grid to be full width */
+.cds--grid,
+.cds--grid--full-width {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 1rem !important;
+  /* keeps a little breathing space, optional */
+}
+
+/* 2. Remove side padding from common parent containers */
+main,
+.cds--content,
+.cds--grid,
+.landing-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 3. Make the split‑layout shell truly full width */
+.dashboard-page-shell,
+.dashboard-page-shell>* {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 4. If you use Carbon Tabs, they sometimes add inner padding */
+.cds--tabs--contained,
+.cds--tab-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.that-parent-class {
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* =====================================================
+   INCREASE HEADER HEIGHT & CONNECT TO DASHBOARD
+   ===================================================== */
+
+/* 1. Make the main header taller */
+.cds--header.mainHeader,
+.cds--header {
+  height: 4rem !important;
+  min-height: 5rem;
+}
+
+/* 2. Center the logo + banner area vertically */
+.cds--header-name {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+/* 3. Adjust max logo height to fit the taller header */
+#header-logo img {
+  max-height: 70px;
+  width: auto;
+}
+
+/* 4. Ensure header action buttons (search, notifications, user) are vertically centered */
+.cds--header__action {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* 5. Align the banner (version text) properly */
+.banner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 1rem;
+}
+
+/* 6. Remove any top padding/margin from dashboard containers – closes the white gap */
+.home-dashboard-container,
+.dashboard-view,
+.dashboard-page-shell {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 7. Extra safety: remove default body margin */
+body,
+#root {
+  margin: 0;
+  padding: 0;
+}
+
+/* 8. Ensure header has no bottom margin */
+.cds--header {
+  margin-bottom: 0 !important;
+}
+
+/* 9. -Keep side padding but remove top padding from tile grid (optional – adjust values as needed) */
+.home-dashboard-container {
+  padding: 0 50px 50px 50px;
+  /* top padding removed */
+}
+
+.dashboard-view {
+  padding: 0 10px 10px 10px;
+  /* top padding removed */
 }
