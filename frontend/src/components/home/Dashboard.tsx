@@ -746,7 +746,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   // Today midnight — same boundary used by the backlog filter so the two
   // views are mutually exclusive: received >= todayMidnight → Today,
   // received < todayMidnight → Backlog.
-  const todayMidnight = useMemo(() => new Date(new Date().setHours(0, 0, 0, 0)), []);
+  const todayMidnight = useMemo(
+    () => new Date(new Date().setHours(0, 0, 0, 0)),
+    [],
+  );
 
   const todayIncomingOrders = useMemo(
     () =>

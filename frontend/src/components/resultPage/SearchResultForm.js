@@ -2142,7 +2142,13 @@ export function SearchResults(props) {
                 />
 
                 {!isReadOnlyView && (
-                  <div style={{ display: "inline-flex", gap: "1rem", marginTop: "16px" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      gap: "1rem",
+                      marginTop: "16px",
+                    }}
+                  >
                     <Button
                       type="button"
                       id="saveResults"
@@ -2163,7 +2169,10 @@ export function SearchResults(props) {
                         }
                       }}
                     >
-                      <FormattedMessage id="label.button.back" defaultMessage="Back" />
+                      <FormattedMessage
+                        id="label.button.back"
+                        defaultMessage="Back"
+                      />
                     </Button>
                   </div>
                 )}

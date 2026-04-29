@@ -83,13 +83,20 @@ function DictionaryManagement() {
   });
 
   const resetFormErrors = () =>
-    setFormErrors({ category: "", dictEntry: "", localAbbreviation: "", loincCode: "" });
+    setFormErrors({
+      category: "",
+      dictEntry: "",
+      localAbbreviation: "",
+      loincCode: "",
+    });
 
   const validateForm = () => {
     const errors = {
       category: !category ? "Dictionary Category is required." : "",
       dictEntry: !dictionaryEntry.trim() ? "Dictionary Entry is required." : "",
-      localAbbreviation: !localAbbreviation.trim() ? "Local Abbreviation is required." : "",
+      localAbbreviation: !localAbbreviation.trim()
+        ? "Local Abbreviation is required."
+        : "",
       loincCode: !loincCode.trim() ? "LOINC Code is required." : "",
     };
     setFormErrors(errors);
@@ -532,7 +539,10 @@ function DictionaryManagement() {
                 <Modal
                   open={open}
                   size="sm"
-                  onRequestClose={() => { setOpen(false); resetFormErrors(); }}
+                  onRequestClose={() => {
+                    setOpen(false);
+                    resetFormErrors();
+                  }}
                   modalHeading={editMode ? "Add Dictionary" : "Edit Dictionary"}
                   primaryButtonText={editMode ? "Add" : "Update"}
                   secondaryButtonText="Cancel"
@@ -606,7 +616,10 @@ function DictionaryManagement() {
                     value={localAbbreviation}
                     onChange={(e) => {
                       setLocalAbbreviation(e.target.value);
-                      setFormErrors((prev) => ({ ...prev, localAbbreviation: "" }));
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        localAbbreviation: "",
+                      }));
                     }}
                     invalid={!!formErrors.localAbbreviation}
                     invalidText={formErrors.localAbbreviation}

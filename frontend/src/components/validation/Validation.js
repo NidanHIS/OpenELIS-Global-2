@@ -473,7 +473,9 @@ const Validation = (props) => {
               }
             />
 
-            <div style={{ display: "inline-flex", gap: "1rem", marginTop: "16px" }}>
+            <div
+              style={{ display: "inline-flex", gap: "1rem", marginTop: "16px" }}
+            >
               <Button
                 type="button"
                 onClick={() => handleSave(values)}
@@ -495,7 +497,10 @@ const Validation = (props) => {
                   }
                 }}
               >
-                <FormattedMessage id="label.button.back" defaultMessage="Back" />
+                <FormattedMessage
+                  id="label.button.back"
+                  defaultMessage="Back"
+                />
               </Button>
             </div>
           </Form>
