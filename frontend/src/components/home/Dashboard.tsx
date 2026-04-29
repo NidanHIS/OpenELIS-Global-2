@@ -1069,19 +1069,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               />
             </a>
             <a
-              href={reportUrl}
-              title="Report"
-              target="_blank"
-              rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
-              <img
-                src={reportIcon}
-                alt="Report"
-                style={{ width: "1.1rem", height: "1.1rem" }}
-              />
-            </a>
-            <a
               href={validationUrl}
               title="Validate"
               target="_blank"
@@ -1095,6 +1082,19 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               <img
                 src={validateIcon}
                 alt="Validate"
+                style={{ width: "1.1rem", height: "1.1rem" }}
+              />
+            </a>
+            <a
+              href={reportUrl}
+              title="Report"
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
+              <img
+                src={reportIcon}
+                alt="Report"
                 style={{ width: "1.1rem", height: "1.1rem" }}
               />
             </a>
