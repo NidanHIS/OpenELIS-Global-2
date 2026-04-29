@@ -1,12 +1,12 @@
 package org.openelisglobal.dataexchange.externalorders.service;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.openelisglobal.common.util.DateUtil;
 import org.openelisglobal.dataexchange.externalorders.ExternalOrderXmlBuilder;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.organization.service.OrganizationService;
@@ -101,6 +101,7 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         form.getSampleOrderItems().setProviderEmail(externalOrderRequest.getProviderEmail());
 
         resolveReferringSite(form.getSampleOrderItems());
+        defaultReferringSite(form.getSampleOrderItems());
         resolveRequester(form.getSampleOrderItems());
 
         if (externalOrderRequest.getPriority() != null) {
@@ -122,6 +123,17 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         if (externalOrderRequest.getRequestDate() != null) {
             form.getSampleOrderItems().setRequestDate(toUiDate(externalOrderRequest.getRequestDate()));
         }
+        if (externalOrderRequest.getNextVisitDate() != null) {
+            form.getSampleOrderItems().setNextVisitDate(toUiDate(externalOrderRequest.getNextVisitDate()));
+        }
+
+        form.getSampleOrderItems()
+                .setProvisionalClinicalDiagnosis(externalOrderRequest.getProvisionalClinicalDiagnosis());
+        form.getSampleOrderItems().setPaymentOptionSelection(externalOrderRequest.getPaymentOptionSelection());
+        form.getSampleOrderItems().setTestLocationCode(externalOrderRequest.getTestLocationCode());
+        form.getSampleOrderItems().setOtherLocationCode(externalOrderRequest.getOtherLocationCode());
+        form.getSampleOrderItems().setRequesterSampleID(externalOrderRequest.getRequesterSampleID());
+        form.getSampleOrderItems().setBillingReferenceNumber(externalOrderRequest.getBillingReferenceNumber());
 
         String fallbackUiDate = pickFallbackCollectionDate(externalOrderRequest);
         if (form.getSampleOrderItems().getReceivedDateForDisplay() == null
@@ -136,6 +148,10 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
                 || form.getSampleOrderItems().getRequestDate().trim().isEmpty()) {
             form.getSampleOrderItems().setRequestDate(fallbackUiDate);
         }
+        if (form.getSampleOrderItems().getProvisionalClinicalDiagnosis() == null
+                || form.getSampleOrderItems().getProvisionalClinicalDiagnosis().trim().isEmpty()) {
+            form.getSampleOrderItems().setProvisionalClinicalDiagnosis("External order");
+        }
 
         if (form.getSampleOrderItems().getLabNo() == null || form.getSampleOrderItems().getLabNo().trim().isEmpty()) {
             form.getSampleOrderItems().setLabNo(generateAccessionNumber());
@@ -148,6 +164,8 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         for (ExternalOrderRequest.ExternalOrderSample sample : originalSamples) {
             if (sample.getCollectionDate() == null || sample.getCollectionDate().trim().isEmpty()) {
                 sample.setCollectionDate(fallbackCollectionDate);
+            } else {
+                sample.setCollectionDate(toUiDate(sample.getCollectionDate()));
             }
             if (sample.getCollectionTime() == null || sample.getCollectionTime().trim().isEmpty()) {
                 sample.setCollectionTime("00:00");
@@ -326,6 +344,22 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         }
     }
 
+    private void defaultReferringSite(SampleOrderItem sampleOrderItems) {
+        if (sampleOrderItems == null) {
+            return;
+        }
+
+        boolean hasReferringSite = sampleOrderItems.getReferringSiteId() != null
+                && !sampleOrderItems.getReferringSiteId().trim().isEmpty();
+        boolean hasReferringSiteName = sampleOrderItems.getReferringSiteName() != null
+                && !sampleOrderItems.getReferringSiteName().trim().isEmpty();
+        if (hasReferringSite || hasReferringSiteName) {
+            return;
+        }
+
+        sampleOrderItems.setReferringSiteName("External Order");
+    }
+
     private void resolveRequester(SampleOrderItem sampleOrderItems) {
         if (sampleOrderItems == null) {
             return;
@@ -418,8 +452,7 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         }
         String d = date.trim();
         if (d.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            String[] parts = d.split("-");
-            return parts[1] + "/" + parts[2] + "/" + parts[0];
+            return DateUtil.formatDateAsText(java.sql.Date.valueOf(d));
         }
         return d;
     }
@@ -431,6 +464,6 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         if (request.getRequestDate() != null && !request.getRequestDate().trim().isEmpty()) {
             return toUiDate(request.getRequestDate());
         }
-        return toUiDate(LocalDate.now().toString());
+        return DateUtil.getCurrentDateAsText();
     }
 }

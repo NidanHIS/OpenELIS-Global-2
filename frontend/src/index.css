@@ -183,7 +183,6 @@ code {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -214,7 +213,7 @@ main,
 
 /* 3. Make the split‑layout shell truly full width */
 .dashboard-page-shell,
-.dashboard-page-shell>* {
+.dashboard-page-shell > * {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
@@ -234,14 +233,14 @@ main,
 }
 
 /* =====================================================
-   INCREASE HEADER HEIGHT & CONNECT TO DASHBOARD
+   HEADER HEIGHT & DASHBOARD CONNECTION
    ===================================================== */
 
-/* 1. Make the main header taller */
+/* 1. Keep the main header compact while preserving the larger brand area */
 .cds--header.mainHeader,
 .cds--header {
-  height: 4rem !important;
-  min-height: 5rem;
+  height: 3.5rem !important;
+  min-height: 3.5rem;
 }
 
 /* 2. Center the logo + banner area vertically */
@@ -249,13 +248,17 @@ main,
   height: 100%;
   display: flex;
   align-items: center;
-  padding: 0 1rem;
+  padding: 0 0.875rem;
 }
 
-/* 3. Adjust max logo height to fit the taller header */
+/* 3. Keep the logo comfortably inside the compact header */
 #header-logo img {
-  max-height: 70px;
+  max-height: 42px;
   width: auto;
+}
+
+#header-logo {
+  margin: 0 0.75rem;
 }
 
 /* 4. Ensure header action buttons (search, notifications, user) are vertically centered */
@@ -270,7 +273,19 @@ main,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-left: 1rem;
+  margin-left: 0.75rem;
+}
+
+.banner h5 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.banner p {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.15;
 }
 
 /* 6. Remove any top padding/margin from dashboard containers – closes the white gap */

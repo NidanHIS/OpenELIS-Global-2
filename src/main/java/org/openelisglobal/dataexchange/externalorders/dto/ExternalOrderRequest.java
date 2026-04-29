@@ -59,6 +59,23 @@ public class ExternalOrderRequest {
     /** Optional request date (yyyy-MM-dd). */
     private String requestDate;
 
+    /** Optional next visit date (yyyy-MM-dd). */
+    private String nextVisitDate;
+
+    private String provisionalClinicalDiagnosis;
+
+    @Pattern(regexp = ValidationHelper.ID_REGEX)
+    private String paymentOptionSelection;
+
+    @Pattern(regexp = ValidationHelper.ID_REGEX)
+    private String testLocationCode;
+
+    private String otherLocationCode;
+
+    private String requesterSampleID;
+
+    private String billingReferenceNumber;
+
     private String programId;
 
     @Valid
@@ -183,6 +200,62 @@ public class ExternalOrderRequest {
 
     public void setRequestDate(String requestDate) {
         this.requestDate = requestDate;
+    }
+
+    public String getNextVisitDate() {
+        return nextVisitDate;
+    }
+
+    public void setNextVisitDate(String nextVisitDate) {
+        this.nextVisitDate = nextVisitDate;
+    }
+
+    public String getProvisionalClinicalDiagnosis() {
+        return provisionalClinicalDiagnosis;
+    }
+
+    public void setProvisionalClinicalDiagnosis(String provisionalClinicalDiagnosis) {
+        this.provisionalClinicalDiagnosis = provisionalClinicalDiagnosis;
+    }
+
+    public String getPaymentOptionSelection() {
+        return paymentOptionSelection;
+    }
+
+    public void setPaymentOptionSelection(String paymentOptionSelection) {
+        this.paymentOptionSelection = paymentOptionSelection;
+    }
+
+    public String getTestLocationCode() {
+        return testLocationCode;
+    }
+
+    public void setTestLocationCode(String testLocationCode) {
+        this.testLocationCode = testLocationCode;
+    }
+
+    public String getOtherLocationCode() {
+        return otherLocationCode;
+    }
+
+    public void setOtherLocationCode(String otherLocationCode) {
+        this.otherLocationCode = otherLocationCode;
+    }
+
+    public String getRequesterSampleID() {
+        return requesterSampleID;
+    }
+
+    public void setRequesterSampleID(String requesterSampleID) {
+        this.requesterSampleID = requesterSampleID;
+    }
+
+    public String getBillingReferenceNumber() {
+        return billingReferenceNumber;
+    }
+
+    public void setBillingReferenceNumber(String billingReferenceNumber) {
+        this.billingReferenceNumber = billingReferenceNumber;
     }
 
     public String getProgramId() {

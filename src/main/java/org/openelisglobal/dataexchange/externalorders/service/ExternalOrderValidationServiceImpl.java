@@ -131,6 +131,13 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
         filtered.setReceivedDate(original.getReceivedDate());
         filtered.setReceivedTime(original.getReceivedTime());
         filtered.setRequestDate(original.getRequestDate());
+        filtered.setNextVisitDate(original.getNextVisitDate());
+        filtered.setProvisionalClinicalDiagnosis(original.getProvisionalClinicalDiagnosis());
+        filtered.setPaymentOptionSelection(original.getPaymentOptionSelection());
+        filtered.setTestLocationCode(original.getTestLocationCode());
+        filtered.setOtherLocationCode(original.getOtherLocationCode());
+        filtered.setRequesterSampleID(original.getRequesterSampleID());
+        filtered.setBillingReferenceNumber(original.getBillingReferenceNumber());
         filtered.setProgramId(original.getProgramId());
 
         // Build sets of valid test and panel IDs for quick lookup

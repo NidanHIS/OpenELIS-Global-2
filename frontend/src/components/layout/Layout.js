@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext, useRef } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useRef,
+} from "react";
 import { useLocation } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -9,10 +15,7 @@ import {
   languages as defaultLanguages,
   buildLanguagesFromConfig,
 } from "../../languages";
-import {
-  hasPermission,
-  PERMISSIONS,
-} from "../security/rbacPermissions";
+import { hasPermission, PERMISSIONS } from "../security/rbacPermissions";
 
 export const ConfigurationContext = createContext(null);
 export const NotificationContext = createContext(null);
@@ -51,6 +54,8 @@ export default function Layout(props) {
   const isAnalyzerContext =
     location.pathname.startsWith("/analyzers") ||
     location.pathname.startsWith("/AnalyzerManagement");
+  const isDashboardContext =
+    location.pathname === "/" || location.pathname === "/Dashboard";
 
   const layoutConfig = {
     storageKeyPrefix: pageStorageKeyPrefix
@@ -121,7 +126,9 @@ export default function Layout(props) {
     });
   }, []);
 
-  const isSystemAdmin = userSessionDetails && hasPermission(userSessionDetails, PERMISSIONS.SYSTEM_ADMIN);
+  const isSystemAdmin =
+    userSessionDetails &&
+    hasPermission(userSessionDetails, PERMISSIONS.SYSTEM_ADMIN);
 
   // Simple toggle: cycle CLOSE → SHOW → LOCK → CLOSE (or custom logic)
   const toggleSideNav = () => {
@@ -171,10 +178,10 @@ export default function Layout(props) {
                 data-testid="content-wrapper"
                 style={{
                   flex: 1,
-                  width: '100%',
-                  maxWidth: '100%',
+                  width: "100%",
+                  maxWidth: "100%",
                   marginLeft: 0,
-                  padding: '1rem'
+                  padding: isDashboardContext ? 0 : "1rem",
                 }}
               >
                 {children}
