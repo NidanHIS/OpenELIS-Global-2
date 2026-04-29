@@ -743,10 +743,24 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     );
   }, [backlogTableData, rightSearch]);
 
+  // Today midnight — same boundary used by the backlog filter so the two
+  // views are mutually exclusive: received >= todayMidnight → Today,
+  // received < todayMidnight → Backlog.
+  const todayMidnight = useMemo(() => new Date(new Date().setHours(0, 0, 0, 0)), []);
+
+  const todayIncomingOrders = useMemo(
+    () =>
+      incomingOrdersData.filter((item) => {
+        if (!item.receivedTimestamp) return true; // no timestamp → show in Today so nothing is lost
+        return new Date(item.receivedTimestamp) >= todayMidnight;
+      }),
+    [incomingOrdersData, todayMidnight],
+  );
+
   const filteredLeftData = useMemo(() => {
     const q = leftSearch.trim().toLowerCase();
-    if (!q) return incomingOrdersData;
-    return incomingOrdersData.filter(
+    if (!q) return todayIncomingOrders;
+    return todayIncomingOrders.filter(
       (item) =>
         String(item.patientName ?? "")
           .toLowerCase()
@@ -758,7 +772,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           .toLowerCase()
           .includes(q),
     );
-  }, [incomingOrdersData, leftSearch]);
+  }, [todayIncomingOrders, leftSearch]);
 
   // Workflow summary counters
   const workflowOrderCount = useMemo(
