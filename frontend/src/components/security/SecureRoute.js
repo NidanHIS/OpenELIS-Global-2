@@ -7,14 +7,9 @@ import { confirmAlert } from "react-confirm-alert";
 import "react-confirm-alert/src/react-confirm-alert.css"; // Import css
 import { Loading, Modal } from "@carbon/react/";
 import config from "../../config.json";
+import { Roles } from "../utils/Utils";
 import { FormattedMessage, useIntl } from "react-intl";
 import { navigateTo } from "../utils/Navigation";
-import {
-  hasAnyPermission,
-  hasPermission,
-  mapLegacyRoleRequirementsToPermissions,
-  PERMISSIONS,
-} from "./rbacPermissions";
 
 const idleTimeout = 1000 * 60 * 30; // milliseconds until idle warning will appear
 const idleWarningTimeout = 1000 * 60; // milliseconds until logout is automatically processed from idle warning
@@ -40,12 +35,12 @@ function SecureRoute(props) {
     setLoading(!errorLoadingSessionDetails && isCheckingLogin());
     if (userSessionDetails.authenticated) {
       console.info("Authenticated");
-      if (hasRoutePermission(userSessionDetails)) {
+      if (hasPermission(userSessionDetails)) {
         console.info("Access Allowed");
         if (
           configurationProperties.REQUIRE_LAB_UNIT_AT_LOGIN === "true" &&
           !userSessionDetails.loginLabUnit &&
-          !hasPermission(userSessionDetails, PERMISSIONS.SYSTEM_ADMIN)
+          !userSessionDetails.roles.includes(Roles.GLOBAL_ADMIN)
         ) {
           navigateTo("/landing");
         }
@@ -66,41 +61,36 @@ function SecureRoute(props) {
         };
         confirmAlert(options);
       }
-      setPermissionGranted(hasRoutePermission(userSessionDetails));
+      setPermissionGranted(hasPermission());
     } else if ("authenticated" in userSessionDetails) {
       navigateTo(config.loginRedirect);
     }
   }, [userSessionDetails, errorLoadingSessionDetails]);
 
-  const hasRoutePermission = (userDetails = userSessionDetails) => {
-    if (props.permission) {
-      return hasPermission(
-        userDetails,
-        props.permission,
-        props.labName || userDetails.loginLabUnit,
-      );
+  const hasPermission = (userDetails = userSessionDetails) => {
+    var hasRole =
+      !props.role ||
+      []
+        .concat(props.role)
+        .some((role) => userDetails.roles && userDetails.roles.includes(role));
+    var containsLabUnitRole = false;
+    if (props.labUnitRole) {
+      Object.keys(props.labUnitRole).forEach((labunit) => {
+        if (userDetails.userLabRolesMap) {
+          const userRoles = userDetails.userLabRolesMap["AllLabUnits"]
+            ? userDetails.userLabRolesMap["AllLabUnits"]
+            : userDetails.userLabRolesMap[labunit] || [];
+          const roles = props.labUnitRole[labunit];
+          roles.forEach((r) => {
+            if (userRoles.includes(r)) {
+              containsLabUnitRole = true;
+            }
+          });
+        }
+      });
     }
-
-    if (props.permissions && props.permissions.length > 0) {
-      return hasAnyPermission(
-        userDetails,
-        props.permissions,
-        props.labName || userDetails.loginLabUnit,
-      );
-    }
-
-    const legacyPermissions = mapLegacyRoleRequirementsToPermissions({
-      role: props.role,
-      labUnitRole: props.labUnitRole,
-    });
-    if (legacyPermissions.length === 0) {
-      return true;
-    }
-    return hasAnyPermission(
-      userDetails,
-      legacyPermissions,
-      props.labName || userDetails.loginLabUnit,
-    );
+    var hasLabUnitRole = !props.labUnitRole || containsLabUnitRole;
+    return hasRole && hasLabUnitRole;
   };
 
   const onIdle = () => {

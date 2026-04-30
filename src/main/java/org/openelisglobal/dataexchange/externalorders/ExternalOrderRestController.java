@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDate;
 import java.util.List;
-import org.openelisglobal.common.util.DateUtil;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.dto.ValidationReport;
 import org.openelisglobal.dataexchange.externalorders.dto.ValidationResult;
@@ -15,7 +13,6 @@ import org.openelisglobal.dataexchange.externalorders.service.ExternalOrderValid
 import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderService;
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
 import org.openelisglobal.patient.service.PatientService;
-import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -54,8 +51,6 @@ public class ExternalOrderRestController {
     public ResponseEntity<?> createExternalOrder(HttpServletRequest request,
             @Valid @RequestBody ExternalOrderRequest externalOrderRequest)
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-
-        applyTestingDefaults(externalOrderRequest);
 
         // Validate the order
         ValidationReport validationReport = validationService.validateOrder(externalOrderRequest);
@@ -102,15 +97,13 @@ public class ExternalOrderRestController {
         String message = validationReport.isFullyValid() ? "Order received successfully with all items validated."
                 : "Order received with partial validation. Some items were not found.";
 
-        return ResponseEntity.ok(buildAcceptedResponse(holding, validationReport, status, message));
+        return ResponseEntity.ok(buildValidationResponse(holding, validationReport, status, message));
     }
 
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateExternalOrder(HttpServletRequest request,
             @Valid @RequestBody ExternalOrderRequest externalOrderRequest)
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-
-        applyTestingDefaults(externalOrderRequest);
 
         // Validate the order
         ValidationReport validationReport = validationService.validateOrder(externalOrderRequest);
@@ -155,7 +148,7 @@ public class ExternalOrderRestController {
             String message = validationReport.isFullyValid() ? "Order updated successfully with all items validated."
                     : "Order updated with partial validation. Some items were not found.";
 
-            return ResponseEntity.ok(buildAcceptedResponse(holding, validationReport, "MERGED", message));
+            return ResponseEntity.ok(buildValidationResponse(holding, validationReport, "MERGED", message));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Order does not exist or has already been collected");
@@ -311,7 +304,6 @@ public class ExternalOrderRestController {
         if (holding != null) {
             response.setExternalOrderNumber(holding.getExternalOrderNumber());
             response.setHoldingId(holding.getId());
-            response.setAccessionNumber(holding.getLabNo());
         } else if (report != null && report.getPatientGuid() != null) {
             // For rejected orders, still set the order number if available
         }
@@ -328,83 +320,5 @@ public class ExternalOrderRestController {
             response.setTotalPanelsReceived(report.getTotalPanelsReceived());
         }
         return response;
-    }
-
-    private ExternalOrderReceivedResponse buildAcceptedResponse(IncomingOrder holding, ValidationReport report,
-            String status, String message) {
-        ExternalOrderReceivedResponse response = buildValidationResponse(holding, report, status, message);
-        if (holding == null || holding.getExternalOrderNumber() == null) {
-            return response;
-        }
-
-        try {
-            SamplePatientEntryForm form = incomingOrderService
-                    .buildSamplePatientEntryForm(holding.getExternalOrderNumber());
-            if (form != null && form.getSampleOrderItems() != null) {
-                response.setAccessionNumber(form.getSampleOrderItems().getLabNo());
-            }
-        } catch (IllegalArgumentException e) {
-            // The order was already accepted; keep the response useful even if the review
-            // form cannot be prepared.
-        }
-        return response;
-    }
-
-    private void applyTestingDefaults(ExternalOrderRequest externalOrderRequest) {
-        if (externalOrderRequest == null) {
-            return;
-        }
-
-        String today = LocalDate.now().toString();
-        if (isBlank(externalOrderRequest.getPriority())) {
-            externalOrderRequest.setPriority("ROUTINE");
-        }
-        if (isBlank(externalOrderRequest.getReferringSiteId())
-                && isBlank(externalOrderRequest.getReferringSiteName())) {
-            externalOrderRequest.setReferringSiteName("External Order");
-        }
-        if (isBlank(externalOrderRequest.getProviderFirstName())) {
-            externalOrderRequest.setProviderFirstName("External");
-        }
-        if (isBlank(externalOrderRequest.getProviderLastName())) {
-            externalOrderRequest.setProviderLastName("Requester");
-        }
-        if (isBlank(externalOrderRequest.getProvisionalClinicalDiagnosis())) {
-            externalOrderRequest.setProvisionalClinicalDiagnosis("External order");
-        }
-        if (isBlank(externalOrderRequest.getReceivedDate())) {
-            externalOrderRequest.setReceivedDate(today);
-        }
-        if (isBlank(externalOrderRequest.getRequestDate())) {
-            externalOrderRequest.setRequestDate(today);
-        }
-        if (isBlank(externalOrderRequest.getReceivedTime())) {
-            externalOrderRequest.setReceivedTime(DateUtil.getCurrentTimeAsText());
-        }
-
-        if (externalOrderRequest.getSamples() == null) {
-            return;
-        }
-        for (ExternalOrderRequest.ExternalOrderSample sample : externalOrderRequest.getSamples()) {
-            if (sample == null) {
-                continue;
-            }
-            if (isBlank(sample.getCollectionDate())) {
-                sample.setCollectionDate(today);
-            }
-            if (isBlank(sample.getCollectionTime())) {
-                sample.setCollectionTime(DateUtil.getCurrentTimeAsText());
-            }
-            if (isBlank(sample.getCollector())) {
-                sample.setCollector("External Order");
-            }
-            if (isBlank(sample.getQuantity())) {
-                sample.setQuantity("1");
-            }
-        }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

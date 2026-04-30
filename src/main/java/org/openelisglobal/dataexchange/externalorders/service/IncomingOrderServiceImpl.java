@@ -190,7 +190,7 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
             return;
         }
 
-        if (holding.getSampleId() != null || holding.getCollectedTimestamp() != null) {
+        if (holding.getSampleId() != null || (holding.getLabNo() != null && !holding.getLabNo().trim().isEmpty())) {
             throw new IllegalStateException("Order can't be deleted after collection");
         }
 
@@ -198,7 +198,7 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public SamplePatientEntryForm buildSamplePatientEntryForm(String externalOrderNumber) {
         if (externalOrderNumber == null || externalOrderNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("Missing externalOrderNumber");
@@ -221,22 +221,7 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
             throw new IllegalArgumentException("Stored payload externalOrderNumber mismatch");
         }
 
-        SamplePatientEntryForm form = externalOrderFormMapperService.buildForm(externalOrderRequest);
-        if (form != null && form.getSampleOrderItems() != null) {
-            String existingLabNo = holding.getLabNo();
-            if (existingLabNo != null && !existingLabNo.trim().isEmpty()) {
-                form.getSampleOrderItems().setLabNo(existingLabNo);
-            } else {
-                String generatedLabNo = form.getSampleOrderItems().getLabNo();
-                if (generatedLabNo != null && !generatedLabNo.trim().isEmpty()) {
-                    holding.setLabNo(generatedLabNo);
-                    holding.setSysUserId(holding.getReceivedSysUserId());
-                    baseObjectDAO.update(holding);
-                }
-            }
-        }
-
-        return form;
+        return externalOrderFormMapperService.buildForm(externalOrderRequest);
     }
 
     private ExternalOrderRequest mergeExternalOrders(ExternalOrderRequest existing, ExternalOrderRequest incoming) {
@@ -285,23 +270,6 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
         out.setReceivedTime(
                 incoming.getReceivedTime() != null ? incoming.getReceivedTime() : existing.getReceivedTime());
         out.setRequestDate(incoming.getRequestDate() != null ? incoming.getRequestDate() : existing.getRequestDate());
-        out.setNextVisitDate(
-                incoming.getNextVisitDate() != null ? incoming.getNextVisitDate() : existing.getNextVisitDate());
-        out.setProvisionalClinicalDiagnosis(
-                incoming.getProvisionalClinicalDiagnosis() != null ? incoming.getProvisionalClinicalDiagnosis()
-                        : existing.getProvisionalClinicalDiagnosis());
-        out.setPaymentOptionSelection(
-                incoming.getPaymentOptionSelection() != null ? incoming.getPaymentOptionSelection()
-                        : existing.getPaymentOptionSelection());
-        out.setTestLocationCode(incoming.getTestLocationCode() != null ? incoming.getTestLocationCode()
-                : existing.getTestLocationCode());
-        out.setOtherLocationCode(incoming.getOtherLocationCode() != null ? incoming.getOtherLocationCode()
-                : existing.getOtherLocationCode());
-        out.setRequesterSampleID(incoming.getRequesterSampleID() != null ? incoming.getRequesterSampleID()
-                : existing.getRequesterSampleID());
-        out.setBillingReferenceNumber(
-                incoming.getBillingReferenceNumber() != null ? incoming.getBillingReferenceNumber()
-                        : existing.getBillingReferenceNumber());
         out.setProgramId(incoming.getProgramId() != null ? incoming.getProgramId() : existing.getProgramId());
 
         Map<String, ExternalOrderRequest.ExternalOrderSample> existingByKey = indexSamples(existing.getSamples());

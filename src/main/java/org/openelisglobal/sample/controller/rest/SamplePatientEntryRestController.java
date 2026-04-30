@@ -390,7 +390,7 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
         }
 
         redirectAttributes.addFlashAttribute(FWD_SUCCESS, true);
-        if (Boolean.TRUE.equals(form.getRememberSiteAndRequester())) {
+        if (form.getRememberSiteAndRequester()) {
             redirectAttributes.addFlashAttribute("sampleOrderItems.providerId",
                     form.getSampleOrderItems().getProviderId());
             redirectAttributes.addFlashAttribute("sampleOrderItems.providerPersonId",

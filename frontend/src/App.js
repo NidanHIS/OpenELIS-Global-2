@@ -82,7 +82,6 @@ import { getFullPath } from "./components/utils/Navigation";
 import IncomingOrders from "./components/incomingOrders/Index";
 import ShipmentReport from "./components/shipment/ShipmentReport";
 import ShipmentSettings from "./components/shipment/ShipmentSettings";
-import { PERMISSIONS } from "./components/security/rbacPermissions";
 
 export default function App() {
   const defaultLocale =
@@ -315,12 +314,12 @@ export default function App() {
                   path="/admin"
                   exact
                   component={() => <Admin />}
-                  permissions={[PERMISSIONS.SYSTEM_ADMIN, PERMISSIONS.USER_READ]}
+                  role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/MasterListsPage"
                   component={() => <Admin />}
-                  permissions={[PERMISSIONS.SYSTEM_ADMIN, PERMISSIONS.USER_READ]}
+                  role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/PathologyDashboard"

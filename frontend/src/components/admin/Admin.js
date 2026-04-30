@@ -1,14 +1,7 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import config from "../../config.json";
 import { FormattedMessage, useIntl, injectIntl } from "react-intl";
-import {
-  Switch,
-  Route,
-  Redirect,
-  useRouteMatch,
-  useHistory,
-  useLocation,
-} from "react-router-dom";
+import { Switch, Route, useRouteMatch, useHistory } from "react-router-dom";
 import "../Style.css";
 import ReflexTestManagement from "./reflexTests/ReflexTestManagement";
 import ProgramManagement from "./program/ProgramManagement";
@@ -106,57 +99,18 @@ import {
 } from "./localizationManagement";
 import ExternalConnectionMenu from "./externalConnections/ExternalConnectionMenu";
 import ExternalConnectionAddModify from "./externalConnections/ExternalConnectionAddModify";
-import UserSessionDetailsContext from "../../UserSessionDetailsContext";
-import { hasAnyPermission, hasPermission, PERMISSIONS } from "../security/rbacPermissions";
 
 function Admin() {
   const intl = useIntl();
   const { path } = useRouteMatch();
   const history = useHistory();
-  const location = useLocation();
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const { userSessionDetails } = useContext(UserSessionDetailsContext);
-  const canAccessAdminFeatures = hasPermission(
-    userSessionDetails,
-    PERMISSIONS.SYSTEM_ADMIN,
-  );
-  const canManageUsers = hasAnyPermission(userSessionDetails, [
-    PERMISSIONS.USER_READ,
-    PERMISSIONS.USER_WRITE,
-  ]);
 
   // Navigation handler to prevent page reload
   const handleNavigation = (targetPath) => (e) => {
     e.preventDefault();
-    const isUserManagementPath =
-      targetPath.includes("/userManagement") || targetPath.includes("/userEdit");
-    if (!canAccessAdminFeatures && !(canManageUsers && isUserManagementPath)) {
-      return;
-    }
     history.push(targetPath);
   };
-
-  useEffect(() => {
-    if (canAccessAdminFeatures) {
-      return;
-    }
-    if (!canManageUsers) {
-      history.replace("/");
-      return;
-    }
-    const isUserManagementPath =
-      location.pathname.includes("/userManagement") ||
-      location.pathname.includes("/userEdit");
-    if (!isUserManagementPath) {
-      history.replace(`${path}/userManagement`);
-    }
-  }, [
-    canAccessAdminFeatures,
-    canManageUsers,
-    history,
-    location.pathname,
-    path,
-  ]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 1024px)"); //applicable for medium screen and below  for only small screen set max-width: 768px
@@ -257,15 +211,13 @@ function Admin() {
           >
             <FormattedMessage id="resultreporting.browse.title" />
           </SideNavLink>
-          {canManageUsers && (
-            <SideNavLink
-              data-cy="userMgmnt"
-              renderIcon={User}
-              onClick={handleNavigation(`${path}/userManagement`)}
-            >
-              <FormattedMessage id="unifiedSystemUser.browser.title" />
-            </SideNavLink>
-          )}
+          <SideNavLink
+            data-cy="userMgmnt"
+            renderIcon={User}
+            onClick={handleNavigation(`${path}/userManagement`)}
+          >
+            <FormattedMessage id="unifiedSystemUser.browser.title" />
+          </SideNavLink>
           <SideNavLink
             data-cy="batchTestReassignment"
             renderIcon={BatchJob}
@@ -496,22 +448,13 @@ function Admin() {
           path={`${path}/resultReportingConfiguration`}
           component={ResultReportingConfiguration}
         />
-        <Route
-          path={`${path}/userManagement`}
-          render={() =>
-            canManageUsers ? <UserManagement /> : <Redirect to="/" />
-          }
-        />
+        <Route path={`${path}/userManagement`} component={UserManagement} />
         <Route
           path={`${path}/batchTestReassignment`}
           component={BatchTestReassignmentAndCancelation}
         />
+        <Route path={`${path}/userEdit`} component={UserAddModify} />
         <Route
-          path={`${path}/userEdit`}
-          render={() =>
-            canManageUsers ? <UserAddModify /> : <Redirect to="/" />
-          }
-        />        <Route
           path={`${path}/globalMenuManagement`}
           component={GlobalMenuManagement}
         />
