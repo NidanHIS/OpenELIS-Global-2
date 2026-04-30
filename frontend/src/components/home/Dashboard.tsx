@@ -782,7 +782,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       (item) =>
         isToday(item.orderDate) &&
         (tilesWithTabs.includes(selectedTile?.type) &&
-        selectedTestSection !== "all"
+          selectedTestSection !== "all"
           ? item.testSection === selectedTestSection
           : true),
     );
@@ -813,7 +813,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (item) =>
           !isToday(item.orderDate) &&
           (tilesWithTabs.includes(selectedTile?.type) &&
-          selectedTestSection !== "all"
+            selectedTestSection !== "all"
             ? item.testSection === selectedTestSection
             : true),
       ),
@@ -1043,18 +1043,18 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               renderIcon={Copy}
             />
             {usesInProgressView(selectedTile.type) ||
-            selectedTile.type === "ORDERS_READY_FOR_VALIDATION" ? (
+              selectedTile.type === "ORDERS_READY_FOR_VALIDATION" ? (
               <Link
                 style={{ color: "blue" }}
                 href={
                   usesInProgressView(selectedTile.type)
                     ? getFullPath(
-                        "/result?type=order&doRange=false&accessionNumber=" +
-                          cell.value,
-                      )
+                      "/result?type=order&doRange=false&accessionNumber=" +
+                      cell.value,
+                    )
                     : getFullPath(
-                        "/validation?type=order&accessionNumber=" + cell.value,
-                      )
+                      "/validation?type=order&accessionNumber=" + cell.value,
+                    )
                 }
               >
                 <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
@@ -1420,8 +1420,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           leftPanelView === "ACTIVE"
                             ? message("dashboard.incomingSearch.placeholder")
                             : message(
-                                "dashboard.incomingSearch.backlogPlaceholder",
-                              )
+                              "dashboard.incomingSearch.backlogPlaceholder",
+                            )
                         }
                         value={leftSearch}
                         onChange={(e) => setLeftSearch(e.target.value)}
@@ -1466,7 +1466,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                   </TableHead>
                                   <TableBody>
                                     {rows.length === 0 &&
-                                    !isFetchingExternalOrder ? (
+                                      !isFetchingExternalOrder ? (
                                       <TableRow>
                                         <TableCell
                                           colSpan={incomingOrderHeaders.length}
@@ -1488,7 +1488,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             if (h.key === "actions") {
                                               const collectUrl = getFullPath(
                                                 "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
+                                                encodeURIComponent(row.id),
                                               );
                                               return (
                                                 <TableCell
@@ -1650,7 +1650,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           onClick={loadPreviousResultsPage}
                           disabled={!previousPage}
                           renderIcon={ArrowLeft}
-                          iconDescription={message("pagination.backward")}
+                          iconDescription="previous"
                           size="sm"
                         />
                         <Button
@@ -1658,7 +1658,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           onClick={loadNextResultsPage}
                           disabled={!nextPage}
                           renderIcon={ArrowRight}
-                          iconDescription={message("pagination.forward")}
+                          iconDescription="next"
                           size="sm"
                         />
                       </div>
@@ -1688,11 +1688,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             )}
                             headers={
                               usesInProgressView(selectedTile.type) ||
-                              selectedTile.type ===
+                                selectedTile.type ===
                                 "ORDERS_READY_FOR_VALIDATION"
                                 ? groupedOrderHeaders
                                 : selectedTile.type !==
-                                    "ORDERS_ENTERED_BY_USER_TODAY"
+                                  "ORDERS_ENTERED_BY_USER_TODAY"
                                   ? orderHeaders
                                   : userHeaders
                             }
@@ -2050,7 +2050,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       selectedTile.type === "ORDERS_ENTERED_BY_USER_TODAY"
                         ? userHeaders
                         : usesInProgressView(selectedTile.type) ||
-                            selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
+                          selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
                           ? groupedOrderHeaders
                           : orderHeaders
                     }
