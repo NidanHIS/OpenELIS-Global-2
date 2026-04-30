@@ -1,5 +1,3 @@
-// HomeDashBoard.tsx - Full file with external orders integration
-
 import React from "react";
 import {
   Tile,
@@ -154,9 +152,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     [intl],
   );
 
-  // ... (all existing helper functions: isSplitLayout, usesInProgressView, getTileEndpoint, etc.) ...
-  // I'm keeping them exactly as they were, no changes.
-
   const isSplitLayout = (type?: MetricType | null) =>
     type === "ON_GOING_ORDERS" || type === "ORDERS_IN_PROGRESS";
 
@@ -286,7 +281,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   useEffect(() => {
     if (selectedTile == null) {
       setSelectedTile({
-        title: "On Going Orders",
+        title: <FormattedMessage id="dashboard.ongoing.orders.label" />,
         subTitle: (
           <FormattedMessage id="dashboard.in.progress.subtitle.label" />
         ),
@@ -352,7 +347,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       timeoutId = setTimeout(() => {
         if (!componentMounted.current) return;
         getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
-        // Do NOT fetch /rest/incoming-orders because we are using external POST API
         if (selectedTile) {
           const seq = ++tileLoadSequence.current;
           if (selectedTile.type === "AVERAGE_TURN_AROUND_TIME") {
@@ -374,11 +368,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     checkMidnight();
     return () => clearTimeout(timeoutId);
   }, [formatIncomingOrderTimestamp, selectedTile]);
-  // --- End modified effect ---
-
-  // Keep all other existing useEffects (for selectedTile changes, test sections, etc.)
-  // No changes needed there.
-
   useEffect(() => {
     if (selectedTile == null) return;
     const seq = ++tileLoadSequence.current;
@@ -421,7 +410,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     setLeftPage(1);
   }, [leftSearch, leftPanelView]);
 
-  // Helper functions (fetchTestSections, loadNextResultsPage, etc.) unchanged.
   const fetchTestSections = (res) => {
     setTestSections(res);
     hasRole(userSessionDetails, "Global Administrator")
@@ -674,7 +662,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       value: counts.samplesToCollect ?? 0,
     },
     {
-      title: "On Going Orders",
+      title: <FormattedMessage id="dashboard.ongoing.orders.label" />,
       subTitle: <FormattedMessage id="dashboard.in.progress.subtitle.label" />,
       type: "ON_GOING_ORDERS",
       value: counts.ordersInProgress ?? 0,
@@ -837,12 +825,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     );
   }, [backlogTableData, rightSearch]);
 
-  // Update filteredLeftData to use incomingOrdersData from external API and support searching by patient GUID, test GUID, test name
   const filteredLeftData = useMemo(() => {
     const q = leftSearch.trim().toLowerCase();
     let filtered = incomingOrdersData;
     if (leftPanelView === "ACTIVE") {
-      // For now, all orders are considered "today" because we only have one external order
       filtered = incomingOrdersData;
     }
     if (!q) return filtered;
@@ -869,14 +855,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   }, [incomingOrdersData, leftSearch, leftPanelView]);
 
   const leftBacklogData = useMemo(() => {
-    // For backlog, we might have older external orders, but for simplicity, return empty or same as active
     const q = leftSearch.trim().toLowerCase();
-    const filtered = incomingOrdersData.filter(() => false); // No backlog for external orders
+    const filtered = incomingOrdersData.filter(() => false);
     if (!q) return filtered;
     return filtered;
   }, [incomingOrdersData, leftSearch]);
 
-  // workflow counts remain unchanged
   const workflowOrderCount = useMemo(
     () =>
       new Set(
@@ -1111,20 +1095,20 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           >
             <a
               href={barcodeUrl}
-              title="Print Barcode"
+              title={message("dashboard.action.printBarcode")}
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
             >
               <img
                 src={barcodeIcon}
-                alt="Print Barcode"
+                alt={message("dashboard.action.printBarcode")}
                 style={{ width: "1.1rem", height: "1.1rem" }}
               />
             </a>
             <a
               href={resultUrl}
-              title="Results"
+              title={message("dashboard.action.results")}
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
@@ -1135,22 +1119,21 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             >
               <img
                 src={resultIcon}
-                alt="Results"
+                alt={message("dashboard.action.results")}
                 style={{ width: "1.1rem", height: "1.1rem" }}
               />
             </a>
             <a
               href="#"
-              title="Validate"
+              title={message("dashboard.action.validate")}
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
                 if (!hasRole(userSessionDetails, "Global Administrator")) {
                   addNotification({
                     kind: NotificationKinds.error,
-                    title: "Validation",
-                    message:
-                      "Permission denied – You are not authorized to validate orders.",
+                    title: message("dashboard.action.validate"),
+                    message: message("dashboard.validation.permissionDenied"),
                   });
                   setNotificationVisible(true);
                 } else {
@@ -1160,20 +1143,20 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             >
               <img
                 src={validateIcon}
-                alt="Validate"
+                alt={message("dashboard.action.validate")}
                 style={{ width: "1.1rem", height: "1.1rem" }}
               />
             </a>
             <a
               href={reportUrl}
-              title="Report"
+              title={message("dashboard.action.report")}
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
             >
               <img
                 src={reportIcon}
-                alt="Report"
+                alt={message("dashboard.action.report")}
                 style={{ width: "1.1rem", height: "1.1rem" }}
               />
             </a>
@@ -1230,7 +1213,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             <CheckmarkFilled
               size={16}
               style={{ color: "#24a148" }}
-              title="Completed"
+              title={message("dashboard.status.completed")}
             />
           ) : (
             cell.value
@@ -1650,7 +1633,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           onClick={loadPreviousResultsPage}
                           disabled={!previousPage}
                           renderIcon={ArrowLeft}
-                          iconDescription="previous"
+                          iconDescription={message("pagination.backward")}
                           size="sm"
                         />
                         <Button
@@ -1658,7 +1641,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           onClick={loadNextResultsPage}
                           disabled={!nextPage}
                           renderIcon={ArrowRight}
-                          iconDescription="next"
+                          iconDescription={message("pagination.forward")}
                           size="sm"
                         />
                       </div>
@@ -1923,7 +1906,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           </div>
         </div>
       ) : (
-        // Original non-split view (kept as is)
         <div className="dashboard-view">
           <Tile className="dashboard-tile">
             <Grid>
@@ -1962,14 +1944,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             onClick={loadPreviousResultsPage}
                             disabled={!previousPage}
                             renderIcon={ArrowLeft}
-                            iconDescription="previous"
+                            iconDescription={message("pagination.backward")}
                           />
                           <Button
                             hasIconOnly
                             onClick={loadNextResultsPage}
                             disabled={!nextPage}
                             renderIcon={ArrowRight}
-                            iconDescription="next"
+                            iconDescription={message("pagination.forward")}
                           />
                         </div>
                       </Column>
@@ -1985,7 +1967,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           ) ? (
                             <TabList
                               style={{ width: "100%" }}
-                              aria-label="List of tabs"
+                              aria-label={message(
+                                "dashboard.departmentTabs.label",
+                              )}
                               contained
                             >
                               <Tab
@@ -2007,7 +1991,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                           ) : (
                             <TabList
                               style={{ width: "100%" }}
-                              aria-label="List of tabs"
+                              aria-label={message(
+                                "dashboard.departmentTabs.label",
+                              )}
                               contained
                             >
                               {testSections?.map((item, id) => (
