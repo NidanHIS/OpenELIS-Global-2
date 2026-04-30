@@ -69,8 +69,12 @@ public class IncomingOrdersRestController {
             item.setPatientGuid(order.getPatientGuid());
             item.setReceivedTimestamp(order.getReceivedTimestamp());
 
-            // New display-only fields - null-safe
-            item.setPatientName(getPatientName(order.getPatientGuid()));
+            // Resolve patient once — extract both name and nationalId in a single lookup
+            PatientDisplayInfo patientInfo = resolvePatientDisplayInfo(order.getPatientGuid());
+            item.setPatientName(patientInfo.name);
+            item.setPatientId(patientInfo.nationalId);
+
+            // Payload-derived display-only fields
             item.setTestCount(calculateTotalTestCount(order.getPayload()));
             item.setSource(extractSource(order.getPayload()));
 
@@ -80,30 +84,60 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * Get patient name from patientGuid. Returns null if patient not found.
+     * Holds the display-only patient fields resolved from a patientGuid.
+     * Both fields are nullable — null means the data was not available.
      */
-    private String getPatientName(String patientGuid) {
+    private static class PatientDisplayInfo {
+        final String name;
+        final String nationalId;
+
+        PatientDisplayInfo(String name, String nationalId) {
+            this.name = name;
+            this.nationalId = nationalId;
+        }
+    }
+
+    /**
+     * Resolve patient display info (name + nationalId) from patientGuid.
+     * Fetches the Patient record exactly once. Returns an instance with null
+     * fields if the patient cannot be found — never returns null itself.
+     */
+    private PatientDisplayInfo resolvePatientDisplayInfo(String patientGuid) {
         if (patientGuid == null || patientGuid.trim().isEmpty()) {
-            return null;
+            return new PatientDisplayInfo(null, null);
         }
         try {
             Patient patient = patientService.getPatientForGuid(patientGuid);
-            if (patient != null && patient.getPerson() != null) {
+            if (patient == null) {
+                return new PatientDisplayInfo(null, null);
+            }
+
+            // Resolve name from Person
+            String resolvedName = null;
+            if (patient.getPerson() != null) {
                 Person person = patient.getPerson();
                 String firstName = person.getFirstName();
                 String lastName = person.getLastName();
                 if (firstName != null && lastName != null) {
-                    return lastName + ", " + firstName;
+                    resolvedName = lastName + ", " + firstName;
                 } else if (firstName != null) {
-                    return firstName;
+                    resolvedName = firstName;
                 } else if (lastName != null) {
-                    return lastName;
+                    resolvedName = lastName;
                 }
             }
+
+            // Resolve nationalId — null-safe, empty string treated as absent
+            String resolvedNationalId = patientService.getNationalId(patient);
+            if (resolvedNationalId != null && resolvedNationalId.trim().isEmpty()) {
+                resolvedNationalId = null;
+            }
+
+            return new PatientDisplayInfo(resolvedName, resolvedNationalId);
         } catch (Exception e) {
-            logger.debug("Could not retrieve patient name for guid: {}", patientGuid, e);
+            logger.debug("Could not resolve patient display info for guid: {}", patientGuid, e);
+            return new PatientDisplayInfo(null, null);
         }
-        return null;
     }
 
     /**
@@ -388,8 +422,9 @@ public class IncomingOrdersRestController {
         private String patientGuid;
         private Timestamp receivedTimestamp;
 
-        // New display-only fields - additive
+        // Display-only fields - additive, never affect collection flow
         private String patientName;
+        private String patientId;
         private Integer testCount;
         private String source;
 
@@ -423,6 +458,14 @@ public class IncomingOrdersRestController {
 
         public void setPatientName(String patientName) {
             this.patientName = patientName;
+        }
+
+        public String getPatientId() {
+            return patientId;
+        }
+
+        public void setPatientId(String patientId) {
+            this.patientId = patientId;
         }
 
         public Integer getTestCount() {

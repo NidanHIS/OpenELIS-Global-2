@@ -768,6 +768,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         String(item.patientName ?? "")
           .toLowerCase()
           .includes(q) ||
+        String(item.patientId ?? "")
+          .toLowerCase()
+          .includes(q) ||
         String(item.source ?? "")
           .toLowerCase()
           .includes(q) ||

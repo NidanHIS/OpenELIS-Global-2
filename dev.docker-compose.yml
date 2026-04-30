@@ -116,7 +116,7 @@ services:
         build:
             context: ./frontend
             dockerfile: Dockerfile
-        image: itechuw/openelis-global-2-frontend-dev:develop
+        image: local-frontend:develop
         container_name: openelisglobal-front-end
         # platform: linux/amd64
         networks:
@@ -135,10 +135,10 @@ services:
         tty: true
 
     proxy:
-        image: nginx:alpine
-        # build:
-        #     context: ./nginx-proxy
-        #     dockerfile: Dockerfile
+        image: nginx:alpine-custom
+        build:
+            context: ./nginx-proxy
+            dockerfile: Dockerfile
         container_name: openelisglobal-proxy
         # platform: linux/amd64
         ports:
