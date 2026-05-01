@@ -57,139 +57,13 @@ li.clickableUserDetails:hover {
  */
 .oe-loginPageContent {
   width: 100%;
-  min-height: calc(100vh - 3rem);
-  padding: 1.5rem;
-  background: #f4f7fb;
 }
 
 .oe-loginPageCenter {
   width: 100%;
-  max-width: 100%;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
-}
-
-.oe-loginShell {
-  width: 100%;
-  max-width: 1320px;
-  margin: 0 auto;
-}
-
-.oe-loginHero,
-.oe-loginFormRow {
-  width: 100%;
-  background: #ffffff;
-  border-radius: 1rem;
-}
-
-.oe-loginHero {
-  padding: 3rem 1.5rem 1.75rem;
-}
-
-.oe-loginFormRow {
-  padding: 0 1.5rem 2rem;
-}
-
-.oe-loginBrandingColumn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.oe-loginBrandingLogoWrap {
-  display: block;
-  width: 100%;
-}
-
-.oe-loginBrandingLogo {
-  max-width: 100%;
-  height: auto;
-}
-
-.oe-loginNotice {
-  max-width: 28rem;
-  margin-top: 0.75rem;
-  color: #343a3f;
-  font-size: 0.95rem;
-  line-height: 1.55;
-}
-
-.oe-loginFormGrid {
-  margin-top: 0;
-}
-
-.oe-loginFormSection {
-  width: 100%;
-  padding-top: 0.5rem;
-  border-top: none;
-  box-shadow: none;
-}
-
-.oe-loginFormStack {
-  gap: 1rem !important;
-}
-
-.oe-loginField {
-  width: 100%;
-}
-
-.oe-loginField .cds--text-input,
-.oe-loginField .cds--password-input {
-  min-height: 3rem;
-  border-radius: 0.5rem;
-}
-
-.oe-loginButtonRow {
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.oe-loginPrimaryButton,
-.oe-loginSecondaryButton,
-.oe-loginSsoButton,
-#oauth-buttons .cds--btn {
-  min-width: 11rem;
-  border-radius: 0.5rem;
-}
-
-#oauth-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-@media screen and (max-width: 900px) {
-  .oe-loginPageContent {
-    padding: 1rem;
-  }
-
-  .oe-loginHero {
-    padding: 2rem 1rem 1.25rem;
-  }
-
-  .oe-loginFormRow {
-    padding: 0 1rem 1.5rem;
-  }
-}
-
-@media screen and (max-width: 640px) {
-  .oe-loginPageContent {
-    min-height: auto;
-    padding: 0.75rem;
-  }
-
-  .oe-loginHero,
-  .oe-loginFormRow {
-    border-radius: 0.75rem;
-  }
-
-  .oe-loginPrimaryButton,
-  .oe-loginSecondaryButton,
-  .oe-loginSsoButton,
-  #oauth-buttons .cds--btn {
-    width: 100%;
-    min-width: 0;
-  }
 }
 
 /* REMOVED: Forcing black text caused dark mode input issues 
@@ -214,12 +88,10 @@ li.clickableUserDetails:hover {
   border: 0.5px solid #295785;
   border-radius: 5px;
 }
-
 .ruleBody {
   margin: 2%;
   padding: 0.5%;
 }
-
 .gridBoundary,
 .columnBoundary.section {
   padding: 1%;
@@ -275,14 +147,12 @@ li.clickableUserDetails:hover {
 .inlineChildDiv {
   margin-left: 1%;
 }
-
 .middleAlign,
 .middleAlignVertical,
 .bottomAlign {
   height: 100%;
   display: flex;
 }
-
 .middleAlign {
   align-items: center;
   justify-content: center;
@@ -292,11 +162,9 @@ li.clickableUserDetails:hover {
   display: flex;
   justify-content: center;
 }
-
 .middleAlignVertical {
   align-items: center;
 }
-
 .bottomAlign {
   align-items: flex-end;
 }
@@ -315,13 +183,11 @@ li.clickableUserDetails:hover {
   margin-left: 1%;
   margin-right: 0%;
 }
-
 .searchLabNumber,
 .sampleInfo {
   margin-left: 0%;
   margin-right: 0%;
 }
-
 .searchLabNumber {
   width: 50%;
 }
@@ -341,13 +207,11 @@ li.clickableUserDetails:hover {
   margin-right: 5%;
   width: 100%;
 }
-
 .institute {
   margin-left: 5%;
   margin-right: 5%;
   width: 100%;
 }
-
 /* REMOVED: Forcing black text caused dark mode input issues 
    Carbon's <Theme theme="white"> handles this correctly */
 .inputText,
@@ -359,7 +223,6 @@ li.clickableUserDetails:hover {
 .inputSelect2 {
   width: 380px;
 }
-
 .inputText2,
 .inputSelect2 {
   padding-left: 1%;
@@ -445,14 +308,11 @@ button {
 .requiredFieldIndicator {
   color: red;
 }
-
 .toastDisplay {
-  position: fixed;
-  /*or fixed*/
+  position: fixed; /*or fixed*/
   top: 47px;
   right: 0px;
-  z-index: 9100;
-  /* Must be higher than Carbon modals (9000) to appear on top */
+  z-index: 9100; /* Must be higher than Carbon modals (9000) to appear on top */
 }
 
 .selectSampleType {
@@ -487,11 +347,9 @@ button {
 .first-row {
   max-width: 500px;
 }
-
 .searchResultsBtn {
   margin: 10px !important;
 }
-
 .advancedSearchResultsBtn {
   margin: 10px !important;
 }
@@ -568,8 +426,7 @@ button {
 /* Compensate padding when active border is added */
 .reduced-padding-nav-menu-item > a.cds--side-nav__link--current,
 .reduced-padding-nav-menu-item > a.cds--side-nav__link[aria-current="page"] {
-  padding-left: calc(1rem - 4px) !important;
-  /* Compensate for 4px border */
+  padding-left: calc(1rem - 4px) !important; /* Compensate for 4px border */
 }
 
 .top-level-menu-item > a {
@@ -587,11 +444,9 @@ button {
   .banner h5 {
     font-size: 1.8vw;
   }
-
   .banner p {
     font-size: 1.4vw;
   }
-
   .formInlineDiv {
     grid-template-columns: 1fr;
   }
@@ -658,10 +513,8 @@ button {
 .cds--side-nav {
   overflow-y: auto !important;
   overflow-x: visible !important;
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 .cds--side-nav__navigation {
@@ -670,8 +523,7 @@ button {
 }
 
 .cds--side-nav::-webkit-scrollbar {
-  display: none;
-  /* Chrome/Safari/Edge */
+  display: none; /* Chrome/Safari/Edge */
 }
 
 /* =============================================================================
@@ -701,10 +553,10 @@ button {
   background-color: var(
     --cds-layer-selected-01,
     rgba(255, 255, 255, 0.1)
-  ) !important;
-  /* Restore active background */
-  padding-left: calc(1rem - 4px) !important;
-  /* Compensate for 4px border to prevent double border */
+  ) !important; /* Restore active background */
+  padding-left: calc(
+    1rem - 4px
+  ) !important; /* Compensate for 4px border to prevent double border */
   border-right: none !important;
   border-top: none !important;
   border-bottom: none !important;
@@ -727,7 +579,6 @@ nav.cds--side-nav .cds--side-nav__link[aria-current="page"] {
   display: none !important;
   content: none !important;
 }
-
 nav.cds--side-nav .cds--side-nav__link--current::before,
 nav.cds--side-nav .cds--side-nav__link[aria-current="page"]::before {
   display: none !important;
@@ -748,8 +599,7 @@ nav.cds--side-nav .cds--side-nav__link[aria-current="page"]::before {
   background-color: var(
     --cds-layer-selected-01,
     rgba(255, 255, 255, 0.1)
-  ) !important;
-  /* Keep active background on hover */
+  ) !important; /* Keep active background on hover */
   border-right: none !important;
   border-top: none !important;
   border-bottom: none !important;
@@ -969,8 +819,7 @@ nav.cds--side-nav .cds--side-nav__link::before {
 /* Subnav items (level 1+) - extra indent for visual hierarchy */
 /* Base indentation for level 1 (2nd level) */
 .reduced-padding-nav-menu-item.cds--side-nav__menu-item .cds--side-nav__link {
-  padding-left: 2.5rem !important;
-  /* Extra indent for subnavs */
+  padding-left: 2.5rem !important; /* Extra indent for subnavs */
 }
 
 /* Subnav items that are parents (SideNavMenu renders a <button.cds--side-nav__submenu>) */
@@ -987,8 +836,7 @@ nav.cds--side-nav .cds--side-nav__link::before {
 .reduced-padding-nav-menu-item
   .reduced-padding-nav-menu-item.cds--side-nav__menu-item
   .cds--side-nav__link {
-  padding-left: 4rem !important;
-  /* 3rd level */
+  padding-left: 4rem !important; /* 3rd level */
 }
 
 /* Level 3 (4th level in nav): items nested two levels deep */
@@ -1000,8 +848,7 @@ nav.cds--side-nav .cds--side-nav__link::before {
   .reduced-padding-nav-menu-item
   .reduced-padding-nav-menu-item.cds--side-nav__menu-item
   .cds--side-nav__link {
-  padding-left: 5.5rem !important;
-  /* 4th level */
+  padding-left: 5.5rem !important; /* 4th level */
 }
 
 /* Level 4 (5th level in nav): items nested three levels deep */
@@ -1015,8 +862,7 @@ nav.cds--side-nav .cds--side-nav__link::before {
   .reduced-padding-nav-menu-item
   .reduced-padding-nav-menu-item.cds--side-nav__menu-item
   .cds--side-nav__link {
-  padding-left: 7rem !important;
-  /* 5th level */
+  padding-left: 7rem !important; /* 5th level */
 }
 
 /* Active subnavs - compensate for border + keep progressive indent */
@@ -1025,8 +871,9 @@ nav.cds--side-nav .cds--side-nav__link::before {
   .cds--side-nav__link--current,
 .reduced-padding-nav-menu-item.cds--side-nav__menu-item
   .cds--side-nav__link[aria-current="page"] {
-  padding-left: calc(2.5rem - 4px) !important;
-  /* Base indent minus 4px border */
+  padding-left: calc(
+    2.5rem - 4px
+  ) !important; /* Base indent minus 4px border */
 }
 
 /* Level 2 (3rd level) active items */
@@ -1063,52 +910,4 @@ nav.cds--side-nav .cds--side-nav__link::before {
   .reduced-padding-nav-menu-item.cds--side-nav__menu-item
   .cds--side-nav__link[aria-current="page"] {
   padding-left: calc(7rem - 4px) !important;
-
-  /* For normal users - make dashboard take full width */
-  .content-nav-locked {
-    margin-left: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 1rem;
-  }
-
-  /* Ensure SideNav doesn't take unnecessary space */
-  .bx--side-nav {
-    flex-shrink: 0;
-  }
-
-  /* Make main content area fill remaining space */
-  .d-flex.flex-grow-1 {
-    min-height: calc(100vh - 48px);
-    /* Adjust based on your header height */
-  }
-
-  /* For normal users with collapsed sidebar */
-  .d-flex.flex-grow-1 > .bx--content {
-    transition: all 0.3s ease;
-  }
-
-  /* For normal users - make dashboard take full width */
-  .content-nav-locked {
-    margin-left: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 1rem;
-  }
-
-  /* Ensure SideNav doesn't take unnecessary space */
-  .bx--side-nav {
-    flex-shrink: 0;
-  }
-
-  /* Make main content area fill remaining space */
-  .d-flex.flex-grow-1 {
-    min-height: calc(100vh - 48px);
-    /* Adjust based on your header height */
-  }
-
-  /* For normal users with collapsed sidebar */
-  .d-flex.flex-grow-1 > .bx--content {
-    transition: all 0.3s ease;
-  }
 }

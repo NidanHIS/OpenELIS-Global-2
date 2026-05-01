@@ -1095,12 +1095,6 @@ export function SearchResults(props) {
     const splitIndex = fullTestName.lastIndexOf("(");
     const testName = fullTestName.substring(0, splitIndex);
     const sampleType = fullTestName.substring(splitIndex);
-    const accessionDisplay = `${
-      formatLabNum
-        ? convertAlphaNumLabNumForDisplay(row.accessionNumber)
-        : row.accessionNumber
-    }-${row.sequenceNumber}`;
-    const sampleIdentifier = row.sampleItemExternalId || accessionDisplay;
 
     console.debug("renderCell: index: " + index + ", id: " + id);
     switch (column.id) {
@@ -1133,13 +1127,11 @@ export function SearchResults(props) {
             </div>
             <div className="sampleInfo">
               <br></br>
-              {sampleIdentifier}
-              {row.sampleItemExternalId && (
-                <>
-                  <br></br>
-                  {accessionDisplay}
-                </>
-              )}
+              {(formatLabNum
+                ? convertAlphaNumLabNumForDisplay(row.accessionNumber)
+                : row.accessionNumber) +
+                "-" +
+                row.sequenceNumber}
               {row.isEqaSample && <EQABadge priority={row.eqaPriority} />}
               <br></br>
               {row.patientName} <br></br>

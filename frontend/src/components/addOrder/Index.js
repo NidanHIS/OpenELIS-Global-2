@@ -120,6 +120,23 @@ const Index = () => {
         const resolvedExternalOrderNumber =
           sampleOrderItems.externalOrderNumber || externalOrderNumber || "";
 
+        setOrderFormValues({
+          ...SampleOrderFormValues,
+          ...form,
+          patientProperties: {
+            ...SampleOrderFormValues.patientProperties,
+            ...patientProperties,
+          },
+          sampleOrderItems: {
+            ...SampleOrderFormValues.sampleOrderItems,
+            ...sampleOrderItems,
+            // Incoming-order review flow uses incomingOrderNumber to skip referral lookup,
+            // but must still submit externalOrderNumber so it can be persisted and later
+            // included in middleware result sync payloads.
+            externalOrderNumber: resolvedExternalOrderNumber,
+          },
+        });
+
         const mappedSamples = mapSamplesFromXml(form.sampleXML);
         const initialSamples =
           mappedSamples.length > 0 ? mappedSamples : [sampleObject];
@@ -146,65 +163,6 @@ const Index = () => {
               }
             : s.sampleXML,
         }));
-        const sampleXML = buildSampleXmlFromSamples(overriddenSamples);
-
-        const applyIncomingForm = (generatedLabNo = "") => {
-          setOrderFormValues({
-            ...SampleOrderFormValues,
-            ...form,
-            sampleXML: sampleXML || form.sampleXML || "",
-            patientUpdateStatus: "NO_ACTION",
-            patientProperties: {
-              ...SampleOrderFormValues.patientProperties,
-              ...patientProperties,
-              patientUpdateStatus: "NO_ACTION",
-              nationalId:
-                patientProperties.nationalId ||
-                patientProperties.guid ||
-                "TEST",
-              birthDateForDisplay:
-                patientProperties.birthDateForDisplay || "01/01/1900",
-              gender: patientProperties.gender || "M",
-              readOnly: true,
-            },
-            sampleOrderItems: {
-              ...SampleOrderFormValues.sampleOrderItems,
-              ...sampleOrderItems,
-              // Incoming-order review flow uses incomingOrderNumber to skip referral lookup,
-              // but must still submit externalOrderNumber so it can be persisted and later
-              // included in middleware result sync payloads.
-              externalOrderNumber: resolvedExternalOrderNumber,
-              labNo: sampleOrderItems.labNo || generatedLabNo,
-              referringSiteName:
-                sampleOrderItems.referringSiteName || "External Order",
-              providerFirstName:
-                sampleOrderItems.providerFirstName || "External",
-              providerLastName:
-                sampleOrderItems.providerLastName || "Requester",
-              provisionalClinicalDiagnosis:
-                sampleOrderItems.provisionalClinicalDiagnosis ||
-                "External order",
-              requestDate:
-                sampleOrderItems.requestDate ||
-                configurationProperties.currentDateAsText,
-              receivedDateForDisplay:
-                sampleOrderItems.receivedDateForDisplay ||
-                configurationProperties.currentDateAsText,
-              receivedTime: sampleOrderItems.receivedTime || currentTime,
-            },
-          });
-        };
-
-        if (sampleOrderItems.labNo) {
-          applyIncomingForm();
-        } else {
-          getFromOpenElisServer(
-            "/rest/SampleEntryGenerateScanProvider",
-            (response) => {
-              applyIncomingForm(response?.status ? response.body : "");
-            },
-          );
-        }
 
         setSamples(overriddenSamples);
         resolveIncomingSampleNames(overriddenSamples);
@@ -421,39 +379,6 @@ const Index = () => {
     } catch (e) {
       return [];
     }
-  };
-
-  const buildSampleXmlFromSamples = (samplesToBuild) => {
-    let sampleXmlString = "";
-    if (!Array.isArray(samplesToBuild) || samplesToBuild.length === 0) {
-      return sampleXmlString;
-    }
-
-    const samplesWithTests = samplesToBuild.filter(
-      (sampleItem) =>
-        Array.isArray(sampleItem.tests) && sampleItem.tests.length > 0,
-    );
-    if (samplesWithTests.length === 0) {
-      return sampleXmlString;
-    }
-
-    sampleXmlString = '<?xml version="1.0" encoding="utf-8"?><samples>';
-    samplesWithTests.forEach((sampleItem) => {
-      const tests = sampleItem.tests.map((test) => test.id).join(",");
-      const panels = Array.isArray(sampleItem.panels)
-        ? sampleItem.panels.map((panel) => panel.id).join(",")
-        : "";
-      const storageLocation = sampleItem.sampleXML?.storageLocation;
-      const storageLocationId = storageLocation?.id || "";
-      const storageLocationType = storageLocation?.type || "";
-      const storagePositionCoordinate =
-        storageLocation?.positionCoordinate || "";
-
-      sampleXmlString += `<sample sampleID='${sampleItem.sampleTypeId}' date='${sampleItem.sampleXML?.collectionDate || ""}' time='${sampleItem.sampleXML?.collectionTime || ""}' collector='${sampleItem.sampleXML?.collector || ""}' quantity='${sampleItem.sampleXML?.quantity || ""}' uom='${sampleItem.sampleXML?.uom || ""}' tests='${tests}' testSectionMap='' testSampleTypeMap='' panels='${panels}' rejected='${sampleItem.sampleXML?.rejected || false}' rejectReasonId='${sampleItem.sampleXML?.rejectionReason || ""}' initialConditionIds='' storageLocationId='${storageLocationId}' storageLocationType='${storageLocationType}' storagePositionCoordinate='${storagePositionCoordinate}' numOrderLabels='${sampleItem.sampleXML?.numOrderLabels || 1}' numSpecimenLabels='${sampleItem.sampleXML?.numSpecimenLabels || 1}'/>`;
-    });
-    sampleXmlString += "</samples>";
-
-    return sampleXmlString;
   };
 
   useEffect(() => {

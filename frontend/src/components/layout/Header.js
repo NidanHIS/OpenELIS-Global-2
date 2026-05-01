@@ -57,7 +57,6 @@ function OEHeader({
   SIDENAV_MODES,
   defaultMode = "close",
   storageKeyPrefix = "main",
-  showSideNavToggle = true,
 }) {
   const { configurationProperties, enabledLanguages } =
     useContext(ConfigurationContext);
@@ -625,7 +624,7 @@ function OEHeader({
           }}
         >
           <Header id="mainHeader" className="mainHeader" aria-label="">
-            {userSessionDetails.authenticated && showSideNavToggle && (
+            {userSessionDetails.authenticated && (
               <button
                 id="sidenav-menu-button"
                 data-cy="menuButton"
@@ -807,7 +806,7 @@ function OEHeader({
                 </li>
               </ul>
             </HeaderPanel>
-            {userSessionDetails.authenticated && showSideNavToggle && (
+            {userSessionDetails.authenticated && (
               <>
                 <SideNav
                   aria-label="Side navigation"

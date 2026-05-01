@@ -84,8 +84,6 @@ const SampleType = (props) => {
         },
   );
   const [loading, setLoading] = useState(true);
-  const incomingTestsKey = JSON.stringify(sample?.tests || []);
-  const incomingPanelsKey = JSON.stringify(sample?.panels || []);
 
   const defaultSelect = { id: "", value: "Choose Rejection Reason" };
 
@@ -486,21 +484,6 @@ const SampleType = (props) => {
       });
     }
   };
-
-  useEffect(() => {
-    if (!sample) {
-      return;
-    }
-
-    setSelectedTests(Array.isArray(sample.tests) ? sample.tests : []);
-    setSelectedPanels(Array.isArray(sample.panels) ? sample.panels : []);
-    setSelectedSampleType((current) => ({
-      ...current,
-      id: sample.sampleTypeId || "",
-      name: sample.name || current.name || "",
-      element_index: index,
-    }));
-  }, [index, incomingPanelsKey, incomingTestsKey, sample?.sampleTypeId]);
 
   useEffect(() => {
     componentMounted.current = true;
