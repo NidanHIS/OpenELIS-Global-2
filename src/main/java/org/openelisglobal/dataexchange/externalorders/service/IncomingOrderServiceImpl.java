@@ -121,6 +121,21 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
 
     @Override
     @Transactional(readOnly = true)
+    public IncomingOrderService.PagedIncomingOrders getOrdersPage(
+            java.sql.Timestamp from, java.sql.Timestamp to, String search, int page, int pageSize) {
+        // Defensive bounds
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+        if (pageSize > 100) pageSize = 100;
+
+        int offset = (page - 1) * pageSize;
+        List<IncomingOrder> items = baseObjectDAO.getPagedOrders(from, to, search, offset, pageSize);
+        long totalCount = baseObjectDAO.countOrders(from, to, search);
+        return new IncomingOrderService.PagedIncomingOrders(items, totalCount, page, pageSize);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<IncomingOrder> getOrderByExternalOrderNumber(String externalOrderNumber) {
         return baseObjectDAO.getByExternalOrderNumber(externalOrderNumber);
     }

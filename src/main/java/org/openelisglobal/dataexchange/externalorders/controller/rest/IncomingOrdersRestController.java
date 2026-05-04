@@ -2,6 +2,10 @@ package org.openelisglobal.dataexchange.externalorders.controller.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -81,6 +86,115 @@ public class IncomingOrdersRestController {
             response.add(item);
         }
         return response;
+    }
+
+    /**
+     * Paginated list endpoint for the dashboard left panel.
+     *
+     * <p>Query parameters (all optional):
+     * <ul>
+     *   <li>{@code page}     – 1-based page number, defaults to 1</li>
+     *   <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
+     *   <li>{@code dateFrom} – ISO date (yyyy-MM-dd), inclusive lower bound on receivedTimestamp</li>
+     *   <li>{@code dateTo}   – ISO date (yyyy-MM-dd), exclusive upper bound on receivedTimestamp</li>
+     *   <li>{@code search}   – substring match on externalOrderNumber</li>
+     * </ul>
+     *
+     * <p>Response shape:
+     * <pre>
+     * {
+     *   "items":      [ ...IncomingOrderListItem... ],
+     *   "totalCount": 1247,
+     *   "page":       1,
+     *   "pageSize":   10,
+     *   "totalPages": 125
+     * }
+     * </pre>
+     *
+     * <p>The existing no-param {@code GET /rest/incoming-orders} is untouched.
+     * This endpoint is only activated when at least one query param is present.
+     */
+    @GetMapping(value = "/paged", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PagedIncomingOrdersResponse> listPaged(
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "10") int pageSize,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String search) {
+
+        // Parse optional date bounds
+        Timestamp from = parseDateToTimestampStart(dateFrom);
+        Timestamp to = parseDateToTimestampStart(dateTo); // exclusive upper bound = start of dateTo day
+
+        IncomingOrderService.PagedIncomingOrders paged =
+                incomingOrderService.getOrdersPage(from, to, search, page, pageSize);
+
+        List<IncomingOrderListItem> items = new ArrayList<>();
+        for (IncomingOrder order : paged.getItems()) {
+            IncomingOrderListItem item = new IncomingOrderListItem();
+            item.setExternalOrderNumber(order.getExternalOrderNumber());
+            item.setPatientGuid(order.getPatientGuid());
+            item.setReceivedTimestamp(order.getReceivedTimestamp());
+
+            PatientDisplayInfo patientInfo = resolvePatientDisplayInfo(order.getPatientGuid());
+            item.setPatientName(patientInfo.name);
+            item.setPatientId(patientInfo.nationalId);
+
+            item.setTestCount(calculateTotalTestCount(order.getPayload()));
+            item.setSource(extractSource(order.getPayload()));
+
+            items.add(item);
+        }
+
+        PagedIncomingOrdersResponse response = new PagedIncomingOrdersResponse(
+                items,
+                paged.getTotalCount(),
+                paged.getPage(),
+                paged.getPageSize(),
+                paged.getTotalPages());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Parses an ISO date string (yyyy-MM-dd) to a Timestamp at the start of that day
+     * in the system default timezone. Returns null if the input is null or blank.
+     */
+    private Timestamp parseDateToTimestampStart(String isoDate) {
+        if (isoDate == null || isoDate.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            LocalDate date = LocalDate.parse(isoDate.trim());
+            return Timestamp.valueOf(date.atTime(LocalTime.MIDNIGHT));
+        } catch (DateTimeParseException e) {
+            logger.warn("Invalid date param '{}', ignoring", isoDate);
+            return null;
+        }
+    }
+
+    /** Response envelope for the paginated list endpoint. */
+    public static class PagedIncomingOrdersResponse {
+        private final List<IncomingOrderListItem> items;
+        private final long totalCount;
+        private final int page;
+        private final int pageSize;
+        private final int totalPages;
+
+        public PagedIncomingOrdersResponse(List<IncomingOrderListItem> items, long totalCount,
+                int page, int pageSize, int totalPages) {
+            this.items = items;
+            this.totalCount = totalCount;
+            this.page = page;
+            this.pageSize = pageSize;
+            this.totalPages = totalPages;
+        }
+
+        public List<IncomingOrderListItem> getItems() { return items; }
+        public long getTotalCount() { return totalCount; }
+        public int getPage() { return page; }
+        public int getPageSize() { return pageSize; }
+        public int getTotalPages() { return totalPages; }
     }
 
     /**

@@ -132,6 +132,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const [rightSearch, setRightSearch] = useState("");
   const [leftSearch, setLeftSearch] = useState("");
 
+  // ── LEFT PANEL SERVER-SIDE PAGINATION STATE ──────────────────────────────────
+  // These drive the paginated /rest/incoming-orders/paged calls.
+  // leftPage / leftPageSize are kept as the source of truth for what the
+  // backend should return; the Carbon <Pagination> component reads them back.
+  const [leftTotalCount, setLeftTotalCount] = useState(0);
+  const [leftTotalPages, setLeftTotalPages] = useState(0);
+  // Debounce ref: holds the setTimeout id so we can cancel on rapid keystrokes
+  const leftSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track in-flight fetch sequence so stale responses are discarded
+  const leftFetchSeq = useRef(0);
   const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
   const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
   const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
@@ -193,28 +203,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   useEffect(() => {
     getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
-    getFromOpenElisServer("/rest/incoming-orders", (res) => {
-      if (!componentMounted.current) return;
-      const raw = Array.isArray(res) ? res : [];
-      // Normalize field names to match table header keys + set row id
-      const list = raw.map((item) => ({
-        ...item,
-        id: item.externalOrderNumber,
-        received: item.receivedTimestamp
-          ? new Date(item.receivedTimestamp).toLocaleString([], {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "—",
-        tests: item.testCount != null ? String(item.testCount) : "—",
-        source: item.source ?? "—",
-      }));
-      setIncomingOrdersData(list);
-      setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
-    });
+    // Initial left-panel load: today's orders, page 1, pageSize 10
+    fetchIncomingOrdersPage(1, leftPageSize, leftPanelView, leftSearch);
     return () => {
       componentMounted.current = false;
     };
@@ -267,6 +257,30 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     setLeftPage(1);
   }, [leftSearch, leftPanelView]);
 
+  // ── REACTIVE LEFT PANEL FETCH ─────────────────────────────────────────────────
+  // Fires whenever page, pageSize, or view changes — immediate re-fetch.
+  useEffect(() => {
+    fetchIncomingOrdersPage(leftPage, leftPageSize, leftPanelView, leftSearch);
+  }, [leftPage, leftPageSize, leftPanelView]);
+
+  // Search is debounced: wait 350ms after the user stops typing before fetching.
+  // This avoids hammering the backend on every keystroke.
+  useEffect(() => {
+    if (leftSearchDebounceRef.current) {
+      clearTimeout(leftSearchDebounceRef.current);
+    }
+    leftSearchDebounceRef.current = setTimeout(() => {
+      // Reset to page 1 whenever search term changes, then fetch
+      setLeftPage(1);
+      fetchIncomingOrdersPage(1, leftPageSize, leftPanelView, leftSearch);
+    }, 350);
+    return () => {
+      if (leftSearchDebounceRef.current) {
+        clearTimeout(leftSearchDebounceRef.current);
+      }
+    };
+  }, [leftSearch]);
+
   const fetchTestSections = (res) => {
     setTestSections(res);
     hasRole(userSessionDetails, "Global Administrator")
@@ -302,6 +316,80 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       }));
       setLoading(false);
     }
+  };
+
+  // ── LEFT PANEL FETCH FUNCTION ─────────────────────────────────────────────────
+  /**
+   * Fetches a page of incoming orders from the new paginated backend endpoint.
+   *
+   * - "ACTIVE" view  → dateFrom = today midnight (orders received today)
+   * - "BACKLOG" view → dateTo   = today midnight (orders received before today)
+   * - search         → forwarded as-is to the backend
+   *
+   * Results replace incomingOrdersData. The Carbon <Pagination> component is
+   * driven by leftTotalCount (total matching records on the server).
+   */
+  const fetchIncomingOrdersPage = (
+    page: number,
+    pageSize: number,
+    panelView: PanelView,
+    searchTerm: string,
+  ) => {
+    if (!componentMounted.current) return;
+
+    const seq = ++leftFetchSeq.current;
+
+    // Build today's midnight as an ISO date string (yyyy-MM-dd)
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+
+    if (panelView === "ACTIVE") {
+      // Today: received >= midnight today
+      params.set("dateFrom", todayIso);
+    } else {
+      // Backlog: received < midnight today
+      params.set("dateTo", todayIso);
+    }
+
+    if (searchTerm && searchTerm.trim()) {
+      params.set("search", searchTerm.trim());
+    }
+
+    const url = `/rest/incoming-orders/paged?${params.toString()}`;
+
+    getFromOpenElisServerV2(url).then((res: any) => {
+      if (!componentMounted.current || seq !== leftFetchSeq.current) return;
+
+      const raw: any[] = Array.isArray(res?.items) ? res.items : [];
+      const list = raw.map((item: any) => ({
+        ...item,
+        id: item.externalOrderNumber,
+        received: item.receivedTimestamp
+          ? new Date(item.receivedTimestamp).toLocaleString([], {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+        tests: item.testCount != null ? String(item.testCount) : "—",
+        source: item.source ?? "—",
+      }));
+
+      setIncomingOrdersData(list);
+      setLeftTotalCount(res?.totalCount ?? 0);
+      setLeftTotalPages(res?.totalPages ?? 0);
+      // Update the tile count with the server's total for the active view
+      if (panelView === "ACTIVE") {
+        setCounts((prev) => ({ ...prev, samplesToCollect: res?.totalCount ?? 0 }));
+      }
+    });
   };
 
   const hasPendingValidationField = (items = []) =>
@@ -742,43 +830,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           .includes(q),
     );
   }, [backlogTableData, rightSearch]);
-
-  // Today midnight — same boundary used by the backlog filter so the two
-  // views are mutually exclusive: received >= todayMidnight → Today,
-  // received < todayMidnight → Backlog.
-  const todayMidnight = useMemo(
-    () => new Date(new Date().setHours(0, 0, 0, 0)),
-    [],
-  );
-
-  const todayIncomingOrders = useMemo(
-    () =>
-      incomingOrdersData.filter((item) => {
-        if (!item.receivedTimestamp) return true; // no timestamp → show in Today so nothing is lost
-        return new Date(item.receivedTimestamp) >= todayMidnight;
-      }),
-    [incomingOrdersData, todayMidnight],
-  );
-
-  const filteredLeftData = useMemo(() => {
-    const q = leftSearch.trim().toLowerCase();
-    if (!q) return todayIncomingOrders;
-    return todayIncomingOrders.filter(
-      (item) =>
-        String(item.patientName ?? "")
-          .toLowerCase()
-          .includes(q) ||
-        String(item.patientId ?? "")
-          .toLowerCase()
-          .includes(q) ||
-        String(item.source ?? "")
-          .toLowerCase()
-          .includes(q) ||
-        String(item.labNumber ?? "")
-          .toLowerCase()
-          .includes(q),
-    );
-  }, [todayIncomingOrders, leftSearch]);
 
   // Workflow summary counters
   const workflowOrderCount = useMemo(
@@ -1419,10 +1470,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       {leftPanelView === "ACTIVE" ? (
                         <>
                           <DataTable
-                            rows={filteredLeftData.slice(
-                              (leftPage - 1) * leftPageSize,
-                              leftPage * leftPageSize,
-                            )}
+                            rows={incomingOrdersData}
                             headers={incomingOrderHeaders}
                             isSortable
                           >
@@ -1524,7 +1572,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={leftPage}
                             pageSize={leftPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={filteredLeftData.length}
+                            totalItems={leftTotalCount}
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
@@ -1566,35 +1614,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       ) : (
                         <>
                           <DataTable
-                            rows={incomingOrdersData
-                              .filter((item) => {
-                                // Left panel backlog: incoming orders received before today
-                                const received = item.receivedTimestamp
-                                  ? new Date(item.receivedTimestamp)
-                                  : null;
-                                const isBeforeToday = received
-                                  ? received <
-                                    new Date(new Date().setHours(0, 0, 0, 0))
-                                  : false;
-                                if (!isBeforeToday) return false;
-                                const q = leftSearch.trim().toLowerCase();
-                                if (!q) return true;
-                                return (
-                                  String(item.patientName ?? "")
-                                    .toLowerCase()
-                                    .includes(q) ||
-                                  String(item.source ?? "")
-                                    .toLowerCase()
-                                    .includes(q) ||
-                                  String(item.externalOrderNumber ?? "")
-                                    .toLowerCase()
-                                    .includes(q)
-                                );
-                              })
-                              .slice(
-                                (leftPage - 1) * leftPageSize,
-                                leftPage * leftPageSize,
-                              )}
+                            rows={incomingOrdersData}
                             headers={incomingOrderHeaders}
                             isSortable
                           >
@@ -1698,17 +1718,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={leftPage}
                             pageSize={leftPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={
-                              incomingOrdersData.filter((item) => {
-                                const received = item.receivedTimestamp
-                                  ? new Date(item.receivedTimestamp)
-                                  : null;
-                                return received
-                                  ? received <
-                                      new Date(new Date().setHours(0, 0, 0, 0))
-                                  : false;
-                              }).length
-                            }
+                            totalItems={leftTotalCount}
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
