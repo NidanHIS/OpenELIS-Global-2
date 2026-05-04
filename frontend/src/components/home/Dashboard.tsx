@@ -1269,10 +1269,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           <div className="split-dashboard-header">
             <div className="split-dashboard-header__left">
               <div className="split-dashboard-title-group">
-                <h2 className="split-dashboard-title">DASHBOARD</h2>
+                <h2 className="split-dashboard-title">
+                  <FormattedMessage id="dashboard.title" />
+                </h2>
                 <p className="split-dashboard-subtitle">
-                  Monitor test workload, sample collection, and daily lab
-                  throughput at a glance.
+                  <FormattedMessage id="dashboard.subtitle" />
                 </p>
               </div>
             </div>
