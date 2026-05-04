@@ -42,6 +42,7 @@ import org.openelisglobal.test.service.TestService;
 import org.openelisglobal.test.valueholder.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -734,5 +735,210 @@ public class PatientDashBoardProvider {
         timeBean.setReceptionToValidation(calculateAverageReceptionToValidationTime());
         timeBean.setResultToValidation(calculateAverageResultToValidationTime());
         return timeBean;
+    }
+
+    /**
+     * Paginated endpoint for the dashboard "Samples Collected / On Going Orders"
+     * right panel.
+     *
+     * <p>Returns a page of grouped order beans (one row per accession number)
+     * covering NotStarted, TechnicalAcceptance, and Finalized analyses — the same
+     * logical dataset as {@code ORDERS-All-Grouped} but with true DB-level
+     * pagination instead of session-based fake pagination.
+     *
+     * <p>The old {@code ORDERS-All-Grouped} endpoint is completely untouched.
+     *
+     * <p>Query parameters (all optional):
+     * <ul>
+     *   <li>{@code page}     – 1-based page number, defaults to 1</li>
+     *   <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
+     * </ul>
+     *
+     * <p>Response shape:
+     * <pre>
+     * {
+     *   "items":      [ ...OrderDisplayBean... ],
+     *   "totalCount": 4821,
+     *   "page":       1,
+     *   "pageSize":   10,
+     *   "totalPages": 483
+     * }
+     * </pre>
+     */
+    @GetMapping(value = "home-dashboard/grouped-orders/paged", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<PagedGroupedOrdersResponse> getGroupedOrdersPaged(
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "10") int pageSize) {
+
+        // Collect all three status IDs that belong in this view:
+        // NotStarted (pending result), TechnicalAcceptance (pending validation),
+        // Finalized (completed). Same set as getAllGroupedOrders.
+        List<String> allStatusIds = new ArrayList<>();
+        allStatusIds.add(iStatusService.getStatusID(AnalysisStatus.NotStarted));
+        allStatusIds.add(iStatusService.getStatusID(AnalysisStatus.TechnicalAcceptance));
+        allStatusIds.add(iStatusService.getStatusID(AnalysisStatus.Finalized));
+
+        // Get the page of distinct sample IDs from the service (2 DB queries total).
+        AnalysisService.PagedSampleIds pagedIds =
+                analysisService.getPagedSampleIdsForStatuses(allStatusIds, page, pageSize);
+
+        List<String> sampleIds = pagedIds.getSampleIds();
+        List<OrderDisplayBean> items = new ArrayList<>();
+
+        if (!sampleIds.isEmpty()) {
+            // Scope the full-status fetches to only the sample IDs on this page.
+            // We fetch all analyses for the relevant statuses and then filter by
+            // the page's sample IDs — this keeps us within proven HQL patterns
+            // and avoids introducing a new batch-by-sample-id query.
+            Set<String> sampleIdSet = new HashSet<>(sampleIds);
+
+            List<String> activeStatusIds = new ArrayList<>();
+            activeStatusIds.add(iStatusService.getStatusID(AnalysisStatus.NotStarted));
+            activeStatusIds.add(iStatusService.getStatusID(AnalysisStatus.TechnicalAcceptance));
+
+            List<String> finalizedStatusIds = new ArrayList<>();
+            finalizedStatusIds.add(iStatusService.getStatusID(AnalysisStatus.Finalized));
+
+            List<Analysis> activeAnalyses = analysisService.getAnalysesForStatusIds(activeStatusIds);
+            List<Analysis> finalizedAnalyses = analysisService.getAnalysesForStatusIds(finalizedStatusIds);
+
+            // Filter to only the sample IDs on this page
+            List<Analysis> pageActiveAnalyses = filterAnalysesBySampleIds(activeAnalyses, sampleIdSet);
+            List<Analysis> pageFinalizedAnalyses = filterAnalysesBySampleIds(finalizedAnalyses, sampleIdSet);
+
+            // Split active into pendingResult / pendingValidation
+            List<Analysis> pendingResult = new ArrayList<>();
+            List<Analysis> pendingValidation = new ArrayList<>();
+            for (Analysis a : pageActiveAnalyses) {
+                if (iStatusService.getStatusID(AnalysisStatus.NotStarted).equals(a.getStatusId())) {
+                    pendingResult.add(a);
+                } else {
+                    pendingValidation.add(a);
+                }
+            }
+
+            // Build grouped beans for active orders (reuses existing private method)
+            items = convertAnalysesToGroupedOrderBean(pendingResult, pendingValidation);
+
+            // Track active accessions to avoid duplicate rows for mixed-state orders
+            Set<String> activeAccessions = new HashSet<>();
+            for (OrderDisplayBean b : items) {
+                if (b.getLabNumber() != null && !b.getLabNumber().trim().isEmpty()) {
+                    activeAccessions.add(b.getLabNumber().trim());
+                }
+            }
+
+            // Add finalized-only accessions (same dedup logic as getAllGroupedOrders)
+            if (!pageFinalizedAnalyses.isEmpty()) {
+                Map<String, OrderDisplayBean> finalizedMap = new LinkedHashMap<>();
+                for (Analysis analysis : pageFinalizedAnalyses) {
+                    if (analysis == null) continue;
+                    Sample sample = analysis.getSampleItem() != null
+                            ? analysis.getSampleItem().getSample() : null;
+                    String labNumber = sample != null ? sample.getAccessionNumber() : null;
+                    String key = labNumber != null ? labNumber : analysis.getId();
+
+                    if (activeAccessions.contains(key)) continue;
+
+                    finalizedMap.computeIfAbsent(key, k -> {
+                        OrderDisplayBean bean = new OrderDisplayBean();
+                        bean.setId(analysis.getId());
+                        if (sample != null) {
+                            Patient patient = sampleHumanService.getPatientForSample(sample);
+                            bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
+                            bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
+                            bean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                            bean.setPatientName(getPatientName(patient));
+                        }
+                        bean.setOrderDate(analysis.getStartedDateForDisplay());
+                        bean.setTestSection(analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");
+                        bean.setCompleted(true);
+                        return bean;
+                    });
+                }
+                items.addAll(finalizedMap.values());
+            }
+
+            // Apply true total test count per sample (same logic as getAllGroupedOrders)
+            // Build accessionNumber -> sampleId map from page analyses
+            Map<String, String> accessionToSampleId = new LinkedHashMap<>();
+            List<Analysis> allPageAnalyses = new ArrayList<>();
+            allPageAnalyses.addAll(pageActiveAnalyses);
+            allPageAnalyses.addAll(pageFinalizedAnalyses);
+            for (Analysis a : allPageAnalyses) {
+                if (a == null) continue;
+                Sample s = a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
+                if (s != null && s.getAccessionNumber() != null && s.getId() != null) {
+                    accessionToSampleId.putIfAbsent(s.getAccessionNumber().trim(), s.getId());
+                }
+            }
+            // One query per unique sample on this page (bounded by pageSize, max 100)
+            Map<String, Integer> accessionToTotalCount = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : accessionToSampleId.entrySet()) {
+                List<Analysis> allForSample = analysisService.getAnalysesBySampleId(entry.getValue());
+                accessionToTotalCount.put(entry.getKey(), allForSample != null ? allForSample.size() : 0);
+            }
+            for (OrderDisplayBean bean : items) {
+                String key = bean.getLabNumber() != null ? bean.getLabNumber().trim() : "";
+                Integer total = accessionToTotalCount.get(key);
+                if (total != null) {
+                    bean.setTestCount(total);
+                }
+            }
+        }
+
+        PagedGroupedOrdersResponse response = new PagedGroupedOrdersResponse(
+                items,
+                pagedIds.getTotalCount(),
+                pagedIds.getPage(),
+                pagedIds.getPageSize(),
+                pagedIds.getTotalPages());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Filters a list of analyses to only those whose sample ID is in the given set.
+     * Used by {@link #getGroupedOrdersPaged} to scope the full-status-fetch down to
+     * the current page's sample IDs.
+     */
+    private List<Analysis> filterAnalysesBySampleIds(List<Analysis> analyses, Set<String> sampleIdSet) {
+        if (analyses == null || sampleIdSet == null || sampleIdSet.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Analysis> filtered = new ArrayList<>();
+        for (Analysis a : analyses) {
+            if (a == null) continue;
+            Sample s = a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
+            if (s != null && s.getId() != null && sampleIdSet.contains(s.getId())) {
+                filtered.add(a);
+            }
+        }
+        return filtered;
+    }
+
+    /** Response envelope for the paginated grouped-orders endpoint. */
+    public static class PagedGroupedOrdersResponse {
+        private final List<OrderDisplayBean> items;
+        private final long totalCount;
+        private final int page;
+        private final int pageSize;
+        private final int totalPages;
+
+        public PagedGroupedOrdersResponse(List<OrderDisplayBean> items, long totalCount,
+                int page, int pageSize, int totalPages) {
+            this.items = items;
+            this.totalCount = totalCount;
+            this.page = page;
+            this.pageSize = pageSize;
+            this.totalPages = totalPages;
+        }
+
+        public List<OrderDisplayBean> getItems() { return items; }
+        public long getTotalCount() { return totalCount; }
+        public int getPage() { return page; }
+        public int getPageSize() { return pageSize; }
+        public int getTotalPages() { return totalPages; }
     }
 }

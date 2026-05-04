@@ -142,6 +142,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const leftSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track in-flight fetch sequence so stale responses are discarded
   const leftFetchSeq = useRef(0);
+
+  // ── RIGHT PANEL SERVER-SIDE PAGINATION STATE ─────────────────────────────────
+  // Drives the paginated /rest/home-dashboard/grouped-orders/paged calls.
+  // rightTotalCount is the server's total count of distinct samples — used as
+  // totalItems in the Carbon <Pagination> component instead of the local array length.
+  const [rightTotalCount, setRightTotalCount] = useState(0);
   const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
   const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
   const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
@@ -262,6 +268,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   useEffect(() => {
     fetchIncomingOrdersPage(leftPage, leftPageSize, leftPanelView, leftSearch);
   }, [leftPage, leftPageSize, leftPanelView]);
+
+  // ── REACTIVE RIGHT PANEL FETCH ────────────────────────────────────────────────
+  // Fires whenever rightPage or rightPageSize changes on the ON_GOING_ORDERS tile.
+  // Only active when the selected tile uses the split layout (ON_GOING_ORDERS /
+  // ORDERS_IN_PROGRESS) — other tiles use the old session-based paging path.
+  useEffect(() => {
+    if (selectedTile == null || !isSplitLayout(selectedTile.type)) return;
+    const seq = ++tileLoadSequence.current;
+    setLoading(true);
+    fetchGroupedOrdersPage(rightPage, rightPageSize, seq);
+  }, [rightPage, rightPageSize]);
 
   // Search is debounced: wait 350ms after the user stops typing before fetching.
   // This avoids hammering the backend on every keystroke.
@@ -574,14 +591,44 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     return { ...first, displayItems: all };
   };
 
+  /**
+   * Fetches a single page of grouped orders from the new paginated endpoint.
+   *
+   * Replaces the old fetchAllGroupedPages loop for the ON_GOING_ORDERS tile.
+   * The server returns exactly one page of OrderDisplayBeans — no looping,
+   * no session-based fake pagination.
+   *
+   * rightTotalCount is set from res.totalCount so the Carbon <Pagination>
+   * component shows the correct total without loading all records.
+   */
+  const fetchGroupedOrdersPage = async (
+    page: number,
+    pageSize: number,
+    seq: number,
+  ) => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    const url = `/rest/home-dashboard/grouped-orders/paged?${params.toString()}`;
+
+    try {
+      const res: any = await getFromOpenElisServerV2(url);
+      if (seq !== tileLoadSequence.current) return;
+
+      const items = Array.isArray(res?.items) ? res.items : [];
+      setRightTotalCount(res?.totalCount ?? 0);
+      // Wrap in the displayItems shape that loadData expects
+      loadData({ displayItems: items }, true, seq);
+    } catch {
+      if (seq === tileLoadSequence.current) {
+        loadData({ displayItems: [] }, true, seq);
+      }
+    }
+  };
+
   const loadOngoingOrdersData = async (seq: number) => {
     try {
-      // ORDERS-All-Grouped returns NotStarted + TechnicalAcceptance + Finalized
-      // so completed records persist in the dashboard after validation.
-      const orders = await fetchAllGroupedPages(
-        "/rest/home-dashboard/ORDERS-All-Grouped",
-      );
-      loadData(orders, true, seq);
+      await fetchGroupedOrdersPage(rightPage, rightPageSize, seq);
     } catch {
       loadData({ displayItems: [] }, true, seq);
     }
@@ -1870,10 +1917,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       {rightPanelView === "ACTIVE" ? (
                         <>
                           <DataTable
-                            rows={filteredRightData.slice(
-                              (rightPage - 1) * rightPageSize,
-                              rightPage * rightPageSize,
-                            )}
+                            rows={
+                              isSplitLayout(selectedTile?.type)
+                                ? filteredRightData
+                                : filteredRightData.slice(
+                                    (rightPage - 1) * rightPageSize,
+                                    rightPage * rightPageSize,
+                                  )
+                            }
                             headers={
                               usesInProgressView(selectedTile.type) ||
                               selectedTile.type ===
@@ -1945,7 +1996,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={rightPage}
                             pageSize={rightPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={filteredRightData.length}
+                            totalItems={
+                              isSplitLayout(selectedTile?.type)
+                                ? rightTotalCount
+                                : filteredRightData.length
+                            }
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}

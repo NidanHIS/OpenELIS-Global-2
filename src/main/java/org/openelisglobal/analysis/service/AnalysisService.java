@@ -236,4 +236,47 @@ public interface AnalysisService extends BaseObjectService<Analysis, String> {
      * @return the existing Analysis or null if not found
      */
     Analysis getAnalysisBySampleItemAndTest(String sampleItemId, String testId);
+
+    /**
+     * Returns a page of distinct sample IDs and the total count of distinct samples
+     * that have at least one analysis with one of the given status IDs.
+     *
+     * <p>Used by the dashboard "Samples Collected / On Going Orders" right panel
+     * to drive true DB-level pagination. The caller is responsible for building
+     * the {@link org.openelisglobal.common.rest.provider.bean.homedashboard.OrderDisplayBean}
+     * list from the returned sample IDs.
+     *
+     * @param statusIds list of analysis status ID strings
+     * @param page      1-based page number (clamped to &ge;1)
+     * @param pageSize  records per page (clamped to 1–100)
+     * @return immutable result wrapper with sample IDs, total count, and paging metadata
+     */
+    PagedSampleIds getPagedSampleIdsForStatuses(List<String> statusIds, int page, int pageSize);
+
+    /**
+     * Immutable result wrapper returned by {@link #getPagedSampleIdsForStatuses}.
+     *
+     * <p>Mirrors the pattern of {@code IncomingOrderService.PagedIncomingOrders}.
+     */
+    final class PagedSampleIds {
+        private final List<String> sampleIds;
+        private final long totalCount;
+        private final int page;
+        private final int pageSize;
+        private final int totalPages;
+
+        public PagedSampleIds(List<String> sampleIds, long totalCount, int page, int pageSize) {
+            this.sampleIds = sampleIds;
+            this.totalCount = totalCount;
+            this.page = page;
+            this.pageSize = pageSize;
+            this.totalPages = pageSize > 0 ? (int) Math.ceil((double) totalCount / pageSize) : 0;
+        }
+
+        public List<String> getSampleIds() { return sampleIds; }
+        public long getTotalCount() { return totalCount; }
+        public int getPage() { return page; }
+        public int getPageSize() { return pageSize; }
+        public int getTotalPages() { return totalPages; }
+    }
 }
