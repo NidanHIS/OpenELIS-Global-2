@@ -149,7 +149,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const isSplitLayout = (type?: MetricType | null) =>
     type === "ON_GOING_ORDERS" || type === "ORDERS_IN_PROGRESS";
 
-  // ── DATA FETCHING ────────────────────────────────────────────────────────────
+  // -- DATA FETCHING --
   const usesInProgressView = (type?: MetricType | null) =>
     type === "ORDERS_IN_PROGRESS" || type === "ON_GOING_ORDERS";
 
@@ -208,9 +208,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               hour: "2-digit",
               minute: "2-digit",
             })
-          : "—",
-        tests: item.testCount != null ? String(item.testCount) : "—",
-        source: item.source ?? "—",
+          : "-",
+        tests: item.testCount != null ? String(item.testCount) : "-",
+        source: item.source ?? "-",
       }));
       setIncomingOrdersData(list);
       setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
@@ -409,7 +409,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       const tc = Number(item.testCount);
       const pendingResultCount = Number.isFinite(prc) ? prc : 0;
       const pendingValidationCount = Number.isFinite(pvc) ? pvc : 0;
-      // Always trust the backend's testCount — it is the real total of ALL
+      // Always trust the backend's testCount - it is the real total of ALL
       // analyses for the sample regardless of status. Only fall back to
       // prc+pvc if the backend didn't send a valid count.
       const testCount =
@@ -545,7 +545,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     setLoading(false);
   };
 
-  // ── TILE LIST ────────────────────────────────────────────────────────────────
+  // -- TILE LIST --
   const tileList: Array<Tile> = [
     {
       title: <FormattedMessage id="dashboard.in.progress.label" />,
@@ -608,7 +608,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const tilesWithTabs = ["ORDERS_COMPLETED_TODAY", "ORDERS_FOR_USER"];
 
-  // ── HANDLERS ─────────────────────────────────────────────────────────────────
+  // -- HANDLERS --
   const handleMinimizeClick = () => {
     setSelectedTile(null);
     hasRole(userSessionDetails, "Global Administrator")
@@ -663,11 +663,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     });
   };
 
-  // ── MEMOISED DATA ─────────────────────────────────────────────────────────────
+  // -- MEMOISED DATA --
 
   // Today = orderDate matches today's calendar date.
   // Backlog = orderDate is before today (any prior calendar day).
-  // Derived purely from server data — no localStorage, no timers.
+  // Derived purely from server data - no localStorage, no timers.
   const todayDateStr = useMemo(() => {
     const d = new Date();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -677,7 +677,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const isToday = useCallback(
     (orderDate?: string) => {
-      if (!orderDate) return true; // no date → show in Today so nothing is lost
+      if (!orderDate) return true; // no date -> show in Today so nothing is lost
       return orderDate.trim() === todayDateStr;
     },
     [todayDateStr],
@@ -743,9 +743,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     );
   }, [backlogTableData, rightSearch]);
 
-  // Today midnight — same boundary used by the backlog filter so the two
-  // views are mutually exclusive: received >= todayMidnight → Today,
-  // received < todayMidnight → Backlog.
+  // Today midnight - same boundary used by the backlog filter so the two
+  // views are mutually exclusive: received >= todayMidnight -> Today,
+  // received < todayMidnight -> Backlog.
   const todayMidnight = useMemo(
     () => new Date(new Date().setHours(0, 0, 0, 0)),
     [],
@@ -754,7 +754,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const todayIncomingOrders = useMemo(
     () =>
       incomingOrdersData.filter((item) => {
-        if (!item.receivedTimestamp) return true; // no timestamp → show in Today so nothing is lost
+        if (!item.receivedTimestamp) return true; // no timestamp -> show in Today so nothing is lost
         return new Date(item.receivedTimestamp) >= todayMidnight;
       }),
     [incomingOrdersData, todayMidnight],
@@ -821,7 +821,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         // Use testCount if it's a real positive number (covers both active and
         // completed orders now that the backend sets it correctly).
         // Fall back to prc+pvc for legacy data that may lack testCount.
-        // No || 1 fallback — a 0 count is valid and should show as 0.
+        // No || 1 fallback - a 0 count is valid and should show as 0.
         return t + (Number.isFinite(tc) && tc > 0 ? tc : prc + pvc);
       }, 0),
     [sectionFilteredData],
@@ -886,7 +886,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     },
   ];
 
-  // ── TABLE HEADERS ─────────────────────────────────────────────────────────────
+  // -- TABLE HEADERS --
   const groupedOrderHeaders = [
     { key: "priority", header: "Priority" },
     {
@@ -942,7 +942,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     { key: "countOfOrdersEntered", header: "Orders Entered" },
   ];
 
-  // ── CELL RENDERER ─────────────────────────────────────────────────────────────
+  // -- CELL RENDERER --
   const renderCell = (cell, row) => {
     const rowPatientName =
       data.find((item) => String(item.id) === String(row.id))?.patientName ||
@@ -1166,7 +1166,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
   };
 
-  // ── PANEL TOGGLE COMPONENT ────────────────────────────────────────────────────
+  // -- PANEL TOGGLE COMPONENT --
   const PanelToggle = ({
     view,
     setView,
@@ -1208,7 +1208,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     </div>
   );
 
-  // ── RENDER ───────────────────────────────────────────────────────────────────
+  // -- RENDER --
   return (
     <>
       {loading && <Loading description="Loading Dashboard..." />}
@@ -1264,15 +1264,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           </Tile>
         </div>
       ) : isSplitLayout(selectedTile.type) ? (
-        /* ── SPLIT-PANEL LAYOUT ── */
+        /*  SPLIT-PANEL LAYOUT  */
         <div className="dashboard-page-shell">
-          <div
-            className="split-dashboard-header"
-            style={{ backgroundColor: "#295785" }}
-          >
+          <div className="split-dashboard-header">
             <div className="split-dashboard-header__left">
               <div className="split-dashboard-title-group">
-                <h2 className="split-dashboard-title">DASHBOARD</h2>
+                <h2 className="split-dashboard-title">
+                  <FormattedMessage id="dashboard.title" />
+                </h2>
+                <p className="split-dashboard-subtitle">
+                  <FormattedMessage id="dashboard.subtitle" />
+                </p>
               </div>
             </div>
             <div className="split-summary-strip">
@@ -1289,39 +1291,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             </div>
           </div>
 
-          <div className="tabbed-dashboard-body" style={{ marginTop: "1rem" }}>
-            <div
-              style={{
-                padding: "1rem 0",
-                marginBottom: "1rem",
-                borderBottom: "1px solid #e0e0e0",
-                display: "flex",
-                gap: "6rem",
-                alignItems: "flex-end",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.75rem",
-                }}
-              >
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: "1.2rem",
-                    fontWeight: 700,
-                    color: "#161616",
-                  }}
-                >
-                  Tests
-                </h3>
-                <div
-                  className="dashboard-table-toggle"
-                  role="group"
-                  style={{ display: "inline-flex" }}
-                >
+          <div className="tabbed-dashboard-body">
+            <div className="split-dashboard-tabs-row">
+              <div className="split-dashboard-tabs-group">
+                <h3 className="split-dashboard-tabs-heading">Tests</h3>
+                <div className="dashboard-table-toggle" role="group">
                   <button
                     type="button"
                     className={`dashboard-table-toggle-btn${dashboardTab === "LEFT" && leftPanelView === "ACTIVE" ? " dashboard-table-toggle-btn--active" : ""}`}
@@ -1329,7 +1303,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       setDashboardTab("LEFT");
                       setLeftPanelView("ACTIVE");
                     }}
-                    style={{ padding: "8px 24px", fontSize: "0.95rem" }}
                   >
                     Today
                   </button>
@@ -1340,34 +1313,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       setDashboardTab("LEFT");
                       setLeftPanelView("BACKLOG");
                     }}
-                    style={{ padding: "8px 24px", fontSize: "0.95rem" }}
                   >
                     Backlog
                   </button>
                 </div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.75rem",
-                }}
-              >
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: "1.2rem",
-                    fontWeight: 700,
-                    color: "#161616",
-                  }}
-                >
+              <div className="split-dashboard-tabs-group">
+                <h3 className="split-dashboard-tabs-heading">
                   Samples Collected
                 </h3>
-                <div
-                  className="dashboard-table-toggle"
-                  role="group"
-                  style={{ display: "inline-flex" }}
-                >
+                <div className="dashboard-table-toggle" role="group">
                   <button
                     type="button"
                     className={`dashboard-table-toggle-btn${dashboardTab === "RIGHT" && rightPanelView === "ACTIVE" ? " dashboard-table-toggle-btn--active" : ""}`}
@@ -1375,7 +1330,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       setDashboardTab("RIGHT");
                       setRightPanelView("ACTIVE");
                     }}
-                    style={{ padding: "8px 24px", fontSize: "0.95rem" }}
                   >
                     Today
                   </button>
@@ -1386,7 +1340,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       setDashboardTab("RIGHT");
                       setRightPanelView("BACKLOG");
                     }}
-                    style={{ padding: "8px 24px", fontSize: "0.95rem" }}
                   >
                     Backlog
                   </button>
@@ -1395,7 +1348,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             </div>
 
             <div className="tab-panel-content">
-              {/* LEFT PANEL — Tests / Incoming Orders */}
+              {/* LEFT PANEL - Tests / Incoming Orders */}
               {dashboardTab === "LEFT" && (
                 <div className="split-panel split-panel--left">
                   <div className="split-panel-inner">
@@ -1405,8 +1358,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         labelText=""
                         placeholder={
                           leftPanelView === "ACTIVE"
-                            ? "Search by patient name or source…"
-                            : "Search backlog…"
+                            ? "Search by patient name or source..."
+                            : "Search backlog..."
                         }
                         value={leftSearch}
                         onChange={(e) => setLeftSearch(e.target.value)}
@@ -1501,7 +1454,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                   `${row.id}-${h.key}`
                                                 }
                                               >
-                                                {cell?.value ?? "—"}
+                                                {cell?.value ?? "-"}
                                               </TableCell>
                                             );
                                           })}
@@ -1675,7 +1628,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                   `${row.id}-${h.key}`
                                                 }
                                               >
-                                                {cell?.value ?? "—"}
+                                                {cell?.value ?? "-"}
                                               </TableCell>
                                             );
                                           })}
@@ -1750,7 +1703,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 </div>
               )}
 
-              {/* RIGHT PANEL — Active Orders / Backlog */}
+              {/* RIGHT PANEL - Active Orders / Backlog */}
               {dashboardTab === "RIGHT" && (
                 <div className="split-panel split-panel--right">
                   <div className="split-panel-inner">
@@ -1846,7 +1799,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             ? intl.formatMessage({
                                 id: "dashboard.orders.search.placeholder",
                               })
-                            : "Search backlog by lab number, patient…"
+                            : "Search backlog by lab number, patient..."
                         }
                         value={rightSearch}
                         onChange={(e) => setRightSearch(e.target.value)}
@@ -2094,7 +2047,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           </div>
         </div>
       ) : (
-        /* ── STANDARD SINGLE-PANEL DETAIL VIEW ── */
+        /*  STANDARD SINGLE-PANEL DETAIL VIEW  */
         <div className="dashboard-view">
           <Tile className="dashboard-tile">
             <Grid>
