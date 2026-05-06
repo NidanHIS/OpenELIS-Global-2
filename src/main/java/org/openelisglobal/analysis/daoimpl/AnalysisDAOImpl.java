@@ -1873,8 +1873,8 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
      */
     @Override
     @Transactional(readOnly = true)
-    public List<String> getPagedDistinctSampleIdsForStatuses(List<String> statusIds, int offset, int limit)
-            throws LIMSRuntimeException {
+    public List<String> getPagedDistinctSampleIdsForStatuses(List<String> statusIds, int offset, int limit,
+            String search) throws LIMSRuntimeException {
         if (statusIds == null || statusIds.isEmpty()) {
             return new java.util.ArrayList<>();
         }
@@ -1883,24 +1883,48 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
 
+            boolean hasSearch = search != null && !search.trim().isEmpty();
+
             // Native SQL: GROUP BY instead of DISTINCT so PostgreSQL allows ORDER BY
             // on accession_number. DISTINCT + ORDER BY on a different column is rejected
             // by PostgreSQL. GROUP BY samp_id + accession_number is safe because each
             // sample has exactly one accession_number (1-to-1), so grouping by both
             // is equivalent to grouping by samp_id alone.
-            String sql = "SELECT si.samp_id"
+            //
+            // LEFT JOINs to sample_human / patient / person are used (not INNER JOIN)
+            // so that samples without a linked patient (e.g. QC samples) are still
+            // visible when no search term is provided.
+            StringBuilder sql = new StringBuilder(
+                    "SELECT si.samp_id"
                     + " FROM analysis a"
                     + " JOIN sample_item si ON si.id = a.sampitem_id"
-                    + " JOIN sample s ON s.id = si.samp_id"
-                    + " WHERE a.status_id IN (:statusIds)"
-                    + " GROUP BY si.samp_id, s.accession_number"
-                    + " ORDER BY s.accession_number DESC";
+                    + " JOIN sample s       ON s.id  = si.samp_id"
+                    + " LEFT JOIN sample_human sh ON sh.samp_id    = si.samp_id"
+                    + " LEFT JOIN patient      p  ON p.id          = sh.patient_id"
+                    + " LEFT JOIN person       per ON per.id       = p.person_id"
+                    + " WHERE a.status_id IN (:statusIds)");
+
+            if (hasSearch) {
+                sql.append(" AND ("
+                        + "s.accession_number ILIKE :search"
+                        + " OR p.national_id   ILIKE :search"
+                        + " OR per.last_name   ILIKE :search"
+                        + " OR per.first_name  ILIKE :search"
+                        + ")");
+            }
+
+            sql.append(" GROUP BY si.samp_id, s.accession_number"
+                    + " ORDER BY s.accession_number DESC");
 
             jakarta.persistence.Query query = entityManager
-                    .createNativeQuery(sql)
+                    .createNativeQuery(sql.toString())
                     .setParameter("statusIds", intIds)
                     .setFirstResult(offset)
                     .setMaxResults(limit);
+
+            if (hasSearch) {
+                query.setParameter("search", "%" + search.trim().toLowerCase() + "%");
+            }
 
             @SuppressWarnings("unchecked")
             List<Object> raw = query.getResultList();
@@ -1928,7 +1952,7 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
      */
     @Override
     @Transactional(readOnly = true)
-    public long countDistinctSamplesForStatuses(List<String> statusIds) throws LIMSRuntimeException {
+    public long countDistinctSamplesForStatuses(List<String> statusIds, String search) throws LIMSRuntimeException {
         if (statusIds == null || statusIds.isEmpty()) {
             return 0L;
         }
@@ -1937,15 +1961,38 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
 
-            String sql = "SELECT COUNT(DISTINCT si.samp_id)"
+            boolean hasSearch = search != null && !search.trim().isEmpty();
+
+            // Same LEFT JOINs as getPagedDistinctSampleIdsForStatuses so the count
+            // is always consistent with the paged results.
+            StringBuilder sql = new StringBuilder(
+                    "SELECT COUNT(DISTINCT si.samp_id)"
                     + " FROM analysis a"
                     + " JOIN sample_item si ON si.id = a.sampitem_id"
-                    + " WHERE a.status_id IN (:statusIds)";
+                    + " JOIN sample s       ON s.id  = si.samp_id"
+                    + " LEFT JOIN sample_human sh ON sh.samp_id    = si.samp_id"
+                    + " LEFT JOIN patient      p  ON p.id          = sh.patient_id"
+                    + " LEFT JOIN person       per ON per.id       = p.person_id"
+                    + " WHERE a.status_id IN (:statusIds)");
 
-            Object result = entityManager
-                    .createNativeQuery(sql)
-                    .setParameter("statusIds", intIds)
-                    .getSingleResult();
+            if (hasSearch) {
+                sql.append(" AND ("
+                        + "s.accession_number ILIKE :search"
+                        + " OR p.national_id   ILIKE :search"
+                        + " OR per.last_name   ILIKE :search"
+                        + " OR per.first_name  ILIKE :search"
+                        + ")");
+            }
+
+            jakarta.persistence.Query query = entityManager
+                    .createNativeQuery(sql.toString())
+                    .setParameter("statusIds", intIds);
+
+            if (hasSearch) {
+                query.setParameter("search", "%" + search.trim().toLowerCase() + "%");
+            }
+
+            Object result = query.getSingleResult();
             return result != null ? ((Number) result).longValue() : 0L;
         } catch (Exception e) {
             LogEvent.logError(e);

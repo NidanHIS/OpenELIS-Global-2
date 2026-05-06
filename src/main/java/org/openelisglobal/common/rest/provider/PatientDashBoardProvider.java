@@ -769,7 +769,8 @@ public class PatientDashBoardProvider {
     @ResponseBody
     public ResponseEntity<PagedGroupedOrdersResponse> getGroupedOrdersPaged(
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "10") int pageSize) {
+            @RequestParam(required = false, defaultValue = "10") int pageSize,
+            @RequestParam(required = false) String search) {
 
         // Collect all three status IDs that belong in this view:
         // NotStarted (pending result), TechnicalAcceptance (pending validation),
@@ -781,7 +782,7 @@ public class PatientDashBoardProvider {
 
         // Get the page of distinct sample IDs from the service (2 DB queries total).
         AnalysisService.PagedSampleIds pagedIds =
-                analysisService.getPagedSampleIdsForStatuses(allStatusIds, page, pageSize);
+                analysisService.getPagedSampleIdsForStatuses(allStatusIds, page, pageSize, search);
 
         List<String> sampleIds = pagedIds.getSampleIds();
         List<OrderDisplayBean> items = new ArrayList<>();
@@ -918,7 +919,8 @@ public class PatientDashBoardProvider {
     @ResponseBody
     public ResponseEntity<PagedGroupedOrdersResponse> getValidationOrdersPaged(
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "10") int pageSize) {
+            @RequestParam(required = false, defaultValue = "10") int pageSize,
+            @RequestParam(required = false) String search) {
 
         // Only TechnicalAcceptance — same as the legacy VALIDATION-Grouped endpoint.
         List<String> statusIds = new ArrayList<>();
@@ -926,7 +928,7 @@ public class PatientDashBoardProvider {
 
         // Page of distinct sample IDs (2 DB queries: count + page).
         AnalysisService.PagedSampleIds pagedIds =
-                analysisService.getPagedSampleIdsForStatuses(statusIds, page, pageSize);
+                analysisService.getPagedSampleIdsForStatuses(statusIds, page, pageSize, search);
 
         List<String> sampleIds = pagedIds.getSampleIds();
         List<OrderDisplayBean> items = new ArrayList<>();

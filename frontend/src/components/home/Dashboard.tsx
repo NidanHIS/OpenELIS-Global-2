@@ -148,6 +148,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   // rightTotalCount is the server's total count of distinct samples — used as
   // totalItems in the Carbon <Pagination> component instead of the local array length.
   const [rightTotalCount, setRightTotalCount] = useState(0);
+  const rightSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
   const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
   const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
@@ -299,6 +300,32 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       }
     };
   }, [leftSearch]);
+
+  // Right panel search is also debounced — same 350ms pattern as left panel.
+  // Only active when a split-layout tile is selected (ON_GOING_ORDERS,
+  // ORDERS_IN_PROGRESS, ORDERS_READY_FOR_VALIDATION).
+  useEffect(() => {
+    if (!selectedTile || !isSplitLayout(selectedTile.type)) return;
+
+    if (rightSearchDebounceRef.current) {
+      clearTimeout(rightSearchDebounceRef.current);
+    }
+    rightSearchDebounceRef.current = setTimeout(() => {
+      // Reset to page 1 whenever search term changes, then fetch
+      setRightPage(1);
+      const seq = ++tileLoadSequence.current;
+      const endpoint =
+        selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
+          ? "/rest/home-dashboard/validation-orders/paged"
+          : "/rest/home-dashboard/grouped-orders/paged";
+      fetchGroupedOrdersPage(1, rightPageSize, seq, endpoint, rightSearch);
+    }, 350);
+    return () => {
+      if (rightSearchDebounceRef.current) {
+        clearTimeout(rightSearchDebounceRef.current);
+      }
+    };
+  }, [rightSearch]);
 
   const fetchTestSections = (res) => {
     setTestSections(res);
@@ -609,10 +636,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     pageSize: number,
     seq: number,
     endpoint = "/rest/home-dashboard/grouped-orders/paged",
+    search = "",
   ) => {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
+    if (search && search.trim()) {
+      params.set("search", search.trim());
+    }
     const url = `${endpoint}?${params.toString()}`;
 
     try {
@@ -637,7 +668,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         ? "/rest/home-dashboard/validation-orders/paged"
         : "/rest/home-dashboard/grouped-orders/paged";
     try {
-      await fetchGroupedOrdersPage(rightPage, rightPageSize, seq, endpoint);
+      await fetchGroupedOrdersPage(rightPage, rightPageSize, seq, endpoint, rightSearch);
     } catch {
       loadData({ displayItems: [] }, true, seq);
     }

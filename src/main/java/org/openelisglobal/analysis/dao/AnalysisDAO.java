@@ -272,9 +272,11 @@ public interface AnalysisDAO extends BaseDAO<Analysis, String> {
      * @param statusIds list of analysis status ID strings (converted to Integer internally)
      * @param offset    zero-based row offset (= (page-1) * pageSize)
      * @param limit     maximum number of sample IDs to return
+     * @param search    optional search term; when non-null/non-blank, filters by
+     *                  accession number, patient national ID, last name, or first name
      * @return ordered list of sample ID strings for the requested page
      */
-    List<String> getPagedDistinctSampleIdsForStatuses(List<String> statusIds, int offset, int limit)
+    List<String> getPagedDistinctSampleIdsForStatuses(List<String> statusIds, int offset, int limit, String search)
             throws LIMSRuntimeException;
 
     /**
@@ -285,7 +287,9 @@ public interface AnalysisDAO extends BaseDAO<Analysis, String> {
      * the {@code totalCount} field in the paginated response.
      *
      * @param statusIds list of analysis status ID strings (converted to Integer internally)
+     * @param search    optional search term; same filter as
+     *                  {@link #getPagedDistinctSampleIdsForStatuses}
      * @return count of distinct samples
      */
-    long countDistinctSamplesForStatuses(List<String> statusIds) throws LIMSRuntimeException;
+    long countDistinctSamplesForStatuses(List<String> statusIds, String search) throws LIMSRuntimeException;
 }

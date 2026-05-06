@@ -249,9 +249,11 @@ public interface AnalysisService extends BaseObjectService<Analysis, String> {
      * @param statusIds list of analysis status ID strings
      * @param page      1-based page number (clamped to &ge;1)
      * @param pageSize  records per page (clamped to 1–100)
+     * @param search    optional search term; when non-null/non-blank, filters by
+     *                  accession number, patient national ID, last name, or first name
      * @return immutable result wrapper with sample IDs, total count, and paging metadata
      */
-    PagedSampleIds getPagedSampleIdsForStatuses(List<String> statusIds, int page, int pageSize);
+    PagedSampleIds getPagedSampleIdsForStatuses(List<String> statusIds, int page, int pageSize, String search);
 
     /**
      * Immutable result wrapper returned by {@link #getPagedSampleIdsForStatuses}.
