@@ -15,9 +15,7 @@ import {
 } from "@carbon/react";
 import { useHistory } from "react-router-dom";
 import { FormattedMessage, useIntl } from "react-intl";
-import {
-  getFromOpenElisServerV2,
-} from "../utils/Utils";
+import { getFromOpenElisServerV2 } from "../utils/Utils";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 

@@ -805,9 +805,12 @@ public class AnalysisServiceImpl extends AuditableBaseObjectServiceImpl<Analysis
     public AnalysisService.PagedSampleIds getPagedSampleIdsForStatuses(List<String> statusIds, int page, int pageSize,
             String search) {
         // Defensive bounds — same pattern as IncomingOrderServiceImpl.getOrdersPage
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-        if (pageSize > 100) pageSize = 100;
+        if (page < 1)
+            page = 1;
+        if (pageSize < 1)
+            pageSize = 10;
+        if (pageSize > 100)
+            pageSize = 100;
 
         int offset = (page - 1) * pageSize;
         List<String> sampleIds = baseObjectDAO.getPagedDistinctSampleIdsForStatuses(statusIds, offset, pageSize,

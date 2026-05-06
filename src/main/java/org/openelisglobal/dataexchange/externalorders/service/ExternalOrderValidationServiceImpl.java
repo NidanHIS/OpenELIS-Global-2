@@ -222,11 +222,11 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
             if (test != null) {
                 // Test GUID resolved — now verify it has at least one sample type mapping.
                 // A test with no mapping would cause a stuck order at collect time.
-                List<org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest> mappings =
-                        typeOfSampleTestService.getTypeOfSampleTestsForTest(test.getId());
+                List<org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest> mappings = typeOfSampleTestService
+                        .getTypeOfSampleTestsForTest(test.getId());
                 if (mappings == null || mappings.isEmpty()) {
-                    return ValidationResult.invalidNoSampleTypeMapping(
-                            testRef.getTestGuid().trim(), null, test.getId(), test.getName());
+                    return ValidationResult.invalidNoSampleTypeMapping(testRef.getTestGuid().trim(), null, test.getId(),
+                            test.getName());
                 }
                 return ValidationResult.validForGuid(testRef.getTestGuid().trim(), test.getId(), test.getName());
             }
@@ -239,11 +239,11 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
             if (tests != null && !tests.isEmpty()) {
                 Test test = tests.get(0);
                 // Test LOINC resolved — verify sample type mapping exists.
-                List<org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest> mappings =
-                        typeOfSampleTestService.getTypeOfSampleTestsForTest(test.getId());
+                List<org.openelisglobal.typeofsample.valueholder.TypeOfSampleTest> mappings = typeOfSampleTestService
+                        .getTypeOfSampleTestsForTest(test.getId());
                 if (mappings == null || mappings.isEmpty()) {
-                    return ValidationResult.invalidNoSampleTypeMapping(
-                            null, testRef.getLoinc().trim(), test.getId(), test.getName());
+                    return ValidationResult.invalidNoSampleTypeMapping(null, testRef.getLoinc().trim(), test.getId(),
+                            test.getName());
                 }
                 return ValidationResult.validForLoinc(testRef.getLoinc().trim(), test.getId(), test.getName());
             }
@@ -264,11 +264,11 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
             if (panel != null) {
                 // Panel GUID resolved — verify it has at least one sample type mapping.
                 // A panel with no mapping would cause a stuck order at collect time.
-                List<org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel> mappings =
-                        typeOfSamplePanelService.getTypeOfSamplePanelsForPanel(panel.getId());
+                List<org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel> mappings = typeOfSamplePanelService
+                        .getTypeOfSamplePanelsForPanel(panel.getId());
                 if (mappings == null || mappings.isEmpty()) {
-                    return ValidationResult.invalidNoSampleTypeMapping(
-                            panelRef.getPanelGuid().trim(), null, panel.getId(), panel.getPanelName());
+                    return ValidationResult.invalidNoSampleTypeMapping(panelRef.getPanelGuid().trim(), null,
+                            panel.getId(), panel.getPanelName());
                 }
                 return ValidationResult.validForGuid(panelRef.getPanelGuid().trim(), panel.getId(),
                         panel.getPanelName());
@@ -281,11 +281,11 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
             Panel panel = panelService.getPanelByLoincCode(panelRef.getLoinc().trim());
             if (panel != null) {
                 // Panel LOINC resolved — verify sample type mapping exists.
-                List<org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel> mappings =
-                        typeOfSamplePanelService.getTypeOfSamplePanelsForPanel(panel.getId());
+                List<org.openelisglobal.typeofsample.valueholder.TypeOfSamplePanel> mappings = typeOfSamplePanelService
+                        .getTypeOfSamplePanelsForPanel(panel.getId());
                 if (mappings == null || mappings.isEmpty()) {
-                    return ValidationResult.invalidNoSampleTypeMapping(
-                            null, panelRef.getLoinc().trim(), panel.getId(), panel.getPanelName());
+                    return ValidationResult.invalidNoSampleTypeMapping(null, panelRef.getLoinc().trim(), panel.getId(),
+                            panel.getPanelName());
                 }
                 return ValidationResult.validForLoinc(panelRef.getLoinc().trim(), panel.getId(), panel.getPanelName());
             }

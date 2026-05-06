@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -91,16 +90,21 @@ public class IncomingOrdersRestController {
     /**
      * Paginated list endpoint for the dashboard left panel.
      *
-     * <p>Query parameters (all optional):
+     * <p>
+     * Query parameters (all optional):
      * <ul>
-     *   <li>{@code page}     – 1-based page number, defaults to 1</li>
-     *   <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
-     *   <li>{@code dateFrom} – ISO date (yyyy-MM-dd), inclusive lower bound on receivedTimestamp</li>
-     *   <li>{@code dateTo}   – ISO date (yyyy-MM-dd), exclusive upper bound on receivedTimestamp</li>
-     *   <li>{@code search}   – substring match on externalOrderNumber</li>
+     * <li>{@code page} – 1-based page number, defaults to 1</li>
+     * <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
+     * <li>{@code dateFrom} – ISO date (yyyy-MM-dd), inclusive lower bound on
+     * receivedTimestamp</li>
+     * <li>{@code dateTo} – ISO date (yyyy-MM-dd), exclusive upper bound on
+     * receivedTimestamp</li>
+     * <li>{@code search} – substring match on externalOrderNumber</li>
      * </ul>
      *
-     * <p>Response shape:
+     * <p>
+     * Response shape:
+     * 
      * <pre>
      * {
      *   "items":      [ ...IncomingOrderListItem... ],
@@ -111,23 +115,23 @@ public class IncomingOrdersRestController {
      * }
      * </pre>
      *
-     * <p>The existing no-param {@code GET /rest/incoming-orders} is untouched.
-     * This endpoint is only activated when at least one query param is present.
+     * <p>
+     * The existing no-param {@code GET /rest/incoming-orders} is untouched. This
+     * endpoint is only activated when at least one query param is present.
      */
     @GetMapping(value = "/paged", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PagedIncomingOrdersResponse> listPaged(
             @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String dateFrom, @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String search) {
 
         // Parse optional date bounds
         Timestamp from = parseDateToTimestampStart(dateFrom);
         Timestamp to = parseDateToTimestampStart(dateTo); // exclusive upper bound = start of dateTo day
 
-        IncomingOrderService.PagedIncomingOrders paged =
-                incomingOrderService.getOrdersPage(from, to, search, page, pageSize);
+        IncomingOrderService.PagedIncomingOrders paged = incomingOrderService.getOrdersPage(from, to, search, page,
+                pageSize);
 
         List<IncomingOrderListItem> items = new ArrayList<>();
         for (IncomingOrder order : paged.getItems()) {
@@ -146,19 +150,16 @@ public class IncomingOrdersRestController {
             items.add(item);
         }
 
-        PagedIncomingOrdersResponse response = new PagedIncomingOrdersResponse(
-                items,
-                paged.getTotalCount(),
-                paged.getPage(),
-                paged.getPageSize(),
-                paged.getTotalPages());
+        PagedIncomingOrdersResponse response = new PagedIncomingOrdersResponse(items, paged.getTotalCount(),
+                paged.getPage(), paged.getPageSize(), paged.getTotalPages());
 
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Parses an ISO date string (yyyy-MM-dd) to a Timestamp at the start of that day
-     * in the system default timezone. Returns null if the input is null or blank.
+     * Parses an ISO date string (yyyy-MM-dd) to a Timestamp at the start of that
+     * day in the system default timezone. Returns null if the input is null or
+     * blank.
      */
     private Timestamp parseDateToTimestampStart(String isoDate) {
         if (isoDate == null || isoDate.trim().isEmpty()) {
@@ -181,8 +182,8 @@ public class IncomingOrdersRestController {
         private final int pageSize;
         private final int totalPages;
 
-        public PagedIncomingOrdersResponse(List<IncomingOrderListItem> items, long totalCount,
-                int page, int pageSize, int totalPages) {
+        public PagedIncomingOrdersResponse(List<IncomingOrderListItem> items, long totalCount, int page, int pageSize,
+                int totalPages) {
             this.items = items;
             this.totalCount = totalCount;
             this.page = page;
@@ -190,16 +191,30 @@ public class IncomingOrdersRestController {
             this.totalPages = totalPages;
         }
 
-        public List<IncomingOrderListItem> getItems() { return items; }
-        public long getTotalCount() { return totalCount; }
-        public int getPage() { return page; }
-        public int getPageSize() { return pageSize; }
-        public int getTotalPages() { return totalPages; }
+        public List<IncomingOrderListItem> getItems() {
+            return items;
+        }
+
+        public long getTotalCount() {
+            return totalCount;
+        }
+
+        public int getPage() {
+            return page;
+        }
+
+        public int getPageSize() {
+            return pageSize;
+        }
+
+        public int getTotalPages() {
+            return totalPages;
+        }
     }
 
     /**
-     * Holds the display-only patient fields resolved from a patientGuid.
-     * Both fields are nullable — null means the data was not available.
+     * Holds the display-only patient fields resolved from a patientGuid. Both
+     * fields are nullable — null means the data was not available.
      */
     private static class PatientDisplayInfo {
         final String name;
@@ -212,9 +227,9 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * Resolve patient display info (name + nationalId) from patientGuid.
-     * Fetches the Patient record exactly once. Returns an instance with null
-     * fields if the patient cannot be found — never returns null itself.
+     * Resolve patient display info (name + nationalId) from patientGuid. Fetches
+     * the Patient record exactly once. Returns an instance with null fields if the
+     * patient cannot be found — never returns null itself.
      */
     private PatientDisplayInfo resolvePatientDisplayInfo(String patientGuid) {
         if (patientGuid == null || patientGuid.trim().isEmpty()) {

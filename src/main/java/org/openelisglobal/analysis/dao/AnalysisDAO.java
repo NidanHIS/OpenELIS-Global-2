@@ -265,15 +265,18 @@ public interface AnalysisDAO extends BaseDAO<Analysis, String> {
      * Returns a page of distinct sample IDs that have at least one analysis with
      * one of the given status IDs. Ordered by accession number descending.
      *
-     * <p>Used by the dashboard "Samples Collected / On Going Orders" right panel
-     * to drive true DB-level pagination — the unit of pagination is the sample
+     * <p>
+     * Used by the dashboard "Samples Collected / On Going Orders" right panel to
+     * drive true DB-level pagination — the unit of pagination is the sample
      * (accession), not the individual analysis row.
      *
-     * @param statusIds list of analysis status ID strings (converted to Integer internally)
+     * @param statusIds list of analysis status ID strings (converted to Integer
+     *                  internally)
      * @param offset    zero-based row offset (= (page-1) * pageSize)
      * @param limit     maximum number of sample IDs to return
      * @param search    optional search term; when non-null/non-blank, filters by
-     *                  accession number, patient national ID, last name, or first name
+     *                  accession number, patient national ID, last name, or first
+     *                  name
      * @return ordered list of sample ID strings for the requested page
      */
     List<String> getPagedDistinctSampleIdsForStatuses(List<String> statusIds, int offset, int limit, String search)
@@ -283,10 +286,12 @@ public interface AnalysisDAO extends BaseDAO<Analysis, String> {
      * Returns the total count of distinct samples that have at least one analysis
      * with one of the given status IDs.
      *
-     * <p>Used alongside {@link #getPagedDistinctSampleIdsForStatuses} to populate
-     * the {@code totalCount} field in the paginated response.
+     * <p>
+     * Used alongside {@link #getPagedDistinctSampleIdsForStatuses} to populate the
+     * {@code totalCount} field in the paginated response.
      *
-     * @param statusIds list of analysis status ID strings (converted to Integer internally)
+     * @param statusIds list of analysis status ID strings (converted to Integer
+     *                  internally)
      * @param search    optional search term; same filter as
      *                  {@link #getPagedDistinctSampleIdsForStatuses}
      * @return count of distinct samples

@@ -741,20 +741,25 @@ public class PatientDashBoardProvider {
      * Paginated endpoint for the dashboard "Samples Collected / On Going Orders"
      * right panel.
      *
-     * <p>Returns a page of grouped order beans (one row per accession number)
-     * covering NotStarted, TechnicalAcceptance, and Finalized analyses — the same
-     * logical dataset as {@code ORDERS-All-Grouped} but with true DB-level
-     * pagination instead of session-based fake pagination.
+     * <p>
+     * Returns a page of grouped order beans (one row per accession number) covering
+     * NotStarted, TechnicalAcceptance, and Finalized analyses — the same logical
+     * dataset as {@code ORDERS-All-Grouped} but with true DB-level pagination
+     * instead of session-based fake pagination.
      *
-     * <p>The old {@code ORDERS-All-Grouped} endpoint is completely untouched.
+     * <p>
+     * The old {@code ORDERS-All-Grouped} endpoint is completely untouched.
      *
-     * <p>Query parameters (all optional):
+     * <p>
+     * Query parameters (all optional):
      * <ul>
-     *   <li>{@code page}     – 1-based page number, defaults to 1</li>
-     *   <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
+     * <li>{@code page} – 1-based page number, defaults to 1</li>
+     * <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
      * </ul>
      *
-     * <p>Response shape:
+     * <p>
+     * Response shape:
+     * 
      * <pre>
      * {
      *   "items":      [ ...OrderDisplayBean... ],
@@ -781,8 +786,8 @@ public class PatientDashBoardProvider {
         allStatusIds.add(iStatusService.getStatusID(AnalysisStatus.Finalized));
 
         // Get the page of distinct sample IDs from the service (2 DB queries total).
-        AnalysisService.PagedSampleIds pagedIds =
-                analysisService.getPagedSampleIdsForStatuses(allStatusIds, page, pageSize, search);
+        AnalysisService.PagedSampleIds pagedIds = analysisService.getPagedSampleIdsForStatuses(allStatusIds, page,
+                pageSize, search);
 
         List<String> sampleIds = pagedIds.getSampleIds();
         List<OrderDisplayBean> items = new ArrayList<>();
@@ -834,13 +839,14 @@ public class PatientDashBoardProvider {
             if (!pageFinalizedAnalyses.isEmpty()) {
                 Map<String, OrderDisplayBean> finalizedMap = new LinkedHashMap<>();
                 for (Analysis analysis : pageFinalizedAnalyses) {
-                    if (analysis == null) continue;
-                    Sample sample = analysis.getSampleItem() != null
-                            ? analysis.getSampleItem().getSample() : null;
+                    if (analysis == null)
+                        continue;
+                    Sample sample = analysis.getSampleItem() != null ? analysis.getSampleItem().getSample() : null;
                     String labNumber = sample != null ? sample.getAccessionNumber() : null;
                     String key = labNumber != null ? labNumber : analysis.getId();
 
-                    if (activeAccessions.contains(key)) continue;
+                    if (activeAccessions.contains(key))
+                        continue;
 
                     finalizedMap.computeIfAbsent(key, k -> {
                         OrderDisplayBean bean = new OrderDisplayBean();
@@ -849,7 +855,8 @@ public class PatientDashBoardProvider {
                             Patient patient = sampleHumanService.getPatientForSample(sample);
                             bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                             bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                            bean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                            bean.setPatientId(
+                                    patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                             bean.setPatientName(getPatientName(patient));
                         }
                         bean.setOrderDate(analysis.getStartedDateForDisplay());
@@ -868,7 +875,8 @@ public class PatientDashBoardProvider {
             allPageAnalyses.addAll(pageActiveAnalyses);
             allPageAnalyses.addAll(pageFinalizedAnalyses);
             for (Analysis a : allPageAnalyses) {
-                if (a == null) continue;
+                if (a == null)
+                    continue;
                 Sample s = a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
                 if (s != null && s.getAccessionNumber() != null && s.getId() != null) {
                     accessionToSampleId.putIfAbsent(s.getAccessionNumber().trim(), s.getId());
@@ -889,12 +897,8 @@ public class PatientDashBoardProvider {
             }
         }
 
-        PagedGroupedOrdersResponse response = new PagedGroupedOrdersResponse(
-                items,
-                pagedIds.getTotalCount(),
-                pagedIds.getPage(),
-                pagedIds.getPageSize(),
-                pagedIds.getTotalPages());
+        PagedGroupedOrdersResponse response = new PagedGroupedOrdersResponse(items, pagedIds.getTotalCount(),
+                pagedIds.getPage(), pagedIds.getPageSize(), pagedIds.getTotalPages());
 
         return ResponseEntity.ok(response);
     }
@@ -902,18 +906,21 @@ public class PatientDashBoardProvider {
     /**
      * Paginated endpoint for the "Orders Ready for Validation" dashboard tile.
      *
-     * <p>Returns only {@link AnalysisStatus#TechnicalAcceptance} analyses, grouped
-     * by accession number — the same set as the legacy {@code VALIDATION-Grouped}
+     * <p>
+     * Returns only {@link AnalysisStatus#TechnicalAcceptance} analyses, grouped by
+     * accession number — the same set as the legacy {@code VALIDATION-Grouped}
      * session endpoint, but served page-by-page without loading everything into the
      * HTTP session.
      *
-     * <p>Query parameters (all optional):
+     * <p>
+     * Query parameters (all optional):
      * <ul>
-     *   <li>{@code page}     – 1-based page number, defaults to 1</li>
-     *   <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
+     * <li>{@code page} – 1-based page number, defaults to 1</li>
+     * <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
      * </ul>
      *
-     * <p>Response shape is identical to {@code grouped-orders/paged}.
+     * <p>
+     * Response shape is identical to {@code grouped-orders/paged}.
      */
     @GetMapping(value = "home-dashboard/validation-orders/paged", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -927,8 +934,8 @@ public class PatientDashBoardProvider {
         statusIds.add(iStatusService.getStatusID(AnalysisStatus.TechnicalAcceptance));
 
         // Page of distinct sample IDs (2 DB queries: count + page).
-        AnalysisService.PagedSampleIds pagedIds =
-                analysisService.getPagedSampleIdsForStatuses(statusIds, page, pageSize, search);
+        AnalysisService.PagedSampleIds pagedIds = analysisService.getPagedSampleIdsForStatuses(statusIds, page,
+                pageSize, search);
 
         List<String> sampleIds = pagedIds.getSampleIds();
         List<OrderDisplayBean> items = new ArrayList<>();
@@ -940,14 +947,16 @@ public class PatientDashBoardProvider {
             List<Analysis> allValidationAnalyses = analysisService.getAnalysesForStatusIds(statusIds);
             List<Analysis> pageAnalyses = filterAnalysesBySampleIds(allValidationAnalyses, sampleIdSet);
 
-            // All analyses on this page are pending-validation — no pendingResult split needed.
+            // All analyses on this page are pending-validation — no pendingResult split
+            // needed.
             List<Analysis> pendingResult = new ArrayList<>();
             items = convertAnalysesToGroupedOrderBean(pendingResult, pageAnalyses);
 
             // Apply true total test count per sample (bounded by pageSize, max 100).
             Map<String, String> accessionToSampleId = new LinkedHashMap<>();
             for (Analysis a : pageAnalyses) {
-                if (a == null) continue;
+                if (a == null)
+                    continue;
                 Sample s = a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
                 if (s != null && s.getAccessionNumber() != null && s.getId() != null) {
                     accessionToSampleId.putIfAbsent(s.getAccessionNumber().trim(), s.getId());
@@ -967,12 +976,8 @@ public class PatientDashBoardProvider {
             }
         }
 
-        PagedGroupedOrdersResponse response = new PagedGroupedOrdersResponse(
-                items,
-                pagedIds.getTotalCount(),
-                pagedIds.getPage(),
-                pagedIds.getPageSize(),
-                pagedIds.getTotalPages());
+        PagedGroupedOrdersResponse response = new PagedGroupedOrdersResponse(items, pagedIds.getTotalCount(),
+                pagedIds.getPage(), pagedIds.getPageSize(), pagedIds.getTotalPages());
 
         return ResponseEntity.ok(response);
     }
@@ -988,7 +993,8 @@ public class PatientDashBoardProvider {
         }
         List<Analysis> filtered = new ArrayList<>();
         for (Analysis a : analyses) {
-            if (a == null) continue;
+            if (a == null)
+                continue;
             Sample s = a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
             if (s != null && s.getId() != null && sampleIdSet.contains(s.getId())) {
                 filtered.add(a);
@@ -1005,8 +1011,8 @@ public class PatientDashBoardProvider {
         private final int pageSize;
         private final int totalPages;
 
-        public PagedGroupedOrdersResponse(List<OrderDisplayBean> items, long totalCount,
-                int page, int pageSize, int totalPages) {
+        public PagedGroupedOrdersResponse(List<OrderDisplayBean> items, long totalCount, int page, int pageSize,
+                int totalPages) {
             this.items = items;
             this.totalCount = totalCount;
             this.page = page;
@@ -1014,10 +1020,24 @@ public class PatientDashBoardProvider {
             this.totalPages = totalPages;
         }
 
-        public List<OrderDisplayBean> getItems() { return items; }
-        public long getTotalCount() { return totalCount; }
-        public int getPage() { return page; }
-        public int getPageSize() { return pageSize; }
-        public int getTotalPages() { return totalPages; }
+        public List<OrderDisplayBean> getItems() {
+            return items;
+        }
+
+        public long getTotalCount() {
+            return totalCount;
+        }
+
+        public int getPage() {
+            return page;
+        }
+
+        public int getPageSize() {
+            return pageSize;
+        }
+
+        public int getTotalPages() {
+            return totalPages;
+        }
     }
 }

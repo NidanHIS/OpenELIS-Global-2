@@ -139,7 +139,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const [leftTotalCount, setLeftTotalCount] = useState(0);
   const [leftTotalPages, setLeftTotalPages] = useState(0);
   // Debounce ref: holds the setTimeout id so we can cancel on rapid keystrokes
-  const leftSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leftSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   // Track in-flight fetch sequence so stale responses are discarded
   const leftFetchSeq = useRef(0);
 
@@ -148,7 +150,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   // rightTotalCount is the server's total count of distinct samples — used as
   // totalItems in the Carbon <Pagination> component instead of the local array length.
   const [rightTotalCount, setRightTotalCount] = useState(0);
-  const rightSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rightSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
   const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
   const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
@@ -433,7 +437,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       setLeftTotalPages(res?.totalPages ?? 0);
       // Update the tile count with the server's total for the active view
       if (panelView === "ACTIVE") {
-        setCounts((prev) => ({ ...prev, samplesToCollect: res?.totalCount ?? 0 }));
+        setCounts((prev) => ({
+          ...prev,
+          samplesToCollect: res?.totalCount ?? 0,
+        }));
       }
     });
   };
@@ -668,7 +675,13 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         ? "/rest/home-dashboard/validation-orders/paged"
         : "/rest/home-dashboard/grouped-orders/paged";
     try {
-      await fetchGroupedOrdersPage(rightPage, rightPageSize, seq, endpoint, rightSearch);
+      await fetchGroupedOrdersPage(
+        rightPage,
+        rightPageSize,
+        seq,
+        endpoint,
+        rightSearch,
+      );
     } catch {
       loadData({ displayItems: [] }, true, seq);
     }

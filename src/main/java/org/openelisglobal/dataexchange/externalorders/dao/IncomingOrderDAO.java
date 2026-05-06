@@ -13,8 +13,8 @@ public interface IncomingOrderDAO extends BaseDAO<IncomingOrder, Integer> {
     /**
      * Returns a page of IncomingOrder rows ordered by receivedTimestamp descending.
      * Both {@code from} and {@code to} are optional — pass null to omit that bound.
-     * {@code search} is optional — pass null or blank to skip text filtering.
-     * Text filtering matches against externalOrderNumber only (no patient join here;
+     * {@code search} is optional — pass null or blank to skip text filtering. Text
+     * filtering matches against externalOrderNumber only (no patient join here;
      * patient name search is handled at the service layer after enrichment).
      *
      * @param from   inclusive lower bound on receivedTimestamp (nullable)
