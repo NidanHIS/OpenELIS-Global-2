@@ -1084,6 +1084,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const incomingOrderHeaders = [
     { key: "patientName", header: "Patient Name" },
+    { key: "patientId", header: "Patient ID" },
     { key: "received", header: "Received" },
     { key: "tests", header: "Tests" },
     { key: "source", header: "Source" },
