@@ -94,9 +94,9 @@
 	<group name="person" isStartNewPage="true" isResetPageNumber="true" footerPosition="ForceAtBottom">
 		<groupExpression><![CDATA[$F{subjectNumber}]]></groupExpression>
 		<groupFooter>
-			<band height="120">
+			<band height="100">
 				<property name="com.jaspersoft.studio.unit.height" value="px"/>
-				<!-- Notes box — full width -->
+				<!-- Notes box — full width, 40px -->
 				<staticText>
 					<reportElement x="1" y="0" width="551" height="40">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -112,95 +112,123 @@
 						<font size="8" isBold="false"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
-					<text><![CDATA[Notes]]></text>
+					<text><![CDATA[Notes:]]></text>
 				</staticText>
-				<!-- 3-column signature row -->
-				<!-- Col 1: Lab Technician -->
-				<staticText>
-					<reportElement x="1" y="40" width="183" height="40">
+				<!-- Col 1: Lab Technician — 60px tall -->
+				<frame>
+					<reportElement x="1" y="40" width="183" height="60">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					</reportElement>
-					<box topPadding="2" leftPadding="4">
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
 						<bottomPen lineWidth="0.5"/>
 						<rightPen lineWidth="0.5"/>
 					</box>
-					<textElement verticalAlignment="Bottom">
-						<font size="8" isBold="false"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<text><![CDATA[Lab Technician]]></text>
-				</staticText>
-				<!-- Col 2: Lab Assistant -->
-				<staticText>
-					<reportElement x="184" y="40" width="183" height="40">
+					<!-- signature line — sits directly above role label -->
+					<staticText>
+						<reportElement x="20" y="32" width="143" height="10"/>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="7"/>
+						</textElement>
+						<text><![CDATA[___________________________]]></text>
+					</staticText>
+					<!-- role label -->
+					<staticText>
+						<reportElement x="1" y="44" width="181" height="14"/>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="8" isBold="false"/>
+						</textElement>
+						<text><![CDATA[Lab Technician]]></text>
+					</staticText>
+				</frame>
+				<!-- Col 2: Lab Assistant — 60px tall -->
+				<frame>
+					<reportElement x="184" y="40" width="183" height="60">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					</reportElement>
-					<box topPadding="2" leftPadding="4">
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
 						<bottomPen lineWidth="0.5"/>
 						<rightPen lineWidth="0.5"/>
 					</box>
-					<textElement verticalAlignment="Bottom">
-						<font size="8" isBold="false"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<text><![CDATA[Lab Assistant]]></text>
-				</staticText>
-				<!-- Col 3: Lab Director — env-driven signature -->
-				<staticText>
-					<reportElement x="367" y="40" width="185" height="40">
+					<!-- signature line — sits directly above role label -->
+					<staticText>
+						<reportElement x="20" y="32" width="143" height="10"/>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="7"/>
+						</textElement>
+						<text><![CDATA[___________________________]]></text>
+					</staticText>
+					<!-- role label -->
+					<staticText>
+						<reportElement x="1" y="44" width="181" height="14"/>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="8" isBold="false"/>
+						</textElement>
+						<text><![CDATA[Lab Assistant]]></text>
+					</staticText>
+				</frame>
+				<!-- Col 3: Lab Director — 60px tall, env-driven signature -->
+				<frame>
+					<reportElement x="367" y="40" width="185" height="60">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					</reportElement>
-					<box topPadding="2" leftPadding="4">
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
 						<bottomPen lineWidth="0.5"/>
 						<rightPen lineWidth="0.5"/>
 					</box>
-					<textElement verticalAlignment="Bottom">
-						<font size="8" isBold="false"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<text><![CDATA[Lab Director]]></text>
-				</staticText>
-				<image>
-					<reportElement x="369" y="42" width="181" height="22">
-						<printWhenExpression><![CDATA[$P{useLabDirectorSignature}]]></printWhenExpression>
-					</reportElement>
-					<imageExpression><![CDATA[$P{labDirectorSignature}]]></imageExpression>
-				</image>
-				<!-- Lab Director name + title below signature -->
-				<textField>
-					<reportElement x="1" y="80" width="551" height="12">
-						<property name="com.jaspersoft.studio.unit.height" value="px"/>
-						<printWhenExpression><![CDATA[$P{useLabDirectorSignature} && $P{labDirectorName} != null]]></printWhenExpression>
-					</reportElement>
-					<box leftPadding="4">
-						<topPen lineWidth="0.5"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.5"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement textAlignment="Right" verticalAlignment="Middle">
-						<font size="8"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$P{labDirectorName} + (($P{labDirectorTitle} != null && !$P{labDirectorTitle}.isEmpty()) ? "  |  " + $P{labDirectorTitle} : "")]]></textFieldExpression>
-				</textField>
+					<!-- signature image (env-driven, sits in top portion) -->
+					<image>
+						<reportElement x="3" y="2" width="179" height="28">
+							<printWhenExpression><![CDATA[$P{useLabDirectorSignature}]]></printWhenExpression>
+						</reportElement>
+						<imageExpression><![CDATA[$P{labDirectorSignature}]]></imageExpression>
+					</image>
+					<!-- signature line (shown when no image) — sits directly above role label -->
+					<staticText>
+						<reportElement x="20" y="32" width="145" height="10">
+							<printWhenExpression><![CDATA[!$P{useLabDirectorSignature}]]></printWhenExpression>
+						</reportElement>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="7"/>
+						</textElement>
+						<text><![CDATA[___________________________]]></text>
+					</staticText>
+					<!-- role label -->
+					<staticText>
+						<reportElement x="1" y="32" width="183" height="12"/>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="8" isBold="false"/>
+						</textElement>
+						<text><![CDATA[Lab Director]]></text>
+					</staticText>
+					<!-- name and title below role label -->
+					<textField isBlankWhenNull="true">
+						<reportElement x="1" y="44" width="183" height="14">
+							<printWhenExpression><![CDATA[$P{labDirectorName} != null]]></printWhenExpression>
+						</reportElement>
+						<textElement textAlignment="Center" verticalAlignment="Middle">
+							<font size="7"/>
+						</textElement>
+						<textFieldExpression><![CDATA[$P{labDirectorName} + (($P{labDirectorTitle} != null && !$P{labDirectorTitle}.isEmpty()) ? "  |  " + $P{labDirectorTitle} : "")]]></textFieldExpression>
+					</textField>
+				</frame>
 			</band>
 		</groupFooter>
 	</group>
 	<group name="Accession Number" isStartNewPage="true" isResetPageNumber="true" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{accessionNumber}]]></groupExpression>
 		<groupHeader>
-			<band height="75" splitType="Prevent">
+			<band height="88" splitType="Prevent">
 								<frame>
-					<reportElement x="-1" y="0" width="554" height="52" isRemoveLineWhenBlank="true" forecolor="#FF6666" backcolor="#33FFFF">
+					<reportElement x="-1" y="0" width="554" height="65" isRemoveLineWhenBlank="true" forecolor="#FF6666" backcolor="#33FFFF">
 						<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
 					</reportElement>
 					<!-- ROW 1: Patient ID (left) | Lab Number (right) -->
@@ -303,9 +331,34 @@
 						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$F{collector}]]></textFieldExpression>
 					</textField>
+					<!-- ROW 5: Order Date/Time (left) | Collection Date/Time (right) -->
+					<textField>
+						<reportElement mode="Opaque" x="1" y="52" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$R{report.orderDate}]]></textFieldExpression>
+					</textField>
+					<textField isBlankWhenNull="true">
+						<reportElement x="111" y="52" width="165" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$F{orderDate}]]></textFieldExpression>
+					</textField>
+					<textField>
+						<reportElement mode="Opaque" x="277" y="52" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA["Specimen / Collection"]]></textFieldExpression>
+					</textField>
+					<textField isBlankWhenNull="true">
+						<reportElement x="387" y="52" width="166" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$F{collectionDateTime}]]></textFieldExpression>
+					</textField>
 				</frame>
 				<textField>
-					<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="0" y="52" width="553" height="23" backcolor="#E6E6E6">
+					<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="0" y="65" width="553" height="23" backcolor="#E6E6E6">
 						<printWhenExpression><![CDATA[$P{useContactTracing}.equals( Boolean.TRUE )]]></printWhenExpression>
 					</reportElement>
 					<box leftPadding="4">
@@ -689,22 +742,33 @@
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="16" splitType="Stretch">
+		<band height="28" splitType="Stretch">
+			<!-- Row 1: Date of Report on the left -->
 			<textField>
-				<reportElement x="28" y="2" width="524" height="14"/>
+				<reportElement x="0" y="1" width="90" height="12"/>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$R{report.reportDate}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy HH.mm.ss">
+				<reportElement x="91" y="1" width="150" height="12"/>
 				<textElement verticalAlignment="Middle">
 					<font size="7"/>
 					<paragraph lineSpacing="Single"/>
 				</textElement>
-				<textFieldExpression><![CDATA["B = " + $R{report.belowNormal} + "  E = " + $R{report.aboveNormal} + "  * = " + $R{report.abnormal}  +  "  R = " + $R{report.extLabReference} + "  C = " + $R{report.confirmTest}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
 			</textField>
+			<!-- Row 2: Legend centered -->
 			<textField>
-				<reportElement x="0" y="2" width="28" height="14"/>
-				<textElement verticalAlignment="Middle">
-					<font size="6"/>
+				<reportElement x="0" y="14" width="552" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7"/>
 					<paragraph lineSpacing="Single"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$R{report.legend}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$R{report.legend} + "  B = " + $R{report.belowNormal} + "  E = " + $R{report.aboveNormal} + "  * = " + $R{report.abnormal} + "  R = " + $R{report.extLabReference} + "  C = " + $R{report.confirmTest}]]></textFieldExpression>
 			</textField>
 		</band>
 	</columnFooter>
@@ -729,23 +793,6 @@
 					<paragraph lineSpacing="Single"/>
 				</textElement>
 				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
-			</textField>
-			<textField pattern="dd/MM/yyyy HH.mm.ss">
-				<reportElement x="102" y="4" width="148" height="10"/>
-				<textElement verticalAlignment="Middle">
-					<font size="7" isBold="true"/>
-					<paragraph lineSpacing="Single"/>
-				</textElement>
-				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="2" y="4" width="100" height="10"/>
-				<box rightPadding="4"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="7" isBold="true"/>
-					<paragraph lineSpacing="Single"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$R{report.reportDate}]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>
