@@ -899,6 +899,83 @@ public class PatientDashBoardProvider {
     }
 
     /**
+     * Paginated endpoint for the "Orders Ready for Validation" dashboard tile.
+     *
+     * <p>Returns only {@link AnalysisStatus#TechnicalAcceptance} analyses, grouped
+     * by accession number — the same set as the legacy {@code VALIDATION-Grouped}
+     * session endpoint, but served page-by-page without loading everything into the
+     * HTTP session.
+     *
+     * <p>Query parameters (all optional):
+     * <ul>
+     *   <li>{@code page}     – 1-based page number, defaults to 1</li>
+     *   <li>{@code pageSize} – records per page, defaults to 10, max 100</li>
+     * </ul>
+     *
+     * <p>Response shape is identical to {@code grouped-orders/paged}.
+     */
+    @GetMapping(value = "home-dashboard/validation-orders/paged", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<PagedGroupedOrdersResponse> getValidationOrdersPaged(
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "10") int pageSize) {
+
+        // Only TechnicalAcceptance — same as the legacy VALIDATION-Grouped endpoint.
+        List<String> statusIds = new ArrayList<>();
+        statusIds.add(iStatusService.getStatusID(AnalysisStatus.TechnicalAcceptance));
+
+        // Page of distinct sample IDs (2 DB queries: count + page).
+        AnalysisService.PagedSampleIds pagedIds =
+                analysisService.getPagedSampleIdsForStatuses(statusIds, page, pageSize);
+
+        List<String> sampleIds = pagedIds.getSampleIds();
+        List<OrderDisplayBean> items = new ArrayList<>();
+
+        if (!sampleIds.isEmpty()) {
+            Set<String> sampleIdSet = new HashSet<>(sampleIds);
+
+            // Fetch all TechnicalAcceptance analyses, then scope to this page's samples.
+            List<Analysis> allValidationAnalyses = analysisService.getAnalysesForStatusIds(statusIds);
+            List<Analysis> pageAnalyses = filterAnalysesBySampleIds(allValidationAnalyses, sampleIdSet);
+
+            // All analyses on this page are pending-validation — no pendingResult split needed.
+            List<Analysis> pendingResult = new ArrayList<>();
+            items = convertAnalysesToGroupedOrderBean(pendingResult, pageAnalyses);
+
+            // Apply true total test count per sample (bounded by pageSize, max 100).
+            Map<String, String> accessionToSampleId = new LinkedHashMap<>();
+            for (Analysis a : pageAnalyses) {
+                if (a == null) continue;
+                Sample s = a.getSampleItem() != null ? a.getSampleItem().getSample() : null;
+                if (s != null && s.getAccessionNumber() != null && s.getId() != null) {
+                    accessionToSampleId.putIfAbsent(s.getAccessionNumber().trim(), s.getId());
+                }
+            }
+            Map<String, Integer> accessionToTotalCount = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : accessionToSampleId.entrySet()) {
+                List<Analysis> allForSample = analysisService.getAnalysesBySampleId(entry.getValue());
+                accessionToTotalCount.put(entry.getKey(), allForSample != null ? allForSample.size() : 0);
+            }
+            for (OrderDisplayBean bean : items) {
+                String key = bean.getLabNumber() != null ? bean.getLabNumber().trim() : "";
+                Integer total = accessionToTotalCount.get(key);
+                if (total != null) {
+                    bean.setTestCount(total);
+                }
+            }
+        }
+
+        PagedGroupedOrdersResponse response = new PagedGroupedOrdersResponse(
+                items,
+                pagedIds.getTotalCount(),
+                pagedIds.getPage(),
+                pagedIds.getPageSize(),
+                pagedIds.getTotalPages());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Filters a list of analyses to only those whose sample ID is in the given set.
      * Used by {@link #getGroupedOrdersPaged} to scope the full-status-fetch down to
      * the current page's sample IDs.

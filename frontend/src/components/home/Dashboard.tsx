@@ -163,7 +163,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     useContext(NotificationContext) as Notification;
 
   const isSplitLayout = (type?: MetricType | null) =>
-    type === "ON_GOING_ORDERS" || type === "ORDERS_IN_PROGRESS";
+    type === "ON_GOING_ORDERS" ||
+    type === "ORDERS_IN_PROGRESS" ||
+    type === "ORDERS_READY_FOR_VALIDATION";
 
   // ── DATA FETCHING ────────────────────────────────────────────────────────────
   const usesInProgressView = (type?: MetricType | null) =>
@@ -594,7 +596,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   /**
    * Fetches a single page of grouped orders from the new paginated endpoint.
    *
-   * Replaces the old fetchAllGroupedPages loop for the ON_GOING_ORDERS tile.
+   * Used by both "On Going Orders" / "Orders In Progress" (grouped-orders/paged)
+   * and "Orders Ready for Validation" (validation-orders/paged) tiles.
    * The server returns exactly one page of OrderDisplayBeans — no looping,
    * no session-based fake pagination.
    *
@@ -605,11 +608,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     page: number,
     pageSize: number,
     seq: number,
+    endpoint = "/rest/home-dashboard/grouped-orders/paged",
   ) => {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
-    const url = `/rest/home-dashboard/grouped-orders/paged?${params.toString()}`;
+    const url = `${endpoint}?${params.toString()}`;
 
     try {
       const res: any = await getFromOpenElisServerV2(url);
@@ -627,8 +631,13 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   };
 
   const loadOngoingOrdersData = async (seq: number) => {
+    // Pick the right paged endpoint based on which tile is active.
+    const endpoint =
+      selectedTile?.type === "ORDERS_READY_FOR_VALIDATION"
+        ? "/rest/home-dashboard/validation-orders/paged"
+        : "/rest/home-dashboard/grouped-orders/paged";
     try {
-      await fetchGroupedOrdersPage(rightPage, rightPageSize, seq);
+      await fetchGroupedOrdersPage(rightPage, rightPageSize, seq, endpoint);
     } catch {
       loadData({ displayItems: [] }, true, seq);
     }
@@ -1070,8 +1079,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               hasIconOnly
               renderIcon={Copy}
             />
-            {usesInProgressView(selectedTile.type) ||
-            selectedTile.type === "ORDERS_READY_FOR_VALIDATION" ? (
+            {isSplitLayout(selectedTile.type) ? (
               <Link
                 style={{ color: "blue" }}
                 href={
@@ -1926,9 +1934,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                   )
                             }
                             headers={
-                              usesInProgressView(selectedTile.type) ||
-                              selectedTile.type ===
-                                "ORDERS_READY_FOR_VALIDATION"
+                              isSplitLayout(selectedTile.type)
                                 ? groupedOrderHeaders
                                 : selectedTile.type !==
                                     "ORDERS_ENTERED_BY_USER_TODAY"
@@ -2288,8 +2294,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                     headers={
                       selectedTile.type === "ORDERS_ENTERED_BY_USER_TODAY"
                         ? userHeaders
-                        : usesInProgressView(selectedTile.type) ||
-                            selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
+                        : isSplitLayout(selectedTile.type)
                           ? groupedOrderHeaders
                           : orderHeaders
                     }
