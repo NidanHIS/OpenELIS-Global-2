@@ -94,40 +94,14 @@
 	<group name="person" isStartNewPage="true" isResetPageNumber="true" footerPosition="ForceAtBottom">
 		<groupExpression><![CDATA[$F{subjectNumber}]]></groupExpression>
 		<groupFooter>
-			<band height="100">
+			<band height="120">
 				<property name="com.jaspersoft.studio.unit.height" value="px"/>
-				<textField evaluationTime="Group" evaluationGroup="person" pattern="">
-					<reportElement x="371" y="0" width="182" height="50" isRemoveLineWhenBlank="true">
-						<property name="com.jaspersoft.studio.unit.height" value="px"/>
-					</reportElement>
-					<box leftPadding="4">
-						<pen lineWidth="0.5"/>
-						<topPen lineWidth="0.5"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.5"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement>
-						<font size="8" isBold="false"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$R{report.signValidation}]]></textFieldExpression>
-				</textField>
-				<textField evaluationTime="Group" evaluationGroup="person" pattern="">
-					<reportElement x="375" y="36" width="100" height="14" isRemoveLineWhenBlank="true">
-						<property name="com.jaspersoft.studio.unit.x" value="px"/>
-					</reportElement>
-					<textElement verticalAlignment="Middle">
-						<font size="8" isBold="false"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$R{report.date}]]></textFieldExpression>
-				</textField>
+				<!-- Notes box — full width -->
 				<staticText>
-					<reportElement x="1" y="0" width="370" height="50" isRemoveLineWhenBlank="true">
+					<reportElement x="1" y="0" width="551" height="40">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					</reportElement>
-					<box topPadding="0" leftPadding="4">
+					<box topPadding="2" leftPadding="4">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -140,38 +114,10 @@
 					</textElement>
 					<text><![CDATA[Notes]]></text>
 				</staticText>
-				<image>
-					<reportElement x="373" y="10" width="178" height="25">
-						<printWhenExpression><![CDATA[$P{useLabDirectorSignature}]]></printWhenExpression>
-					</reportElement>
-					<imageExpression><![CDATA[$P{labDirectorSignature}]]></imageExpression>
-				</image>
-				<textField>
-					<reportElement x="375" y="35" width="100" height="10">
-						<property name="com.jaspersoft.studio.unit.height" value="px"/>
-						<property name="com.jaspersoft.studio.unit.y" value="px"/>
-						<property name="com.jaspersoft.studio.unit.x" value="px"/>
-						<printWhenExpression><![CDATA[$P{useLabDirectorSignature} && $P{labDirectorTitle} != null]]></printWhenExpression>
-					</reportElement>
-					<textElement>
-						<font size="8"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$P{labDirectorName}]]></textFieldExpression>
-				</textField>
-				<textField>
-					<reportElement x="375" y="45" width="100" height="10">
-						<property name="com.jaspersoft.studio.unit.height" value="px"/>
-						<property name="com.jaspersoft.studio.unit.y" value="px"/>
-						<property name="com.jaspersoft.studio.unit.x" value="px"/>
-						<printWhenExpression><![CDATA[$P{useLabDirectorSignature} && $P{labDirectorTitle} != null]]></printWhenExpression>
-					</reportElement>
-					<textElement>
-						<font size="8"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$P{labDirectorTitle}]]></textFieldExpression>
-				</textField>
-				<textField isBlankWhenNull="true">
-					<reportElement x="1" y="50" width="370" height="20">
+				<!-- 3-column signature row -->
+				<!-- Col 1: Lab Technician -->
+				<staticText>
+					<reportElement x="1" y="40" width="183" height="40">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					</reportElement>
 					<box topPadding="2" leftPadding="4">
@@ -181,605 +127,185 @@
 						<bottomPen lineWidth="0.5"/>
 						<rightPen lineWidth="0.5"/>
 					</box>
-					<textElement verticalAlignment="Middle">
-						<font size="8"/>
+					<textElement verticalAlignment="Bottom">
+						<font size="8" isBold="false"/>
+						<paragraph lineSpacing="Single"/>
 					</textElement>
-					<textFieldExpression><![CDATA["Collector: " + ($F{collector} != null ? $F{collector} : "")]]></textFieldExpression>
-				</textField>
+					<text><![CDATA[Lab Technician]]></text>
+				</staticText>
+				<!-- Col 2: Lab Assistant -->
 				<staticText>
-					<reportElement x="371" y="50" width="182" height="20">
+					<reportElement x="184" y="40" width="183" height="40">
 						<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					</reportElement>
-					<box leftPadding="4">
+					<box topPadding="2" leftPadding="4">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
 						<bottomPen lineWidth="0.5"/>
 						<rightPen lineWidth="0.5"/>
 					</box>
-					<textElement verticalAlignment="Middle">
+					<textElement verticalAlignment="Bottom">
+						<font size="8" isBold="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<text><![CDATA[Lab Assistant]]></text>
+				</staticText>
+				<!-- Col 3: Lab Director — env-driven signature -->
+				<staticText>
+					<reportElement x="367" y="40" width="185" height="40">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="2" leftPadding="4">
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement verticalAlignment="Bottom">
+						<font size="8" isBold="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<text><![CDATA[Lab Director]]></text>
+				</staticText>
+				<image>
+					<reportElement x="369" y="42" width="181" height="22">
+						<printWhenExpression><![CDATA[$P{useLabDirectorSignature}]]></printWhenExpression>
+					</reportElement>
+					<imageExpression><![CDATA[$P{labDirectorSignature}]]></imageExpression>
+				</image>
+				<!-- Lab Director name + title below signature -->
+				<textField>
+					<reportElement x="1" y="80" width="551" height="12">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<printWhenExpression><![CDATA[$P{useLabDirectorSignature} && $P{labDirectorName} != null]]></printWhenExpression>
+					</reportElement>
+					<box leftPadding="4">
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font size="8"/>
 					</textElement>
-					<text><![CDATA[]]></text>
-				</staticText>
+					<textFieldExpression><![CDATA[$P{labDirectorName} + (($P{labDirectorTitle} != null && !$P{labDirectorTitle}.isEmpty()) ? "  |  " + $P{labDirectorTitle} : "")]]></textFieldExpression>
+				</textField>
 			</band>
 		</groupFooter>
 	</group>
 	<group name="Accession Number" isStartNewPage="true" isResetPageNumber="true" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{accessionNumber}]]></groupExpression>
 		<groupHeader>
-			<band height="117" splitType="Prevent">
-				<textField pattern="" isBlankWhenNull="true">
-					<reportElement mode="Opaque" x="0" y="65" width="553" height="29" isRemoveLineWhenBlank="true" forecolor="#000000" backcolor="#FFFFFF">
+			<band height="75" splitType="Prevent">
+								<frame>
+					<reportElement x="-1" y="0" width="554" height="52" isRemoveLineWhenBlank="true" forecolor="#FF6666" backcolor="#33FFFF">
 						<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
 					</reportElement>
-					<box leftPadding="4">
-						<topPen lineWidth="0.25" lineStyle="Solid"/>
-						<leftPen lineWidth="0.25" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.25" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
-					</box>
-					<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" markup="none">
-						<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$R{report.specimenCollectTimes} + ": " + ($F{collectionDateTime} != null ? $F{collectionDateTime}: "" )]]></textFieldExpression>
-				</textField>
-				<frame>
-					<reportElement mode="Opaque" x="0" y="65" width="553" height="29" isRemoveLineWhenBlank="true" forecolor="#66FF66" backcolor="#FFFFFF">
-						<printWhenExpression><![CDATA[$V{PAGE_NUMBER} > 1]]></printWhenExpression>
-					</reportElement>
-					<box>
-						<pen lineColor="#E6E6E6"/>
-						<topPen lineColor="#E6E6E6"/>
-						<leftPen lineColor="#E6E6E6"/>
-						<bottomPen lineColor="#E6E6E6"/>
-						<rightPen lineColor="#E6E6E6"/>
-					</box>
-					<textField isBlankWhenNull="true">
-						<reportElement stretchType="RelativeToBandHeight" mode="Transparent" x="100" y="14" width="156" height="14" backcolor="#FFFFFF"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.25"/>
-							<topPen lineWidth="0.25" lineStyle="Solid"/>
-							<leftPen lineWidth="0.25" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.25" lineStyle="Solid"/>
-							<rightPen lineWidth="0.25" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{contactInfo}]]></textFieldExpression>
-					</textField>
+					<!-- ROW 1: Patient ID (left) | Lab Number (right) -->
 					<textField>
-						<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="0" y="14" width="100" height="14" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.prescriber}]]></textFieldExpression>
+						<reportElement mode="Opaque" x="1" y="0" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA["Patient ID"]]></textFieldExpression>
 					</textField>
 					<textField isBlankWhenNull="true">
-						<reportElement stretchType="RelativeToBandHeight" x="361" y="14" width="192" height="14" backcolor="#FFFFFF"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{siteInfo}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="256" y="14" width="105" height="14" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.referringSite}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="0" y="0" width="100" height="14" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.patientCode}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement mode="Transparent" x="101" y="0" width="86" height="14" backcolor="#FFFFFF"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.0" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.0" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{subjectNumber}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="256" y="0" width="105" height="14" backcolor="#FFFFFF"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.0" lineStyle="Solid"/>
-							<rightPen lineWidth="0.0" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement x="111" y="0" width="165" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$F{nationalId}]]></textFieldExpression>
 					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement mode="Opaque" x="186" y="0" width="70" height="14" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.idNational}]]></textFieldExpression>
-					</textField>
 					<textField>
-						<reportElement mode="Opaque" x="361" y="0" width="95" height="14" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement mode="Opaque" x="277" y="0" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$R{report.ordinanceNo}]]></textFieldExpression>
 					</textField>
 					<textField isBlankWhenNull="true">
-						<reportElement x="456" y="0" width="97" height="14" backcolor="#C0C0C0"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement x="387" y="0" width="166" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$F{accessionNumber}]]></textFieldExpression>
 					</textField>
-				</frame>
-				<frame>
-					<reportElement x="-1" y="0" width="554" height="65" isRemoveLineWhenBlank="true" forecolor="#FF6666" backcolor="#33FFFF">
-						<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
-					</reportElement>
-					<textField pattern="" isBlankWhenNull="true">
-						<reportElement mode="Opaque" x="402" y="0" width="50" height="21" backcolor="#E6E6E6"/>
-						<box leftPadding="3">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.age}]]></textFieldExpression>
-					</textField>
-					<textField pattern="" isBlankWhenNull="true">
-						<reportElement x="452" y="0" width="34" height="21"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{age}]]></textFieldExpression>
-					</textField>
-					<textField pattern="" isBlankWhenNull="true">
-						<reportElement x="524" y="0" width="30" height="21">
-							<printWhenExpression><![CDATA[!"0".equals($F{gender})]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{gender}]]></textFieldExpression>
-					</textField>
+					<!-- ROW 2: Full Name (left) | Referring Site (right) -->
 					<textField>
-						<reportElement mode="Opaque" x="485" y="0" width="39" height="21" backcolor="#E6E6E6"/>
-						<box leftPadding="3">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.sex}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="1" y="0" width="100" height="21" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font fontName="SansSerif" size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.patientCode}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="101" y="0" width="100" height="21"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.0" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.0" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{subjectNumber}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="199" y="0" width="87" height="11" backcolor="#E6E6E6">
-							<printWhenExpression><![CDATA[$P{useBillingNumber}.equals( Boolean.TRUE )]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.idNational}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="199" y="10" width="87" height="11" backcolor="#E6E6E6">
-							<printWhenExpression><![CDATA[$P{useBillingNumber}.equals( Boolean.TRUE )]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<topPen lineWidth="1.0" lineColor="#CCCCCC"/>
-							<leftPen lineWidth="0.5" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.5" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$P{billingNumberLabel}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="286" y="0" width="117" height="11">
-							<printWhenExpression><![CDATA[$P{useBillingNumber}.equals( Boolean.TRUE )]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineStyle="Solid"/>
-							<leftPen lineWidth="0.0" lineStyle="Solid"/>
-							<rightPen lineWidth="0.0" lineStyle="Solid"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{nationalId}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="285" y="10" width="117" height="11">
-							<printWhenExpression><![CDATA[$P{useBillingNumber}.equals( Boolean.TRUE )]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<leftPen lineWidth="0.0" lineStyle="Solid"/>
-							<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-							<rightPen lineWidth="0.0" lineStyle="Solid"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{billingNumber}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="1" y="32" width="100" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineColor="#CCCCCC"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.prescriber}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement stretchType="RelativeToBandHeight" x="100" y="32" width="171" height="11"/>
-						<box leftPadding="4">
-							<bottomPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{contactInfo}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="271" y="21" width="100" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineColor="#000000"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5" lineColor="#000000"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.referringSite}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement stretchType="RelativeToBandHeight" x="371" y="21" width="183" height="11" isPrintWhenDetailOverflows="true"/>
-						<box leftPadding="4">
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{siteInfo}.split("\\|", 2)[0]]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="1" y="43" width="100" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="1.0" lineColor="#000000"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.ordinanceNo}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="100" y="43" width="171" height="11"/>
-						<box leftPadding="4">
-							<topPen lineWidth="1.0"/>
-							<bottomPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{accessionNumber}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="271" y="43" width="100" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="1.0" lineColor="#000000"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.program}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="371" y="43" width="183" height="11"/>
-						<box leftPadding="4">
-							<topPen lineWidth="1.0"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{labOrderType}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="1" y="54" width="163" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5" lineColor="#000000"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.orderDate}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="271" y="54" width="162" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5" lineColor="#000000"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.receiptDate}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="164" y="54" width="107" height="11"/>
-						<box leftPadding="4">
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{orderDate}]]></textFieldExpression>
-					</textField>
-					<textField isBlankWhenNull="true">
-						<reportElement x="434" y="54" width="120" height="11"/>
-						<box leftPadding="4">
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{recievedDate}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement mode="Opaque" x="1" y="21" width="100" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement markup="none">
-							<font size="8" isBold="false" isItalic="false"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement mode="Opaque" x="1" y="13" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$R{label.patient_name}]]></textFieldExpression>
 					</textField>
 					<textField isBlankWhenNull="true">
-						<reportElement x="101" y="21" width="170" height="11"/>
-						<box leftPadding="4">
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement x="111" y="13" width="165" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$F{patientName}]]></textFieldExpression>
 					</textField>
 					<textField>
-						<reportElement mode="Opaque" x="199" y="0" width="88" height="21" backcolor="#E6E6E6">
-							<printWhenExpression><![CDATA[$P{useBillingNumber}.equals( Boolean.FALSE )]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$R{report.idNational}]]></textFieldExpression>
+						<reportElement mode="Opaque" x="277" y="13" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$R{report.referringSite}]]></textFieldExpression>
+					</textField>
+					<textField isBlankWhenNull="true">
+						<reportElement x="387" y="13" width="166" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$F{siteInfo}.split("\\|", 2)[0]]]></textFieldExpression>
+					</textField>
+					<!-- ROW 3: Age/Sex (left) | Ward/Dept/Unit (right) -->
+					<textField>
+						<reportElement mode="Opaque" x="1" y="26" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$R{report.age} + " / " + $R{report.sex}]]></textFieldExpression>
+					</textField>
+					<textField isBlankWhenNull="true">
+						<reportElement x="111" y="26" width="165" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$F{age} + " / " + $F{gender}]]></textFieldExpression>
 					</textField>
 					<textField>
-						<reportElement mode="Opaque" x="287" y="0" width="115" height="21">
-							<printWhenExpression><![CDATA[$P{useBillingNumber}.equals( Boolean.FALSE )]]></printWhenExpression>
-						</reportElement>
-						<box leftPadding="4">
-							<pen lineWidth="0.5"/>
-							<topPen lineWidth="0.5"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-						</textElement>
-						<textFieldExpression><![CDATA[$F{nationalId}]]></textFieldExpression>
-					</textField>
-					<textField>
-						<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="271" y="32" width="100" height="11" backcolor="#E6E6E6"/>
-						<box leftPadding="4">
-							<topPen lineWidth="0.5" lineColor="#000000"/>
-							<leftPen lineWidth="0.5"/>
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement verticalAlignment="Middle">
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement mode="Opaque" x="277" y="26" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$R{report.referringSiteDepartment}]]></textFieldExpression>
 					</textField>
 					<textField isBlankWhenNull="true">
-						<reportElement stretchType="RelativeToBandHeight" x="371" y="32" width="183" height="11" isPrintWhenDetailOverflows="true"/>
-						<box leftPadding="4">
-							<bottomPen lineWidth="0.5"/>
-							<rightPen lineWidth="0.5"/>
-						</box>
-						<textElement>
-							<font size="8"/>
-							<paragraph lineSpacing="Single"/>
-						</textElement>
+						<reportElement x="387" y="26" width="166" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
 						<textFieldExpression><![CDATA[$F{siteInfo}.split("\\|", 2)[1]]]></textFieldExpression>
+					</textField>
+					<!-- ROW 4: Address (left) | Collector (right) -->
+					<textField>
+						<reportElement mode="Opaque" x="1" y="39" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA["Address"]]></textFieldExpression>
+					</textField>
+					<textField isBlankWhenNull="true">
+						<reportElement x="111" y="39" width="165" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$F{contactInfo}]]></textFieldExpression>
+					</textField>
+					<textField>
+						<reportElement mode="Opaque" x="277" y="39" width="110" height="13" backcolor="#E6E6E6"/>
+						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA["Collector"]]></textFieldExpression>
+					</textField>
+					<textField isBlankWhenNull="true">
+						<reportElement x="387" y="39" width="166" height="13"/>
+						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
+						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
+						<textFieldExpression><![CDATA[$F{collector}]]></textFieldExpression>
 					</textField>
 				</frame>
 				<textField>
-					<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="0" y="94" width="553" height="23" backcolor="#E6E6E6">
+					<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="0" y="52" width="553" height="23" backcolor="#E6E6E6">
 						<printWhenExpression><![CDATA[$P{useContactTracing}.equals( Boolean.TRUE )]]></printWhenExpression>
 					</reportElement>
 					<box leftPadding="4">
@@ -924,7 +450,6 @@
 	</title>
 	<pageHeader>
 		<band height="124" splitType="Stretch">
-			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
 			<subreport>
 				<reportElement x="0" y="0" width="552" height="94" printWhenGroupChanges="person"/>
 				<subreportParameter name="labName2">
