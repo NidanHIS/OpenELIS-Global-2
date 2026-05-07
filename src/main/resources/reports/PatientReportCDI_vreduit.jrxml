@@ -91,6 +91,7 @@
 	<field name="contactTracingIndexName" class="java.lang.String"/>
 	<field name="contactTracingIndexRecordNumber" class="java.lang.String"/>
 	<field name="collector" class="java.lang.String"/>
+	<field name="collectionDateOnly" class="java.lang.String"/>
 	<group name="person" isStartNewPage="true" isResetPageNumber="true" footerPosition="ForceAtBottom">
 		<groupExpression><![CDATA[$F{subjectNumber}]]></groupExpression>
 		<groupFooter>
@@ -348,13 +349,13 @@
 						<reportElement mode="Opaque" x="277" y="52" width="110" height="13" backcolor="#E6E6E6"/>
 						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
 						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
-						<textFieldExpression><![CDATA["Specimen / Collection"]]></textFieldExpression>
+						<textFieldExpression><![CDATA["Collection Date/Time"]]></textFieldExpression>
 					</textField>
 					<textField isBlankWhenNull="true">
 						<reportElement x="387" y="52" width="166" height="13"/>
 						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
 						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
-						<textFieldExpression><![CDATA[$F{collectionDateTime}]]></textFieldExpression>
+						<textFieldExpression><![CDATA[$F{collectionDateOnly}]]></textFieldExpression>
 					</textField>
 				</frame>
 				<textField>

@@ -84,6 +84,7 @@ public final class ClinicalPatientData {
     private String tbFollowupPeriodLine1;
     private String tbFollowupPeriodLine2;
     private String collector;
+    private String collectionDateOnly;
 
     public ClinicalPatientData() {
     }
@@ -145,6 +146,7 @@ public final class ClinicalPatientData {
         sampleSortOrder = data.getSampleSortOrder();
         analysisStatus = data.getAnalysisStatus();
         collector = data.getCollector();
+        collectionDateOnly = data.getCollectionDateOnly();
     }
 
     public String getReferralRefRange() {
@@ -678,5 +680,13 @@ public final class ClinicalPatientData {
 
     public void setCollector(String collector) {
         this.collector = collector;
+    }
+
+    public String getCollectionDateOnly() {
+        return collectionDateOnly;
+    }
+
+    public void setCollectionDateOnly(String collectionDateOnly) {
+        this.collectionDateOnly = collectionDateOnly;
     }
 }

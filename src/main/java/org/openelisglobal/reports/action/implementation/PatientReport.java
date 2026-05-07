@@ -938,6 +938,10 @@ public abstract class PatientReport extends Report {
             data.setSampleType(analysisService.getTypeOfSample(currentAnalysis).getLocalizedName());
             data.setCollectionDateTime(DateUtil.convertTimestampToStringDateAndConfiguredHourTime(
                     currentAnalysis.getSampleItem().getCollectionDate()));
+            // collectionDateOnly captures the clean per-row collection timestamp before
+            // setCollectionTime() overwrites collectionDateTime with a summary string.
+            data.setCollectionDateOnly(DateUtil.convertTimestampToStringDateAndConfiguredHourTime(
+                    currentAnalysis.getSampleItem().getCollectionDate()));
             // Collector is stored on SampleItem — set by SampleAddService from the
             // sample XML collector attribute (populated with the logged-in user's name
             // during order entry / incoming order collection).
