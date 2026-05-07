@@ -380,7 +380,7 @@
 			<band splitType="Stretch"/>
 		</groupFooter>
 	</group>
-	<group name="section name" isReprintHeaderOnEachPage="true">
+	<group name="section name" isStartNewPage="true" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{testSection}]]></groupExpression>
 		<groupHeader>
 			<band height="25" splitType="Prevent">
