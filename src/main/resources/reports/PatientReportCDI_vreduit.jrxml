@@ -393,10 +393,9 @@
 					</textElement>
 					<textFieldExpression><![CDATA[$F{testSection}]]></textFieldExpression>
 				</textField>
-				<!-- Column header row: y=18 (4px gap after dept name), bordered, bold, black text -->
 				<!-- Test Name -->
 				<staticText>
-					<reportElement mode="Opaque" x="0" y="18" width="200" height="12" forecolor="#000000" backcolor="#E6E6E6"/>
+					<reportElement x="0" y="18" width="200" height="12"/>
 					<box topPadding="2" leftPadding="4" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -405,14 +404,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement verticalAlignment="Middle">
-						<font size="7" isBold="true"/>
+						<font size="6" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Test Name]]></text>
 				</staticText>
 				<!-- Result -->
 				<staticText>
-					<reportElement mode="Opaque" x="200" y="18" width="110" height="12" forecolor="#000000" backcolor="#E6E6E6"/>
+					<reportElement x="200" y="18" width="110" height="12"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -421,14 +420,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="7" isBold="true"/>
+						<font size="6" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Result]]></text>
 				</staticText>
 				<!-- Status -->
 				<staticText>
-					<reportElement mode="Opaque" x="310" y="18" width="80" height="12" forecolor="#000000" backcolor="#E6E6E6"/>
+					<reportElement x="310" y="18" width="80" height="12"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -437,14 +436,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="7" isBold="true"/>
+						<font size="6" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Status]]></text>
 				</staticText>
 				<!-- Alert -->
 				<staticText>
-					<reportElement mode="Opaque" x="390" y="18" width="30" height="12" forecolor="#000000" backcolor="#E6E6E6"/>
+					<reportElement x="390" y="18" width="30" height="12"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -453,14 +452,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="7" isBold="true"/>
+						<font size="6" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Alert]]></text>
 				</staticText>
 				<!-- Reference Value (Unit) -->
 				<staticText>
-					<reportElement mode="Opaque" x="420" y="18" width="133" height="12" forecolor="#000000" backcolor="#E6E6E6"/>
+					<reportElement x="420" y="18" width="133" height="12"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -469,7 +468,7 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="7" isBold="true"/>
+						<font size="6" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Reference Value (Unit)]]></text>
