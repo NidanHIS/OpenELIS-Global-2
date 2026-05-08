@@ -1,0 +1,186 @@
+# CI workflow for feat/patch-safe branch.
+# Completely isolated — does not touch nidan-dev, latest tags, or any existing workflow.
+#
+# On PR  → feat/patch-safe : runs Java + frontend format checks (informational, no merge block)
+# On push → feat/patch-safe : builds and publishes Docker images tagged :qa to DockerHub
+
+name: Patch-Safe CI
+
+on:
+  pull_request:
+    branches: [feat/patch-safe]
+  push:
+    branches: [feat/patch-safe]
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  DOCKER_NAME: ${{ vars.DOCKERHUB_USERNAME }}/openelis-global-2
+
+# ── PR CHECKS ────────────────────────────────────────────────────────────────
+# These two jobs only run when a PR is opened/updated against feat/patch-safe.
+# They are informational — they will show green/red on the PR but do NOT block merge.
+
+jobs:
+  check-backend-format:
+    if: github.event_name == 'pull_request'
+    name: Java Format Check (Spotless)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK 21
+        uses: actions/setup-java@v1
+        with:
+          java-version: 21
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.repository }}
+          submodules: recursive
+
+      - name: Check Java formatting
+        run: mvn spotless:check
+
+  check-frontend-format:
+    if: github.event_name == 'pull_request'
+    name: Frontend Format Check (Prettier)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.repository }}
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: frontend
+
+      - name: Check frontend formatting
+        run: npx prettier ./ --check
+        working-directory: frontend
+
+# ── POST-MERGE DOCKER PUBLISH ─────────────────────────────────────────────────
+# These three jobs only run on push to feat/patch-safe (i.e. after a PR merges)
+# or when manually triggered via workflow_dispatch.
+# Images are tagged :qa — never :latest (that tag is exclusive to nidan-dev).
+
+  build-and-push-image-backend:
+    if: >
+      github.repository == 'Trigonal-Technology/OpenELIS-Global-2' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Build & Push Backend :qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_NAME }}:qa
+          build-args: SKIP_SPOTLESS=true
+
+  build-and-push-image-frontend:
+    if: >
+      github.repository == 'Trigonal-Technology/OpenELIS-Global-2' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Build & Push Frontend :qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.prod
+          push: true
+          tags: ${{ env.DOCKER_NAME }}-frontend:qa
+
+  build-and-push-image-database:
+    if: >
+      github.repository == 'Trigonal-Technology/OpenELIS-Global-2' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Build & Push Database :qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push database image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./db/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_NAME }}-database:qa
