@@ -33,6 +33,8 @@ public class ExternalOrderRequest {
 
     private String referringSiteName;
 
+    private String referringSiteDepartmentName;
+
     @Pattern(regexp = ValidationHelper.ID_REGEX)
     private String referringSiteDepartmentId;
 
@@ -103,6 +105,14 @@ public class ExternalOrderRequest {
 
     public void setReferringSiteName(String referringSiteName) {
         this.referringSiteName = referringSiteName;
+    }
+
+    public String getReferringSiteDepartmentName() {
+        return referringSiteDepartmentName;
+    }
+
+    public void setReferringSiteDepartmentName(String referringSiteDepartmentName) {
+        this.referringSiteDepartmentName = referringSiteDepartmentName;
     }
 
     public String getReferringSiteDepartmentId() {

@@ -251,8 +251,19 @@ const AddOrder = (props) => {
       ...orderFormValues,
       sampleOrderItems: {
         ...orderFormValues.sampleOrderItems,
-        referringSiteDepartmentId: e.target.value,
-        referringSiteName: "",
+        referringSiteDepartmentName: e.target.value,
+        referringSiteDepartmentId: "",
+      },
+    });
+  }
+
+  function handleAutoCompleteRequesterDept(deptId) {
+    setOrderFormValues({
+      ...orderFormValues,
+      sampleOrderItems: {
+        ...orderFormValues.sampleOrderItems,
+        referringSiteDepartmentId: deptId,
+        referringSiteDepartmentName: "",
       },
     });
   }
@@ -637,25 +648,29 @@ const AddOrder = (props) => {
               {/* )} */}
             </Column>
             <Column lg={8} md={4} sm={4}>
-              <Select
-                id="requesterDepartmentId"
+              <AutoComplete
                 name="requesterDepartmentId"
-                labelText={intl.formatMessage({ id: "order.department.label" })}
-                onChange={handleRequesterDept}
-                required
-                value={
-                  orderFormValues.sampleOrderItems.referringSiteDepartmentId
+                id="requesterDepartmentId"
+                allowFreeText={
+                  !(
+                    configurationProperties.restrictFreeTextRefSiteEntry ===
+                    "true"
+                  )
                 }
-              >
-                <SelectItem value="" text="" />
-                {departments.map((department, index) => (
-                  <SelectItem
-                    key={index}
-                    text={department.value}
-                    value={department.id}
-                  />
-                ))}
-              </Select>
+                value={
+                  orderFormValues.sampleOrderItems.referringSiteDepartmentId !=
+                  ""
+                    ? orderFormValues.sampleOrderItems.referringSiteDepartmentId
+                    : orderFormValues.sampleOrderItems
+                        .referringSiteDepartmentName
+                }
+                onChange={handleRequesterDept}
+                onSelect={handleAutoCompleteRequesterDept}
+                label={intl.formatMessage({ id: "order.department.label" })}
+                style={{ width: "!important 100%" }}
+                suggestions={departments.length > 0 ? departments : []}
+                required
+              />
             </Column>
             <Column lg={16} md={8} sm={3}>
               {" "}

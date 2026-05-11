@@ -130,6 +130,7 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
         filtered.setReferringSiteId(original.getReferringSiteId());
         filtered.setReferringSiteName(original.getReferringSiteName());
         filtered.setReferringSiteDepartmentId(original.getReferringSiteDepartmentId());
+        filtered.setReferringSiteDepartmentName(original.getReferringSiteDepartmentName());
         filtered.setProviderPersonId(original.getProviderPersonId());
         filtered.setProviderFirstName(original.getProviderFirstName());
         filtered.setProviderLastName(original.getProviderLastName());
