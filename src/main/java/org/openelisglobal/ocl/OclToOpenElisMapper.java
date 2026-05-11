@@ -52,6 +52,18 @@ public class OclToOpenElisMapper {
     private String systemUserId = "1";
     private Set<JsonNode> labSetPanelNodes;
 
+    /**
+     * Built once per import run by {@link #buildLabSetToSectionLookup(JsonNode)}.
+     *
+     * Key   = LabSet concept id (String, e.g. "150")
+     * Value = display_name of the real (non-meta) ConvSet that owns that LabSet
+     *         (e.g. "Haematology")
+     *
+     * Used by {@link #mapTestSection} Priority 1.5: when a test has no direct
+     * ConvSet parent, we walk Test → LabSet → ConvSet to resolve the section.
+     */
+    private Map<String, String> labSetToSectionName = new HashMap<>();
+
     public Set<JsonNode> getLabSetPanelNodes() {
         return labSetPanelNodes;
     }
@@ -79,9 +91,24 @@ public class OclToOpenElisMapper {
     private static final Set<String> SUPPORTED_DATATYPES = Set.of("NUMERIC", "TEXT", "CODED", "N/A", "NONE");
     private static final Set<String> ALLOWED_CONCEPT_CLASSES = Set.of("TEST");
     private static final Set<String> LABSET_CONCEPT_CLASSES = Set.of("LABSET");
+    private static final Set<String> CONVSET_CONCEPT_CLASSES = Set.of("CONVSET");
     private static final Set<String> NUMERIC_DATA_TYPES = Set.of("NUMERIC");
     private static final Set<String> CODED_DATA_TYPES = Set.of("CODED");
     private static final Set<String> NONE_DATATYPES = Set.of("NONE", "N/A");
+
+    /**
+     * ConvSet display_names that are organisational groupings in OCL, NOT real
+     * laboratory departments. These must never be created as TestSection rows.
+     *
+     * "Department"          — root container for the 11 real sections
+     * "Tests Orderability"  — flat list of every orderable test/panel
+     * "All Orderable Tests" — contains "Tests Orderability"
+     */
+    private static final Set<String> META_CONVSET_NAMES = Set.of(
+            "Department",
+            "Tests Orderability",
+            "All Orderable Tests"
+    );
 
     // Map OCL data types to OpenELIS result type IDs
     private static final Map<String, String> RESULT_TYPE_MAPPING = new HashMap<>();
@@ -91,6 +118,200 @@ public class OclToOpenElisMapper {
         RESULT_TYPE_MAPPING.put("TEXT", "R");
         RESULT_TYPE_MAPPING.put("N/A", "R"); // Free text result
         RESULT_TYPE_MAPPING.put("NONE", "R"); // Free text result
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 1 — Test-section pre-pass
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Idempotently creates or re-activates OpenELIS TestSection rows from OCL
+     * ConvSet concepts.
+     *
+     * <p><b>Must be called BEFORE {@link #mapConceptsToTestAddForms}</b> so that
+     * every section exists in the database by the time individual Test concepts
+     * try to resolve their section via {@code mapTestSection()}.
+     *
+     * <p>Rules:
+     * <ul>
+     *   <li>ConvSets whose {@code display_name} is in {@link #META_CONVSET_NAMES}
+     *       are skipped — they are organisational groupings, not lab departments.</li>
+     *   <li>Idempotency key: English name via
+     *       {@link TestSectionService#getTestSectionByName(String)}.
+     *       <ul>
+     *         <li>Found → ensure {@code is_active = 'Y'}; update only if dirty.</li>
+     *         <li>Not found → insert with a new Localization row.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Any per-concept exception is caught and logged; the loop continues so
+     *       one bad concept cannot abort the entire pre-pass.</li>
+     * </ul>
+     *
+     * @param rootNode the root OCL JSON node (must contain a {@code concepts} array)
+     * @return number of sections created or verified/updated
+     */
+    public int upsertTestSections(JsonNode rootNode) {
+        JsonNode concepts = rootNode.get("concepts");
+        if (concepts == null || !concepts.isArray()) {
+            log.warn("OCL upsertTestSections: no 'concepts' array found — skipping section pre-pass.");
+            return 0;
+        }
+
+        int created = 0;
+        int verified = 0;
+        int skipped = 0;
+
+        for (JsonNode concept : concepts) {
+            String conceptClass = getText(concept, "concept_class");
+
+            // Only process ConvSet concepts
+            if (conceptClass == null
+                    || !CONVSET_CONCEPT_CLASSES.contains(conceptClass.toUpperCase())) {
+                continue;
+            }
+
+            Map<String, String> names = extractNames(concept);
+            String englishName = names.get("englishName");
+            String frenchName  = names.get("frenchName");
+
+            // Guard: must have a non-blank name
+            if (StringUtils.isBlank(englishName)) {
+                log.warn("OCL upsertTestSections: ConvSet id=" + getText(concept, "id") + " has no resolvable English name — skipping.");
+                skipped++;
+                continue;
+            }
+
+            // Guard: skip meta/grouping ConvSets
+            if (META_CONVSET_NAMES.contains(englishName)) {
+                log.info("OCL upsertTestSections: skipping meta ConvSet '" + englishName + "'.");
+                skipped++;
+                continue;
+            }
+
+            try {
+                TestSection existing = testSectionService.getTestSectionByName(englishName);
+
+                if (existing != null) {
+                    // Already exists — only touch is_active if it is off
+                    if (!"Y".equals(existing.getIsActive())) {
+                        existing.setIsActive("Y");
+                        existing.setSysUserId(systemUserId);
+                        testSectionService.update(existing);
+                        log.info("OCL upsertTestSections: re-activated section '" + englishName + "'.");
+                    } else {
+                        log.info("OCL upsertTestSections: section '" + englishName + "' already active — no change.");
+                    }
+                    verified++;
+
+                } else {
+                    // Does not exist — create Localization first (NOT NULL FK), then TestSection
+                    Localization localization = new Localization();
+                    localization.setEnglish(englishName);
+                    // frenchName falls back to englishName when absent (extractNames guarantees this)
+                    localization.setFrench(frenchName);
+                    localization.setDescription("test section name");
+                    localization.setSysUserId(systemUserId);
+                    String localizationId = localizationService.insert(localization);
+                    localization.setId(localizationId);
+
+                    TestSection section = new TestSection();
+                    section.setTestSectionName(englishName);
+                    section.setDescription(englishName);
+                    section.setIsActive("Y");
+                    section.setIsExternal("N");
+                    section.setLocalization(localization);
+                    section.setSysUserId(systemUserId);
+                    testSectionService.insert(section);
+
+                    log.info("OCL upsertTestSections: created section '" + englishName + "'.");
+                    created++;
+                }
+
+            } catch (Exception e) {
+                log.error("OCL upsertTestSections: failed to upsert section '" + englishName + "' — skipping this entry. Error: " + e.getMessage(), e);
+                skipped++;
+            }
+        }
+
+        log.info("OCL upsertTestSections complete: created=" + created + ", verified=" + verified + ", skipped=" + skipped + ".");
+        return created + verified;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 2 onwards — concept mapping (unchanged for now)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Builds the {@link #labSetToSectionName} lookup once per import run.
+     *
+     * <p>Algorithm — single pass over all CONCEPT-SET mappings:
+     * <ul>
+     *   <li>For every mapping where {@code from} is a real (non-meta) ConvSet
+     *       and {@code to} is a LabSet, record
+     *       {@code labSetId → convSetName}.</li>
+     *   <li>{@code putIfAbsent} — first ConvSet owner wins (deterministic;
+     *       no LabSet belongs to two real sections in TTH v0.4).</li>
+     * </ul>
+     *
+     * <p>Result for TTH v0.4: 13 entries covering all LabSets that have a
+     * real section parent. The 3 LabSets that are only under "Tests
+     * Orderability" (Basic Serology, Blood Banking, Renal Function Test)
+     * will not appear in the map — their tests fall through to the default.
+     *
+     * @param rootNode the root OCL JSON node
+     */
+    private void buildLabSetToSectionLookup(JsonNode rootNode) {
+        labSetToSectionName = new HashMap<>();
+
+        JsonNode concepts = rootNode.get("concepts");
+        JsonNode mappings  = rootNode.get("mappings");
+        if (concepts == null || !concepts.isArray()
+                || mappings == null || !mappings.isArray()) {
+            log.warn("OCL buildLabSetToSectionLookup: missing concepts or mappings array — lookup will be empty.");
+            return;
+        }
+
+        // Build id → class and id → name maps for O(1) lookup during the pass
+        Map<String, String> idToClass = new HashMap<>();
+        Map<String, String> idToName  = new HashMap<>();
+        for (JsonNode c : concepts) {
+            String id   = getText(c, "id");
+            String cls  = getText(c, "concept_class");
+            String name = getText(c, "display_name");
+            if (id != null) {
+                idToClass.put(id, cls  != null ? cls.toUpperCase()  : "");
+                idToName .put(id, name != null ? name               : "");
+            }
+        }
+
+        // Single pass: ConvSet → LabSet edges only
+        for (JsonNode mapping : mappings) {
+            String mapType = getText(mapping, "map_type");
+            if (!"CONCEPT-SET".equalsIgnoreCase(mapType)) {
+                continue;
+            }
+            String fromId = getText(mapping, "from_concept_code");
+            String toId   = getText(mapping, "to_concept_code");
+            if (fromId == null || toId == null) {
+                continue;
+            }
+            // from must be a real (non-meta) ConvSet
+            if (!"CONVSET".equals(idToClass.get(fromId))) {
+                continue;
+            }
+            String convSetName = idToName.get(fromId);
+            if (convSetName == null || META_CONVSET_NAMES.contains(convSetName)) {
+                continue;
+            }
+            // to must be a LabSet
+            if (!"LABSET".equals(idToClass.get(toId))) {
+                continue;
+            }
+            labSetToSectionName.putIfAbsent(toId, convSetName);
+            log.debug("OCL section lookup: LabSet " + toId + " ('" + idToName.get(toId) + "') → section '" + convSetName + "'");
+        }
+
+        log.info("OCL buildLabSetToSectionLookup: " + labSetToSectionName.size() + " LabSet→section entries built.");
     }
 
     /**
@@ -106,6 +327,10 @@ public class OclToOpenElisMapper {
             List<TestAddForm> forms = new ArrayList<>();
             labSetPanelNodes = new HashSet<>();
             this.rootNode = rootNode;
+
+            // Build the LabSet→section lookup used by mapTestSection() Priority 1.5.
+            // Done once here so the per-test call is O(mappings-per-test), not O(all-mappings²).
+            buildLabSetToSectionLookup(rootNode);
 
             // Validate root node structure - accept both Source Version and Collection
             // Version
@@ -175,30 +400,58 @@ public class OclToOpenElisMapper {
 
             if (dataType != null && conceptClass != null && LABSET_CONCEPT_CLASSES.contains(conceptClass.toUpperCase())
                     && NONE_DATATYPES.contains(dataType.toUpperCase())) {
-                Panel panel = createPanel(englishName, description, systemUserId, loinc, externalId);
 
-                if (panelService.getPanelByName(panel) != null) {
-                    Panel existingPanel = panelService.getPanelByName(panel);
+                // ── Panel upsert: GUID-first → name-fallback → create ─────────────────
+                Panel existingPanel = null;
+
+                // Step 1: GUID lookup — canonical match regardless of name changes
+                if (StringUtils.isNotBlank(externalId)) {
+                    existingPanel = panelService.getPanelByGUID(externalId);
+                    if (existingPanel != null) {
+                        log.info("OCL panel upsert: found by GUID '" + externalId + "' → panel '" + englishName + "'.");
+                    }
+                }
+
+                // Step 2: name fallback — panel existed before OCL had GUIDs
+                if (existingPanel == null) {
+                    Panel probe = createPanel(englishName, description, systemUserId, loinc, externalId);
+                    existingPanel = panelService.getPanelByName(probe);
+                    if (existingPanel != null) {
+                        log.info("OCL panel upsert: found by name '" + englishName + "' (GUID lookup missed).");
+                    }
+                }
+
+                if (existingPanel != null) {
+                    // Update all mutable fields from OCL
                     boolean needsUpdate = false;
 
-                    // Update LOINC if provided
-                    if (StringUtils.isNotBlank(loinc)) {
+                    if (StringUtils.isNotBlank(externalId) && !externalId.equals(existingPanel.getGuid())) {
+                        log.info("OCL panel upsert: stamping GUID '" + externalId + "' on panel '" + englishName + "'.");
+                        existingPanel.setGuid(externalId);
+                        needsUpdate = true;
+                    }
+                    if (StringUtils.isNotBlank(loinc) && !loinc.equals(existingPanel.getLoinc())) {
                         existingPanel.setLoinc(loinc);
                         needsUpdate = true;
                     }
-
-                    // Update GUID with external_id (OpenMRS UUID) if provided and different
-                    if (StringUtils.isNotBlank(externalId) && !externalId.equals(existingPanel.getGuid())) {
-                        existingPanel.setGuid(externalId);
+                    // Sync active/retired flag from OCL
+                    boolean retired = Boolean.parseBoolean(getText(concept, "retired"));
+                    String expectedActive = retired ? "N" : "Y";
+                    if (!expectedActive.equals(existingPanel.getIsActive())) {
+                        existingPanel.setIsActive(expectedActive);
                         needsUpdate = true;
-                        log.info("Updating GUID for existing panel '" + englishName + "' from '"
-                                + existingPanel.getGuid() + "' to '" + externalId + "'");
                     }
 
                     if (needsUpdate) {
+                        existingPanel.setSysUserId(systemUserId);
                         panelService.update(existingPanel);
+                        log.info("OCL panel upsert: updated panel '" + englishName + "'.");
+                    } else {
+                        log.info("OCL panel upsert: panel '" + englishName + "' already up-to-date — no change.");
                     }
+
                 } else {
+                    // Step 3: create — panel does not exist at all
                     Localization localization = createLocalization(frenchName, englishName, "create panel",
                             systemUserId);
 
@@ -214,10 +467,13 @@ public class OclToOpenElisMapper {
                     RoleModule validationValidationModule = createRoleModule(systemUserId, validationModule,
                             validationRole);
                     TypeOfSample typeOfSample = getTypeOfSample(concept);
-                    panelCreateService.insert(localization, panel, workplanModule, resultModule, validationModule,
+                    Panel newPanel = createPanel(englishName, description, systemUserId, loinc, externalId);
+                    panelCreateService.insert(localization, newPanel, workplanModule, resultModule, validationModule,
                             workplanResultModule, resultResultModule, validationValidationModule, typeOfSample.getId(),
                             systemUserId);
+                    log.info("OCL panel upsert: created new panel '" + englishName + "'.");
                 }
+
                 getLabSetPanelNodes().add(concept);
                 return null;
             }
@@ -234,25 +490,89 @@ public class OclToOpenElisMapper {
                 return null;
             }
 
-            Test dbTest = testService.getTestByLocalizedName(englishName, Locale.ENGLISH);
+            // ── Test upsert: GUID-first → name-fallback → create ──────────────────────
+            Test dbTest = null;
+
+            // Step 1: GUID lookup — canonical match regardless of name changes
+            if (StringUtils.isNotBlank(externalId)) {
+                dbTest = testService.getTestByGUID(externalId);
+                if (dbTest != null) {
+                    log.info("OCL test upsert: found by GUID '" + externalId + "' → test '" + englishName + "'.");
+                }
+            }
+
+            // Step 2: name fallback — test existed before OCL had GUIDs, or GUID not yet set
+            if (dbTest == null) {
+                dbTest = testService.getTestByLocalizedName(englishName, Locale.ENGLISH);
+                if (dbTest != null) {
+                    log.info("OCL test upsert: found by name '" + englishName + "' (GUID lookup missed).");
+                }
+            }
+
             if (dbTest != null) {
+                // Update all mutable fields from OCL
                 boolean needsUpdate = false;
-                // Update LOINC if provided
-                if (StringUtils.isNotBlank(loinc)) {
+
+                // Stamp GUID if missing or changed
+                if (StringUtils.isNotBlank(externalId) && !externalId.equals(dbTest.getGuid())) {
+                    log.info("OCL test upsert: stamping GUID '" + externalId + "' on test '" + englishName + "'.");
+                    dbTest.setGuid(externalId);
+                    needsUpdate = true;
+                }
+
+                // Update LOINC
+                if (StringUtils.isNotBlank(loinc) && !loinc.equals(dbTest.getLoinc())) {
                     dbTest.setLoinc(loinc);
                     needsUpdate = true;
                 }
-                // Update GUID with external_id (OpenMRS UUID) if provided and different
-                if (StringUtils.isNotBlank(externalId) && !externalId.equals(dbTest.getGuid())) {
-                    dbTest.setGuid(externalId);
+
+                // Update section — resolve via P1/P1.5/P2/P3/P4/P5
+                TestSection resolvedSection = resolveTestSection(concept);
+                if (resolvedSection != null) {
+                    TestSection currentSection = dbTest.getTestSection();
+                    if (currentSection == null
+                            || !resolvedSection.getId().equals(currentSection.getId())) {
+                        log.info("OCL test upsert: updating section for '" + englishName + "': '"
+                                + (currentSection != null ? currentSection.getTestSectionName() : "null")
+                                + "' → '" + resolvedSection.getTestSectionName() + "'.");
+                        dbTest.setTestSection(resolvedSection);
+                        needsUpdate = true;
+                    }
+                }
+
+                // Update UOM — resolve or create
+                JsonNode extrasNode = concept.get("extras");
+                if (extrasNode != null && extrasNode.has("units")) {
+                    String units = getText(extrasNode, "units");
+                    if (StringUtils.isNotBlank(units)) {
+                        // resolveOrCreateUom returns a session-managed entity — safe to assign
+                        UnitOfMeasure resolvedUom = resolveOrCreateUom(units);
+                        if (resolvedUom != null) {
+                            UnitOfMeasure currentUom = dbTest.getUnitOfMeasure();
+                            if (currentUom == null || !resolvedUom.getId().equals(currentUom.getId())) {
+                                dbTest.setUnitOfMeasure(resolvedUom);
+                                needsUpdate = true;
+                            }
+                        }
+                    }
+                }
+
+                // Sync active/retired flag
+                boolean retired = Boolean.parseBoolean(getText(concept, "retired"));
+                String expectedActive = retired ? "N" : "Y";
+                if (!expectedActive.equals(dbTest.getIsActive())) {
+                    dbTest.setIsActive(expectedActive);
                     needsUpdate = true;
-                    log.info("Updating GUID for existing test '" + englishName + "' from '" + dbTest.getGuid()
-                            + "' to '" + externalId + "'");
                 }
+
                 if (needsUpdate) {
+                    dbTest.setSysUserId(systemUserId);
                     testService.update(dbTest);
+                    log.info("OCL test upsert: updated test '" + englishName + "'.");
+                } else {
+                    log.info("OCL test upsert: test '" + englishName + "' already up-to-date — no change.");
                 }
-                return null;
+                return null; // existing test handled — no TestAddForm needed
             }
 
             // Log concept class information
@@ -356,49 +676,140 @@ public class OclToOpenElisMapper {
     }
 
     private void mapTestSection(JsonNode concept, ObjectNode jsonWad) {
-        JsonNode extras = concept.get("extras");
-        String testSectionId = null;
+        TestSection testSection = resolveTestSection(concept);
+        String testSectionId = (testSection != null) ? testSection.getId() : null;
+        if (testSectionId == null) {
+            log.warn("OCL mapTestSection: no section resolved for test id='" + getText(concept, "id")
+                    + "' name='" + getText(concept, "display_name") + "' — testSection will be null.");
+        }
+        jsonWad.put("testSection", testSectionId);
+    }
+
+    /**
+     * Resolves the OpenELIS {@link TestSection} for an OCL Test concept.
+     *
+     * <p>Priority chain:
+     * <ol>
+     *   <li><b>P1</b> — direct CONCEPT-SET mapping: ConvSet → this Test</li>
+     *   <li><b>P1.5</b> — indirect chain: LabSet → this Test, where LabSet is
+     *       owned by a real ConvSet (pre-built in {@link #labSetToSectionName})</li>
+     *   <li><b>P2</b> — OCL {@code extras.test_section} field</li>
+     *   <li><b>P3</b> — {@code ocl-test-mapping.json} manual override</li>
+     *   <li><b>P4</b> — configured default ({@link #defaultTestSection})</li>
+     *   <li><b>P5</b> — hardcoded last-resort {@code "Hematology"}</li>
+     * </ol>
+     *
+     * <p>Returns {@code null} only if every priority fails (should not happen on a
+     * correctly seeded DB, but is handled gracefully by callers).
+     *
+     * @param concept the OCL Test concept JSON node
+     * @return the resolved {@link TestSection}, or {@code null} if none found
+     */
+    private TestSection resolveTestSection(JsonNode concept) {
+        String conceptId = getText(concept, "id");
         TestSection testSection = null;
 
-        // Priority 1: Check OCL extras for explicit test_section
+        // ── P1: direct ConvSet → Test CONCEPT-SET mapping ────────────────────────
+        if (conceptId != null && this.rootNode != null) {
+            JsonNode mappings = this.rootNode.get("mappings");
+            if (mappings != null && mappings.isArray()) {
+                for (JsonNode mapping : mappings) {
+                    if (!"CONCEPT-SET".equalsIgnoreCase(getText(mapping, "map_type"))) {
+                        continue;
+                    }
+                    if (!conceptId.equals(getText(mapping, "to_concept_code"))) {
+                        continue;
+                    }
+                    String fromId = getText(mapping, "from_concept_code");
+                    if (fromId == null) {
+                        continue;
+                    }
+                    JsonNode fromConcept = getConceptById(fromId);
+                    if (fromConcept == null) {
+                        continue; // dangling reference (e.g. id=278) — skip gracefully
+                    }
+                    if (!"ConvSet".equalsIgnoreCase(getText(fromConcept, "concept_class"))) {
+                        continue; // LabSet or other — handled in P1.5
+                    }
+                    String sectionName = getText(fromConcept, "display_name");
+                    if (sectionName == null || META_CONVSET_NAMES.contains(sectionName)) {
+                        continue; // meta grouping — skip
+                    }
+                    testSection = testSectionService.getTestSectionByName(sectionName);
+                    if (testSection != null) {
+                        log.debug("OCL resolveTestSection P1 (direct ConvSet): id='" + conceptId + "' → '" + sectionName + "'");
+                        return testSection;
+                    }
+                    log.warn("OCL resolveTestSection P1: section '" + sectionName + "' not in DB for test '" + conceptId + "' — continuing.");
+                }
+            }
+        }
+
+        // ── P1.5: Test → LabSet → ConvSet chain ──────────────────────────────────
+        if (conceptId != null && this.rootNode != null && !labSetToSectionName.isEmpty()) {
+            JsonNode mappings = this.rootNode.get("mappings");
+            if (mappings != null && mappings.isArray()) {
+                for (JsonNode mapping : mappings) {
+                    if (!"CONCEPT-SET".equalsIgnoreCase(getText(mapping, "map_type"))) {
+                        continue;
+                    }
+                    if (!conceptId.equals(getText(mapping, "to_concept_code"))) {
+                        continue;
+                    }
+                    String fromId = getText(mapping, "from_concept_code");
+                    if (fromId == null) {
+                        continue;
+                    }
+                    String sectionName = labSetToSectionName.get(fromId);
+                    if (sectionName == null) {
+                        continue; // from side is not a LabSet with a known section
+                    }
+                    testSection = testSectionService.getTestSectionByName(sectionName);
+                    if (testSection != null) {
+                        log.debug("OCL resolveTestSection P1.5 (LabSet→ConvSet): id='" + conceptId + "' → '" + sectionName + "'");
+                        return testSection;
+                    }
+                    log.warn("OCL resolveTestSection P1.5: section '" + sectionName + "' not in DB for test '" + conceptId + "' — continuing.");
+                }
+            }
+        }
+
+        // ── P2: OCL extras explicit test_section field ────────────────────────────
+        JsonNode extras = concept.get("extras");
         if (extras != null && extras.has("test_section")) {
             String oclTestSection = getText(extras, "test_section");
             testSection = testSectionService.getTestSectionByName(oclTestSection);
             if (testSection != null) {
-                log.debug("Using test_section from OCL extras: " + oclTestSection);
-                jsonWad.put("testSection", testSection.getId());
-                return;
+                log.debug("OCL resolveTestSection P2 (extras): id='" + conceptId + "' → '" + oclTestSection + "'");
+                return testSection;
             }
         }
 
-        // Priority 2: Use OclMappingService lookup based on test name
+        // ── P3: ocl-test-mapping.json manual override ─────────────────────────────
         String testName = getText(concept, "display_name");
         if (oclMappingService != null && testName != null) {
-            OclMappingService.MappingEntry mapping = oclMappingService.getMapping(testName);
-            String mappedTestSection = mapping.getTestSection();
-            testSection = testSectionService.getTestSectionByName(mappedTestSection);
+            OclMappingService.MappingEntry mappingEntry = oclMappingService.getMapping(testName);
+            String mappedSection = mappingEntry.getTestSection();
+            testSection = testSectionService.getTestSectionByName(mappedSection);
             if (testSection != null) {
-                log.debug("Using mapped test_section for test '" + testName + "': " + mappedTestSection);
-                jsonWad.put("testSection", testSection.getId());
-                return;
+                log.debug("OCL resolveTestSection P3 (mapping JSON): '" + testName + "' → '" + mappedSection + "'");
+                return testSection;
             }
         }
 
-        // Priority 3: Fallback to configured default
-        if (testSection == null) {
-            testSection = testSectionService.getTestSectionByName(defaultTestSection);
-        }
-
-        // Priority 4: Hardcoded fallback
-        if (testSection == null) {
-            testSection = testSectionService.getTestSectionByName("Hematology");
-        }
-
+        // ── P4: configured default ────────────────────────────────────────────────
+        testSection = testSectionService.getTestSectionByName(defaultTestSection);
         if (testSection != null) {
-            testSectionId = testSection.getId();
+            log.debug("OCL resolveTestSection P4 (default): id='" + conceptId + "' → '" + defaultTestSection + "'");
+            return testSection;
         }
 
-        jsonWad.put("testSection", testSectionId);
+        // ── P5: hardcoded last-resort ─────────────────────────────────────────────
+        testSection = testSectionService.getTestSectionByName("Hematology");
+        if (testSection != null) {
+            log.debug("OCL resolveTestSection P5 (hardcoded): id='" + conceptId + "' → 'Hematology'");
+        }
+        return testSection;
     }
 
     private void mapPanels(JsonNode concept, ObjectNode jsonWad) {
@@ -411,23 +822,69 @@ public class OclToOpenElisMapper {
         String units = null;
         String unitsId = null;
 
-        // Try extras first (OCL standard: units attribute in extras)
         JsonNode extras = concept.get("extras");
         if (extras != null && extras.has("units")) {
             units = getText(extras, "units");
         }
 
         if (StringUtils.isNotBlank(units)) {
-            UnitOfMeasure uom = new UnitOfMeasure();
-            uom.setUnitOfMeasureName(units);
-            UnitOfMeasure dbUom = uomSerivice.getUnitOfMeasureByName(uom);
-            if (dbUom != null) {
-                unitsId = dbUom.getId();
+            UnitOfMeasure resolved = resolveOrCreateUom(units);
+            if (resolved != null) {
+                unitsId = resolved.getId();
             }
-
         }
 
         jsonWad.put("uom", unitsId != null ? unitsId : "");
+    }
+
+    /**
+     * Looks up a UnitOfMeasure by exact name; creates it if it does not exist.
+     *
+     * <p>Always returns a Hibernate-managed entity (loaded from the session or
+     * freshly persisted). Never returns a transient shell — callers can safely
+     * assign the result to a persistent entity and call {@code update()} without
+     * triggering a {@code TransientPropertyValueException}.
+     *
+     * <p>Idempotency: exact name match → same row every run.
+     * Concurrent-insert safety: if two threads race to insert the same name,
+     * the loser catches the duplicate exception and re-fetches.
+     *
+     * @param units the unit string from OCL extras (e.g. "mg/dL", "10^3/uL")
+     * @return the managed {@link UnitOfMeasure}, or {@code null} on failure
+     */
+    private UnitOfMeasure resolveOrCreateUom(String units) {
+        // Step 1: exact name lookup — returns a session-managed entity
+        UnitOfMeasure probe = new UnitOfMeasure();
+        probe.setUnitOfMeasureName(units);
+        UnitOfMeasure dbUom = uomSerivice.getUnitOfMeasureByName(probe);
+        if (dbUom != null) {
+            return dbUom;
+        }
+
+        // Step 2: not found — create it with the exact OCL string as both name and description
+        try {
+            UnitOfMeasure newUom = new UnitOfMeasure();
+            newUom.setUnitOfMeasureName(units);
+            newUom.setDescription(units);
+            newUom.setSysUserId(systemUserId);
+            String newId = uomSerivice.insert(newUom);
+            log.info("OCL resolveOrCreateUom: created new UOM '" + units + "' (id=" + newId + ").");
+            // Re-fetch the persisted entity so the caller gets a session-managed object
+            newUom.setId(newId);
+            UnitOfMeasure persisted = uomSerivice.getUnitOfMeasureByName(probe);
+            return persisted != null ? persisted : newUom;
+        } catch (Exception e) {
+            // Concurrent insert by another thread — re-fetch by name
+            dbUom = uomSerivice.getUnitOfMeasureByName(probe);
+            if (dbUom != null) {
+                log.info("OCL resolveOrCreateUom: concurrent insert for '" + units
+                        + "' resolved via re-fetch (id=" + dbUom.getId() + ").");
+                return dbUom;
+            }
+            log.error("OCL resolveOrCreateUom: failed to create or find UOM '" + units
+                    + "' — test will have no UOM. Error: " + e.getMessage());
+            return null;
+        }
     }
 
     private void mapLoinc(String loinc, ObjectNode jsonWad) {

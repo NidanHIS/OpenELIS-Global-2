@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Widens clinlims.test_section.name from VARCHAR(20) to VARCHAR(60).
+
+        The original 20-char limit was sized for short internal codes.
+        OCL ConvSet department names are human-readable strings that exceed
+        this limit:
+          "Histopathology/Cytology"          = 23 chars
+          "Molecular Lab and Flowcytometry"  = 31 chars
+          "Immuno-Histo Chemistry"           = 22 chars
+
+        VARCHAR(60) matches the existing description column on the same table
+        and is consistent with the localization value columns (text).
+
+        preConditions: only runs if the column is still VARCHAR(20) — safe to
+        apply on any environment regardless of whether it was already widened
+        manually. If already widened, changeset is marked MARK_RAN and skipped.
+    -->
+    <changeSet id="widen-test-section-name-to-60" author="nidan">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="character varying(20)">
+                SELECT data_type || '(' || character_maximum_length || ')'
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims'
+                  AND table_name   = 'test_section'
+                  AND column_name  = 'name'
+            </sqlCheck>
+        </preConditions>
+
+        <modifyDataType
+            schemaName="clinlims"
+            tableName="test_section"
+            columnName="name"
+            newDataType="VARCHAR(60)" />
+
+    </changeSet>
+
+</databaseChangeLog>
