@@ -270,6 +270,9 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
         out.setReferringSiteDepartmentId(
                 incoming.getReferringSiteDepartmentId() != null ? incoming.getReferringSiteDepartmentId()
                         : existing.getReferringSiteDepartmentId());
+        out.setReferringSiteDepartmentName(
+                incoming.getReferringSiteDepartmentName() != null ? incoming.getReferringSiteDepartmentName()
+                        : existing.getReferringSiteDepartmentName());
 
         out.setProviderPersonId(incoming.getProviderPersonId() != null ? incoming.getProviderPersonId()
                 : existing.getProviderPersonId());

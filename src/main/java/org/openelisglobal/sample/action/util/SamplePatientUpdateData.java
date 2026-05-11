@@ -371,6 +371,31 @@ public class SamplePatientUpdateData {
             providerPerson = provider.getPerson();
             providerPerson.setSysUserId(currentUserId);
         } else {
+            // Try to find an existing provider by name to avoid the "duplicate gang"
+            String firstName = sampleOrder.getProviderFirstName();
+            String lastName = sampleOrder.getProviderLastName();
+
+            if (!GenericValidator.isBlankOrNull(firstName) && !GenericValidator.isBlankOrNull(lastName)) {
+                String fullName = firstName.trim() + " " + lastName.trim();
+                List<Provider> existingProviders = SpringContext.getBean(ProviderService.class)
+                        .getPagesOfSearchedProviders(1, fullName);
+
+                if (existingProviders != null && !existingProviders.isEmpty()) {
+                    // Cautious match: only use if we find an exact match for both names
+                    for (Provider existing : existingProviders) {
+                        if (existing.getPerson() != null && firstName.trim().equalsIgnoreCase(existing.getPerson().getFirstName())
+                                && lastName.trim().equalsIgnoreCase(existing.getPerson().getLastName())) {
+                            provider = existing;
+                            providerPerson = existing.getPerson();
+                            providerPerson.setSysUserId(currentUserId);
+                            provider.setSysUserId(currentUserId);
+                            return; // Found our guy, stop here
+                        }
+                    }
+                }
+            }
+
+            // No existing guy found, create a new one as before
             providerPerson = new Person();
             provider = new Provider();
             provider.setFhirUuid(UUID.randomUUID());
@@ -443,9 +468,18 @@ public class SamplePatientUpdateData {
         SampleRequester requester = null;
 
         String orgId = orderItem.getReferringSiteDepartmentId();
+        String deptName = orderItem.getReferringSiteDepartmentName();
 
         if (!GenericValidator.isBlankOrNull(orgId)) {
             requester = createSiteRequester(orgId, TableIdService.getInstance().ORGANIZATION_REQUESTER_TYPE_ID);
+        } else if (!GenericValidator.isBlankOrNull(deptName)) {
+            Organization probe = new Organization();
+            probe.setOrganizationName(deptName.trim());
+            Organization existing = orgService.getActiveOrganizationByName(probe, true);
+            if (existing != null && existing.getId() != null) {
+                requester = createSiteRequester(existing.getId(),
+                        TableIdService.getInstance().ORGANIZATION_REQUESTER_TYPE_ID);
+            }
         }
 
         return requester;

@@ -337,8 +337,8 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * Extract source (referringSiteName) from payload. Returns null if not
-     * available.
+     * Extract source (referringSiteDepartmentName or referringSiteName) from
+     * payload. Prioritizes department name for better granularity.
      */
     private String extractSource(String payload) {
         if (payload == null || payload.trim().isEmpty()) {
@@ -346,6 +346,11 @@ public class IncomingOrdersRestController {
         }
         try {
             ExternalOrderRequest request = objectMapper.readValue(payload, ExternalOrderRequest.class);
+            String departmentName = request.getReferringSiteDepartmentName();
+            if (departmentName != null && !departmentName.trim().isEmpty()) {
+                return departmentName.trim();
+            }
+
             String referringSiteName = request.getReferringSiteName();
             if (referringSiteName != null && !referringSiteName.trim().isEmpty()) {
                 return referringSiteName.trim();
