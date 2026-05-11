@@ -36,8 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-
-
 /**
  * Handler for loading OCL (Open Concept Lab) configuration files. Supports ZIP
  * format containing OCL concept collections.
@@ -134,7 +132,6 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
      */
     public void performImport(List<JsonNode> oclNodes) {
         log.info("OCL Import: Found {} nodes to process.", oclNodes.size());
-
 
         int conceptCount = 0;
         int testsCreated = 0;
