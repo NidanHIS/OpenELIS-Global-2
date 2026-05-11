@@ -383,7 +383,8 @@ public class SamplePatientUpdateData {
                 if (existingProviders != null && !existingProviders.isEmpty()) {
                     // Cautious match: only use if we find an exact match for both names
                     for (Provider existing : existingProviders) {
-                        if (existing.getPerson() != null && firstName.trim().equalsIgnoreCase(existing.getPerson().getFirstName())
+                        if (existing.getPerson() != null
+                                && firstName.trim().equalsIgnoreCase(existing.getPerson().getFirstName())
                                 && lastName.trim().equalsIgnoreCase(existing.getPerson().getLastName())) {
                             provider = existing;
                             providerPerson = existing.getPerson();
