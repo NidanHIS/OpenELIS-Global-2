@@ -230,7 +230,6 @@
 			<band height="88" splitType="Prevent">
 								<frame>
 					<reportElement x="-1" y="0" width="554" height="65" isRemoveLineWhenBlank="true" forecolor="#FF6666" backcolor="#33FFFF">
-						<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
 					</reportElement>
 					<!-- ROW 1: Patient ID (left) | Lab Number (right) -->
 					<textField>
@@ -411,7 +410,7 @@
 				</staticText>
 				<!-- Result -->
 				<staticText>
-					<reportElement x="200" y="18" width="110" height="12"/>
+					<reportElement x="200" y="18" width="190" height="12"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -424,22 +423,6 @@
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Result]]></text>
-				</staticText>
-				<!-- Status -->
-				<staticText>
-					<reportElement x="310" y="18" width="80" height="12"/>
-					<box topPadding="2" bottomPadding="2">
-						<pen lineWidth="0.5"/>
-						<topPen lineWidth="0.5"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.5"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="6" isBold="true"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<text><![CDATA[Status]]></text>
 				</staticText>
 				<!-- Alert -->
 				<staticText>
@@ -621,9 +604,9 @@
 					</textElement>
 					<textFieldExpression><![CDATA[$F{testName}]]></textFieldExpression>
 				</textField>
-				<!-- Result: x=200, w=110 -->
+				<!-- Result: x=200, w=190 -->
 				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="200" y="0" width="110" height="12"/>
+					<reportElement stretchType="RelativeToTallestObject" x="200" y="0" width="190" height="12"/>
 					<box topPadding="2" bottomPadding="2" rightPadding="4">
 						<topPen lineWidth="0.0" lineColor="#CCCCCC"/>
 						<leftPen lineWidth="0.5"/>
@@ -635,21 +618,6 @@
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<textFieldExpression><![CDATA[$F{result}]]></textFieldExpression>
-				</textField>
-				<!-- Status: x=310, w=80 -->
-				<textField isBlankWhenNull="true">
-					<reportElement x="310" y="0" width="80" height="12"/>
-					<box topPadding="2" bottomPadding="2">
-						<topPen lineWidth="0.0" lineColor="#CCCCCC"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.0" lineColor="#CCCCCC"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="6"/>
-						<paragraph lineSpacing="Single"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$F{analysisStatus}]]></textFieldExpression>
 				</textField>
 				<!-- Alert: x=390, w=30 -->
 				<textField isBlankWhenNull="true">
