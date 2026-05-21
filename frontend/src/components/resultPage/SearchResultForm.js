@@ -1019,6 +1019,7 @@ export function SearchResults(props) {
       selector: (row) => row.analysisMethod,
       sortable: true,
       width: "7rem",
+      omit: true,
     },
     {
       id: "testName",
@@ -1060,6 +1061,7 @@ export function SearchResults(props) {
         return renderCell(row, index, column, id);
       },
       width: "10rem",
+      omit: true,
     },
     {
       id: "notes",
