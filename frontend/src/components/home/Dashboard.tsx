@@ -153,9 +153,54 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const rightSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
-  const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
-  const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
+  const [rightPanelView, setRightPanelView] = useState<PanelView>(() => {
+    try {
+      const stored = localStorage.getItem("dashboard_right_panel");
+      return (stored as PanelView) || "ACTIVE";
+    } catch {
+      return "ACTIVE";
+    }
+  });
+  const [leftPanelView, setLeftPanelView] = useState<PanelView>(() => {
+    try {
+      const stored = localStorage.getItem("dashboard_left_panel");
+      return (stored as PanelView) || "ACTIVE";
+    } catch {
+      return "ACTIVE";
+    }
+  });
+  const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">(() => {
+    try {
+      const stored = localStorage.getItem("dashboard_tab");
+      return (stored as "LEFT" | "RIGHT") || "RIGHT";
+    } catch {
+      return "RIGHT";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard_right_panel", rightPanelView);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+  }, [rightPanelView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard_left_panel", leftPanelView);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+  }, [leftPanelView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard_tab", dashboardTab);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+  }, [dashboardTab]);
 
   const componentMounted = useRef(true);
   const tileLoadSequence = useRef(0);
@@ -256,8 +301,13 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   useEffect(() => {
     setRightSearch("");
     setLeftSearch("");
-    setRightPanelView("ACTIVE");
-    setLeftPanelView("ACTIVE");
+    try {
+      setRightPanelView((localStorage.getItem("dashboard_right_panel") as PanelView) || "ACTIVE");
+      setLeftPanelView((localStorage.getItem("dashboard_left_panel") as PanelView) || "ACTIVE");
+    } catch {
+      setRightPanelView("ACTIVE");
+      setLeftPanelView("ACTIVE");
+    }
     setRightPage(1);
     setLeftPage(1);
     patientNameCache.current = {};
