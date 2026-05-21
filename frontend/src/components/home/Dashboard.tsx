@@ -302,8 +302,13 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     setRightSearch("");
     setLeftSearch("");
     try {
-      setRightPanelView((localStorage.getItem("dashboard_right_panel") as PanelView) || "ACTIVE");
-      setLeftPanelView((localStorage.getItem("dashboard_left_panel") as PanelView) || "ACTIVE");
+      setRightPanelView(
+        (localStorage.getItem("dashboard_right_panel") as PanelView) ||
+          "ACTIVE",
+      );
+      setLeftPanelView(
+        (localStorage.getItem("dashboard_left_panel") as PanelView) || "ACTIVE",
+      );
     } catch {
       setRightPanelView("ACTIVE");
       setLeftPanelView("ACTIVE");
@@ -1297,9 +1302,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               title="Report"
               target="_blank"
               rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", color: "black" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                color: "black",
+              }}
             >
-              <Printer size={20} style={{ width: "1.1rem", height: "1.1rem" }} />
+              <Printer
+                size={20}
+                style={{ width: "1.1rem", height: "1.1rem" }}
+              />
             </a>
           </div>
         </TableCell>

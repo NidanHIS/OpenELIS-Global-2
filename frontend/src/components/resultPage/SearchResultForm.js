@@ -2119,9 +2119,9 @@ export function SearchResults(props) {
                   customStyles={{
                     tableWrapper: {
                       style: {
-                        minHeight: '400px',
-                      }
-                    }
+                        minHeight: "400px",
+                      },
+                    },
                   }}
                   data={props.results?.testResult?.slice(
                     (page - 1) * pageSize,

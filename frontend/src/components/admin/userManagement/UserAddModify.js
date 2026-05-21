@@ -851,9 +851,11 @@ function UserAddModify() {
                         id: "login.login.name",
                       })}
                       invalid={
-                        !!(userDataShow &&
-                        userDataShow.userLoginName &&
-                        !loginNameRegex.test(userDataShow.userLoginName))
+                        !!(
+                          userDataShow &&
+                          userDataShow.userLoginName &&
+                          !loginNameRegex.test(userDataShow.userLoginName)
+                        )
                       }
                       // invalidText={errors.order}
                       required={true}
@@ -911,10 +913,12 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        !!(passwordTouched.userPassword &&
-                        userDataShow &&
-                        userDataShow.userPassword &&
-                        !isValidPassword(userDataShow.userPassword))
+                        !!(
+                          passwordTouched.userPassword &&
+                          userDataShow &&
+                          userDataShow.userPassword &&
+                          !isValidPassword(userDataShow.userPassword)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
@@ -945,16 +949,16 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        !!((passwordTouched.confirmPassword &&
-                          userDataShow &&
-                          userDataShow.userPassword &&
-                          userDataShow.confirmPassword &&
-                          !isValidPassword(
-                            userDataShow.confirmPassword,
-                          )) ||
-                        (passwordTouched.confirmPassword &&
-                          userDataShow.confirmPassword !==
-                            userDataShow.userPassword))
+                        !!(
+                          (passwordTouched.confirmPassword &&
+                            userDataShow &&
+                            userDataShow.userPassword &&
+                            userDataShow.confirmPassword &&
+                            !isValidPassword(userDataShow.confirmPassword)) ||
+                          (passwordTouched.confirmPassword &&
+                            userDataShow.confirmPassword !==
+                              userDataShow.userPassword)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
@@ -986,9 +990,11 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        !!(userDataShow &&
-                        userDataShow.userFirstName &&
-                        !nameRegex.test(userDataShow.userFirstName))
+                        !!(
+                          userDataShow &&
+                          userDataShow.userFirstName &&
+                          !nameRegex.test(userDataShow.userFirstName)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
@@ -1019,9 +1025,11 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        !!(userDataShow &&
-                        userDataShow.userLastName &&
-                        !nameRegex.test(userDataShow.userLastName))
+                        !!(
+                          userDataShow &&
+                          userDataShow.userLastName &&
+                          !nameRegex.test(userDataShow.userLastName)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
