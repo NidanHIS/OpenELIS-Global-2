@@ -46,9 +46,22 @@ const breadcrumbs = [
   },
 ];
 
-const passwordPatternRegex = /^(?=.*[*$#!])(?=.*[a-zA-Z0-9]).{7,}$/;
-const loginNameRegex = /^[a-zA-Z]+$/;
-const nameRegex = /^(?=.*[a-zA-Z])[a-zA-Z .'_@-]*$/;
+const loginNameRegex = /^[a-zA-Z]{3,}$/;
+const nameRegex = /^[a-zA-Z .'_ -]{3,}$/;
+
+const isValidPassword = (password) => {
+  if (!password || password.length < 8) return false;
+  // Allowed: a-z, A-Z, 0-9, _, %, $, #, !
+  if (/[^a-zA-Z0-9_%$#!]/.test(password)) return false;
+
+  let classes = 0;
+  if (/[a-z]/.test(password)) classes++;
+  if (/[A-Z]/.test(password)) classes++;
+  if (/[0-9]/.test(password)) classes++;
+  if (/[%$#!]/.test(password)) classes++;
+
+  return classes >= 3;
+};
 
 function UserAddModify() {
   const { notificationVisible, setNotificationVisible, addNotification } =
@@ -341,6 +354,16 @@ function UserAddModify() {
   }, [selectedTestSectionLabUnits]);
 
   function userSavePostCall() {
+    const isInvalid = Object.values(validation).some((value) => !value);
+    if (isInvalid) {
+      addNotification({
+        kind: NotificationKinds.error,
+        title: intl.formatMessage({ id: "notification.title" }),
+        message: intl.formatMessage({ id: "import.error.validationFailed" }),
+      });
+      setNotificationVisible(true);
+      return;
+    }
     setIsLoading(true);
     postToOpenElisServerJsonResponse(
       `/rest/UnifiedSystemUser`,
@@ -427,7 +450,7 @@ function UserAddModify() {
       userPassword: true,
     }));
     const value = e.target.value.trim();
-    const isValid = passwordPatternRegex.test(value);
+    const isValid = isValidPassword(value);
 
     if (value && !isValid) {
       if (!notificationVisible) {
@@ -464,7 +487,7 @@ function UserAddModify() {
       confirmPassword: true,
     }));
     const value = e.target.value.trim();
-    const isValid = passwordPatternRegex.test(value);
+    const isValid = isValidPassword(value);
 
     if (value && !isValid) {
       if (!notificationVisible) {
@@ -891,7 +914,7 @@ function UserAddModify() {
                         !!(passwordTouched.userPassword &&
                         userDataShow &&
                         userDataShow.userPassword &&
-                        !passwordPatternRegex.test(userDataShow.userPassword))
+                        !isValidPassword(userDataShow.userPassword))
                       }
                       // invalidText={errors.order}
                       value={
@@ -926,7 +949,7 @@ function UserAddModify() {
                           userDataShow &&
                           userDataShow.userPassword &&
                           userDataShow.confirmPassword &&
-                          !passwordPatternRegex.test(
+                          !isValidPassword(
                             userDataShow.confirmPassword,
                           )) ||
                         (passwordTouched.confirmPassword &&
