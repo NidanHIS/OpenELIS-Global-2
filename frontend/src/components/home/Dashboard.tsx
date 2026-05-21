@@ -1092,7 +1092,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   // -- TABLE HEADERS --
   const groupedOrderHeaders = [
-    { key: "priority", header: "Priority" },
+    { key: "patientId", header: "Patient ID" },
     {
       key: "orderDate",
       header: <FormattedMessage id="sample.label.orderdate" />,
@@ -1118,7 +1118,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   ];
 
   const orderHeaders = [
-    { key: "priority", header: "Priority" },
+    { key: "patientId", header: "Patient ID" },
     {
       key: "orderDate",
       header: <FormattedMessage id="sample.label.orderdate" />,
