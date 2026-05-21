@@ -24,7 +24,7 @@ import {
 } from "@carbon/react";
 import "./Dashboard.css";
 import { Minimize, Maximize, ArrowLeft, ArrowRight } from "@carbon/react/icons";
-import { Copy, CheckmarkFilled } from "@carbon/icons-react";
+import { Copy, CheckmarkFilled, Printer } from "@carbon/icons-react";
 import {
   useState,
   useEffect,
@@ -1247,13 +1247,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               title="Report"
               target="_blank"
               rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center" }}
+              style={{ display: "inline-flex", alignItems: "center", color: "black" }}
             >
-              <img
-                src={reportIcon}
-                alt="Report"
-                style={{ width: "1.1rem", height: "1.1rem" }}
-              />
+              <Printer size={20} style={{ width: "1.1rem", height: "1.1rem" }} />
             </a>
           </div>
         </TableCell>
