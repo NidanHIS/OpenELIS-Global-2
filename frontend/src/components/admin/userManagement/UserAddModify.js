@@ -121,6 +121,7 @@ function UserAddModify() {
       setIsLoading(true);
     } else {
       setUserData(res);
+      setIsLoading(false);
       if (res.loginUserId) {
         setValidation({
           validatepassword: true,
@@ -154,6 +155,7 @@ function UserAddModify() {
       setIsLoading(true);
     } else {
       setCopyUserPermissionList(res);
+      setIsLoading(false);
     }
   };
 
@@ -350,7 +352,7 @@ function UserAddModify() {
   }
 
   function userSavePostCallback(res) {
-    if (res) {
+    if (res && res.forward === "redirect:/UnifiedSystemUser") {
       setIsLoading(false);
       addNotification({
         title: intl.formatMessage({
@@ -365,16 +367,24 @@ function UserAddModify() {
       setTimeout(() => {
         window.location.reload();
       }, 200);
+    } else if (res && res.errors) {
+      setIsLoading(false);
+      res.errors.forEach((error) => {
+        addNotification({
+          kind: NotificationKinds.error,
+          title: intl.formatMessage({ id: "notification.title" }),
+          message: error,
+        });
+      });
+      setNotificationVisible(true);
     } else {
+      setIsLoading(false);
       addNotification({
         kind: NotificationKinds.error,
         title: intl.formatMessage({ id: "notification.title" }),
         message: intl.formatMessage({ id: "server.error.msg" }),
       });
       setNotificationVisible(true);
-      setTimeout(() => {
-        window.location.reload();
-      }, 200);
     }
   }
 
@@ -765,7 +775,7 @@ function UserAddModify() {
     }
   };
 
-  if (!isLoading) {
+  if (isLoading) {
     return (
       <>
         <Loading />
@@ -818,9 +828,9 @@ function UserAddModify() {
                         id: "login.login.name",
                       })}
                       invalid={
-                        userDataShow &&
+                        !!(userDataShow &&
                         userDataShow.userLoginName &&
-                        !loginNameRegex.test(userDataShow.userLoginName)
+                        !loginNameRegex.test(userDataShow.userLoginName))
                       }
                       // invalidText={errors.order}
                       required={true}
@@ -878,10 +888,10 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        passwordTouched.userPassword &&
+                        !!(passwordTouched.userPassword &&
                         userDataShow &&
                         userDataShow.userPassword &&
-                        !passwordPatternRegex.test(userDataShow.userPassword)
+                        !passwordPatternRegex.test(userDataShow.userPassword))
                       }
                       // invalidText={errors.order}
                       value={
@@ -912,7 +922,7 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        (passwordTouched.confirmPassword &&
+                        !!((passwordTouched.confirmPassword &&
                           userDataShow &&
                           userDataShow.userPassword &&
                           userDataShow.confirmPassword &&
@@ -921,7 +931,7 @@ function UserAddModify() {
                           )) ||
                         (passwordTouched.confirmPassword &&
                           userDataShow.confirmPassword !==
-                            userDataShow.userPassword)
+                            userDataShow.userPassword))
                       }
                       // invalidText={errors.order}
                       value={
@@ -953,9 +963,9 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        userDataShow &&
+                        !!(userDataShow &&
                         userDataShow.userFirstName &&
-                        !nameRegex.test(userDataShow.userFirstName)
+                        !nameRegex.test(userDataShow.userFirstName))
                       }
                       // invalidText={errors.order}
                       value={
@@ -986,9 +996,9 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        userDataShow &&
+                        !!(userDataShow &&
                         userDataShow.userLastName &&
-                        !nameRegex.test(userDataShow.userLastName)
+                        !nameRegex.test(userDataShow.userLastName))
                       }
                       // invalidText={errors.order}
                       value={
