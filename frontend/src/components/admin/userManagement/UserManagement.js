@@ -236,7 +236,7 @@ function UserManagement() {
           loginName: item.loginName,
           expDate: item.expDate,
           locked: item.locked,
-          disabled: item.disabled,
+          disabled: item.disabled === "Y",
           active: item.active,
           timeout: item.timeout,
         };
