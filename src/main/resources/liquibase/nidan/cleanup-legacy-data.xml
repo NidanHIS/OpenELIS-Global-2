@@ -82,4 +82,336 @@
             DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%';
         </sql>
     </changeSet>
+
+    <changeSet id="nidan-cleanup-legacy-data-002" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <!--
+                Guard 1: No analysis rows exist for any of the 20 legacy tests from new_tests.xml.
+                If any hospital has real patient data tied to these tests, we skip entirely.
+                onFail="MARK_RAN" means Liquibase marks this changeset as executed and moves on —
+                the application will NOT crash on startup.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.analysis WHERE test_id IN (
+                    SELECT id FROM clinlims.test WHERE description IN (
+                        'COVIDPCR(Respiratory Swab)',
+                        'COVIDPCR(Sputum)',
+                        'COVIDPCR(Fluid)',
+                        'COVID-19ANTIBODYIgM(Serum)',
+                        'COVID-19ANTIBODYIgM(Plasma)',
+                        'COVID-19ANTIBODYIgG(Serum)',
+                        'COVID-19ANTIBODYIgG(Plasma)',
+                        'DENGUEPCR(Serum)',
+                        'DENGUEPCR(Plasma)',
+                        'DENGUEPCR(DBS)',
+                        'HIVINFANTVIRALLOAD(Serum)',
+                        'HIVINFANTVIRALLOAD(Plasma)',
+                        'HIVINFANTVIRALLOAD(DBS)',
+                        'HIVVIRALLOAD(Serum)',
+                        'HIVVIRALLOAD(Plasma)',
+                        'HIVVIRALLOAD(DBS)',
+                        'HEPATITISCVIRALLOAD(Serum)',
+                        'HEPATITISCVIRALLOAD(Plasma)',
+                        'HEPATITISBVIRALLOAD(Serum)',
+                        'HEPATITISBVIRALLOAD(Plasma)'
+                    )
+                )
+            </sqlCheck>
+            <!--
+                Guard 2: No sample_item rows exist for the Respiratory Swab sample type.
+                This is the only sample type we are deleting — the other 5 (Sputum, Fluid,
+                Serum, Plasma, DBS) are shared infrastructure and are NOT touched.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.sample_item WHERE typeosamp_id IN (
+                    SELECT id FROM clinlims.type_of_sample WHERE description = 'Respiratory Swab'
+                )
+            </sqlCheck>
+        </preConditions>
+        <comment>
+            Wave 2 cleanup: removes 20 legacy tests seeded by 2.3.x.x/new_tests.xml
+            (COVID PCR, COVID Antibody IgM/IgG, Dengue PCR, HIV Infant Viral Load,
+            HIV Viral Load, Hepatitis C Viral Load, Hepatitis B Viral Load) and the
+            Respiratory Swab sample type which is exclusively owned by these tests.
+
+            NOT deleted: Sputum, Fluid, Serum, Plasma, DBS sample types — these are
+            shared by OCL import, TB tests, and RetroCI Java code.
+            NOT deleted: 'Inconclusive' and 'Invalid' dictionary entries — shared across
+            multiple test groups and cannot be proven exclusive to these tests.
+
+            Safety: MARK_RAN if any patient analysis data exists for these tests.
+        </comment>
+
+        <!--
+            STEP 1 — result_limits
+            FK: result_limits.test_id → test.id
+            Must go before test_result because result_limits.normal_dictionary_id
+            points into dictionary, and test_result.value also points into dictionary.
+            Clearing result_limits first avoids any cascade confusion.
+        -->
+        <sql>
+            DELETE FROM clinlims.result_limits
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'COVIDPCR(Respiratory Swab)',
+                    'COVIDPCR(Sputum)',
+                    'COVIDPCR(Fluid)',
+                    'COVID-19ANTIBODYIgM(Serum)',
+                    'COVID-19ANTIBODYIgM(Plasma)',
+                    'COVID-19ANTIBODYIgG(Serum)',
+                    'COVID-19ANTIBODYIgG(Plasma)',
+                    'DENGUEPCR(Serum)',
+                    'DENGUEPCR(Plasma)',
+                    'DENGUEPCR(DBS)',
+                    'HIVINFANTVIRALLOAD(Serum)',
+                    'HIVINFANTVIRALLOAD(Plasma)',
+                    'HIVINFANTVIRALLOAD(DBS)',
+                    'HIVVIRALLOAD(Serum)',
+                    'HIVVIRALLOAD(Plasma)',
+                    'HIVVIRALLOAD(DBS)',
+                    'HEPATITISCVIRALLOAD(Serum)',
+                    'HEPATITISCVIRALLOAD(Plasma)',
+                    'HEPATITISBVIRALLOAD(Serum)',
+                    'HEPATITISBVIRALLOAD(Plasma)'
+                )
+            );
+        </sql>
+
+        <!--
+            STEP 2 — test_analyte
+            FK: test_analyte.test_id → test.id
+            These tests have no analyte rows per forensic analysis, but we delete
+            defensively to guarantee no FK violation when we delete the test rows.
+        -->
+        <sql>
+            DELETE FROM clinlims.test_analyte
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'COVIDPCR(Respiratory Swab)',
+                    'COVIDPCR(Sputum)',
+                    'COVIDPCR(Fluid)',
+                    'COVID-19ANTIBODYIgM(Serum)',
+                    'COVID-19ANTIBODYIgM(Plasma)',
+                    'COVID-19ANTIBODYIgG(Serum)',
+                    'COVID-19ANTIBODYIgG(Plasma)',
+                    'DENGUEPCR(Serum)',
+                    'DENGUEPCR(Plasma)',
+                    'DENGUEPCR(DBS)',
+                    'HIVINFANTVIRALLOAD(Serum)',
+                    'HIVINFANTVIRALLOAD(Plasma)',
+                    'HIVINFANTVIRALLOAD(DBS)',
+                    'HIVVIRALLOAD(Serum)',
+                    'HIVVIRALLOAD(Plasma)',
+                    'HIVVIRALLOAD(DBS)',
+                    'HEPATITISCVIRALLOAD(Serum)',
+                    'HEPATITISCVIRALLOAD(Plasma)',
+                    'HEPATITISBVIRALLOAD(Serum)',
+                    'HEPATITISBVIRALLOAD(Plasma)'
+                )
+            );
+        </sql>
+
+        <!--
+            STEP 3 — test_result
+            FK: test_result.test_id → test.id
+            Also: test.default_test_result_id → test_result.id
+            We must clear test.default_test_result_id first (set to NULL) before
+            deleting test_result rows, because the FK goes both ways:
+              test.default_test_result_id → test_result.id
+            If we delete test_result while test.default_test_result_id still points
+            to it, PostgreSQL will throw a FK violation.
+        -->
+        <sql>
+            UPDATE clinlims.test
+            SET default_test_result_id = NULL
+            WHERE description IN (
+                'COVIDPCR(Respiratory Swab)',
+                'COVIDPCR(Sputum)',
+                'COVIDPCR(Fluid)',
+                'COVID-19ANTIBODYIgM(Serum)',
+                'COVID-19ANTIBODYIgM(Plasma)',
+                'COVID-19ANTIBODYIgG(Serum)',
+                'COVID-19ANTIBODYIgG(Plasma)',
+                'DENGUEPCR(Serum)',
+                'DENGUEPCR(Plasma)',
+                'DENGUEPCR(DBS)',
+                'HIVINFANTVIRALLOAD(Serum)',
+                'HIVINFANTVIRALLOAD(Plasma)',
+                'HIVINFANTVIRALLOAD(DBS)',
+                'HIVVIRALLOAD(Serum)',
+                'HIVVIRALLOAD(Plasma)',
+                'HIVVIRALLOAD(DBS)',
+                'HEPATITISCVIRALLOAD(Serum)',
+                'HEPATITISCVIRALLOAD(Plasma)',
+                'HEPATITISBVIRALLOAD(Serum)',
+                'HEPATITISBVIRALLOAD(Plasma)'
+            );
+        </sql>
+        <sql>
+            DELETE FROM clinlims.test_result
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'COVIDPCR(Respiratory Swab)',
+                    'COVIDPCR(Sputum)',
+                    'COVIDPCR(Fluid)',
+                    'COVID-19ANTIBODYIgM(Serum)',
+                    'COVID-19ANTIBODYIgM(Plasma)',
+                    'COVID-19ANTIBODYIgG(Serum)',
+                    'COVID-19ANTIBODYIgG(Plasma)',
+                    'DENGUEPCR(Serum)',
+                    'DENGUEPCR(Plasma)',
+                    'DENGUEPCR(DBS)',
+                    'HIVINFANTVIRALLOAD(Serum)',
+                    'HIVINFANTVIRALLOAD(Plasma)',
+                    'HIVINFANTVIRALLOAD(DBS)',
+                    'HIVVIRALLOAD(Serum)',
+                    'HIVVIRALLOAD(Plasma)',
+                    'HIVVIRALLOAD(DBS)',
+                    'HEPATITISCVIRALLOAD(Serum)',
+                    'HEPATITISCVIRALLOAD(Plasma)',
+                    'HEPATITISBVIRALLOAD(Serum)',
+                    'HEPATITISBVIRALLOAD(Plasma)'
+                )
+            );
+        </sql>
+
+        <!--
+            STEP 4 — sampletype_test
+            FK: sampletype_test.test_id → test.id
+            FK: sampletype_test.sample_type_id → type_of_sample.id
+            Clears the M:N mapping table. Must happen before deleting test rows
+            AND before deleting the Respiratory Swab type_of_sample row.
+        -->
+        <sql>
+            DELETE FROM clinlims.sampletype_test
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'COVIDPCR(Respiratory Swab)',
+                    'COVIDPCR(Sputum)',
+                    'COVIDPCR(Fluid)',
+                    'COVID-19ANTIBODYIgM(Serum)',
+                    'COVID-19ANTIBODYIgM(Plasma)',
+                    'COVID-19ANTIBODYIgG(Serum)',
+                    'COVID-19ANTIBODYIgG(Plasma)',
+                    'DENGUEPCR(Serum)',
+                    'DENGUEPCR(Plasma)',
+                    'DENGUEPCR(DBS)',
+                    'HIVINFANTVIRALLOAD(Serum)',
+                    'HIVINFANTVIRALLOAD(Plasma)',
+                    'HIVINFANTVIRALLOAD(DBS)',
+                    'HIVVIRALLOAD(Serum)',
+                    'HIVVIRALLOAD(Plasma)',
+                    'HIVVIRALLOAD(DBS)',
+                    'HEPATITISCVIRALLOAD(Serum)',
+                    'HEPATITISCVIRALLOAD(Plasma)',
+                    'HEPATITISBVIRALLOAD(Serum)',
+                    'HEPATITISBVIRALLOAD(Plasma)'
+                )
+            );
+        </sql>
+
+        <!--
+            STEP 5 — test (the parent rows)
+            All child FKs are now cleared. Safe to delete.
+        -->
+        <sql>
+            DELETE FROM clinlims.test
+            WHERE description IN (
+                'COVIDPCR(Respiratory Swab)',
+                'COVIDPCR(Sputum)',
+                'COVIDPCR(Fluid)',
+                'COVID-19ANTIBODYIgM(Serum)',
+                'COVID-19ANTIBODYIgM(Plasma)',
+                'COVID-19ANTIBODYIgG(Serum)',
+                'COVID-19ANTIBODYIgG(Plasma)',
+                'DENGUEPCR(Serum)',
+                'DENGUEPCR(Plasma)',
+                'DENGUEPCR(DBS)',
+                'HIVINFANTVIRALLOAD(Serum)',
+                'HIVINFANTVIRALLOAD(Plasma)',
+                'HIVINFANTVIRALLOAD(DBS)',
+                'HIVVIRALLOAD(Serum)',
+                'HIVVIRALLOAD(Plasma)',
+                'HIVVIRALLOAD(DBS)',
+                'HEPATITISCVIRALLOAD(Serum)',
+                'HEPATITISCVIRALLOAD(Plasma)',
+                'HEPATITISBVIRALLOAD(Serum)',
+                'HEPATITISBVIRALLOAD(Plasma)'
+            );
+        </sql>
+
+        <!--
+            STEP 6 — type_of_sample: Respiratory Swab only
+            sampletype_test rows for this sample type were cleared in STEP 4.
+            The other 5 sample types (Sputum, Fluid, Serum, Plasma, DBS) are
+            intentionally NOT deleted — they are shared by OCL import, TB tests,
+            and RetroCI Java code (AnalyzerResultsAcceptServiceImpl, ARVFormMapper,
+            EIDFormMapper all do a string-based lookup for "DBS").
+        -->
+        <sql>
+            DELETE FROM clinlims.type_of_sample
+            WHERE description = 'Respiratory Swab';
+        </sql>
+
+        <!--
+            STEP 7 — dictionary entries exclusively owned by these tests
+            These entries were seeded by new_tests.xml changesets id="100" and id="624"
+            and are only referenced by test_result rows for the tests deleted above.
+            Those test_result rows were cleared in STEP 3, so no FK violation is possible.
+
+            NOT deleted: 'Inconclusive' — used across multiple test groups in this file
+            and potentially by other Haiti Lab tests not audited here.
+            NOT deleted: 'Invalid' — same reason.
+        -->
+        <sql>
+            DELETE FROM clinlims.dictionary
+            WHERE dict_entry IN (
+                'IgM DETECTED',
+                'IgM NOT DETECTED',
+                'IgG DETECTED',
+                'IgG NOT DETECTED',
+                'DENGUE VIRUS NOT DETECTED',
+                'DENGUE VIRUS TYPE1 DETECTED',
+                'DENGUE VIRUS TYPE2 DETECTED',
+                'HIV-1 DNA NOT DETECTED',
+                'HIV-1 DNA DETECTED',
+                'SARS-COV-2 RNA NOT DETECTED',
+                'SARS-CoV-2 RNA DETECTED',
+                'RETEST - INCONCLUSIVE'
+            );
+        </sql>
+
+        <!--
+            STEP 8 — orphaned localization rows
+            Targets only the localization rows created by new_tests.xml for:
+              - test names and report names for the 20 deleted tests
+              - the Respiratory Swab sample type name
+            The localization rows for Sputum, Fluid, Serum, Plasma, DBS are
+            intentionally NOT deleted — those sample types are staying.
+            We match by the exact english values inserted by new_tests.xml.
+        -->
+        <sql>
+            DELETE FROM clinlims.localization
+            WHERE english IN (
+                'COVID-19 PCR',
+                'SARS-CoV-2 RNA by qRT-PCR',
+                'COVID-19 ANTIBODY IgM',
+                'IgM to SARS-CoV-2 by EIA or LFA',
+                'COVID-19 ANTIBODY IgG',
+                'IgG to SARS-CoV-2 by EIA or LFA',
+                'DENGUE PCR',
+                'Dengue virus RNA by qRT-PCR',
+                'HIV INFANT VIRAL LOAD',
+                'HIV-1 DNA by qRT-PCR',
+                'HIV VIRAL LOAD',
+                'HIV-1 RNA by qRT-PCR',
+                'HEPATITIS C VIRAL LOAD',
+                'HCV RNA by qRT-PCR',
+                'HEPATITIS B VIRAL LOAD',
+                'HBV RNA by qRT-PCR',
+                'Respiratory Swab'
+            );
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>
