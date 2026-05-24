@@ -10,4 +10,5 @@
   <include relativeToChangelogFile="true" file="add-panel-price.xml"/>
   <include relativeToChangelogFile="true" file="incoming_orders.xml"/>
   <include relativeToChangelogFile="true" file="add-dictionary-guid.xml"/>
+  <include relativeToChangelogFile="true" file="cleanup-legacy-data.xml"/>
 </databaseChangeLog>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="nidan-cleanup-legacy-data-001" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <!-- Ensure no patient data relies on these tests -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.analysis WHERE test_id IN (
+                    SELECT id FROM clinlims.test WHERE description IN (
+                        'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
+                    )
+                )
+            </sqlCheck>
+            <!-- Ensure no samples rely on these legacy sample types -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.sample_item WHERE typeosamp_id IN (
+                    SELECT id FROM clinlims.type_of_sample WHERE description IN ('Tissue antemortem', 'Tissue post mortem')
+                )
+            </sqlCheck>
+        </preConditions>
+        <comment>Clean up unused legacy tests and sample types. Safety bounds: MARK_RAN if patient data is found.</comment>
+
+        <!-- 1. Remove references in sampletype_test mapping -->
+        <sql>
+            DELETE FROM clinlims.sampletype_test 
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
+                )
+            );
+        </sql>
+
+        <!-- 1.b Remove test_analyte mapping to avoid FK violation from test_result -->
+        <sql>
+            DELETE FROM clinlims.test_analyte
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
+                )
+            );
+        </sql>
+
+        <!-- 1.c Remove test_result references -->
+        <sql>
+            DELETE FROM clinlims.test_result 
+            WHERE test_id IN (
+                SELECT id FROM clinlims.test WHERE description IN (
+                    'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
+                )
+            );
+        </sql>
+
+        <!-- 2. Remove tests -->
+        <sql>
+            DELETE FROM clinlims.test 
+            WHERE description IN (
+                'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
+            );
+        </sql>
+
+        <!-- 3. Remove orphaned sample types (tissue antemortem/postmortem) -->
+        <sql>
+            DELETE FROM clinlims.type_of_sample 
+            WHERE description IN ('Tissue antemortem', 'Tissue post mortem');
+        </sql>
+
+        <!-- 4. Cleanup orphaned localizations created by these specific legacy elements -->
+        <sql>
+            DELETE FROM clinlims.localization 
+            WHERE english IN (
+                'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin',
+                'Tissue antemortem', 'Tissue post mortem'
+            );
+        </sql>
+
+        <!-- 5. Remove orphaned system modules from failed panel imports -->
+        <sql>
+            DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%';
+        </sql>
+    </changeSet>
+</databaseChangeLog>
