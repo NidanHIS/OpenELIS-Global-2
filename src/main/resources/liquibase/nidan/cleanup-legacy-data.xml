@@ -5,413 +5,179 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="nidan-cleanup-legacy-data-001" author="nidan">
-        <preConditions onFail="MARK_RAN">
-            <!-- Ensure no patient data relies on these tests -->
-            <sqlCheck expectedResult="0">
-                SELECT count(*) FROM clinlims.analysis WHERE test_id IN (
-                    SELECT id FROM clinlims.test WHERE description IN (
-                        'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
-                    )
-                )
-            </sqlCheck>
-            <!-- Ensure no samples rely on these legacy sample types -->
-            <sqlCheck expectedResult="0">
-                SELECT count(*) FROM clinlims.sample_item WHERE typeosamp_id IN (
-                    SELECT id FROM clinlims.type_of_sample WHERE description IN ('Tissue antemortem', 'Tissue post mortem')
-                )
-            </sqlCheck>
-        </preConditions>
-        <comment>Clean up unused legacy tests and sample types. Safety bounds: MARK_RAN if patient data is found.</comment>
+    <!--
+        NUCLEAR CLEANUP CHANGESET
+        =========================
+        Wipes ALL tests and panels seeded by legacy Liquibase migrations
+        (2.0.x.x through 3.3.x.x) so that OCL import gets a clean slate.
 
-        <!-- 1. Remove references in sampletype_test mapping -->
-        <sql>
-            DELETE FROM clinlims.sampletype_test 
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
-                )
-            );
-        </sql>
+        EXECUTION POSITION IN STARTUP SEQUENCE:
+          1. Liquibase runs base-changelog.xml top-to-bottom:
+               2.0 → 2.1 → ... → 3.3 → [nidan/base.xml] → 3.4 → 3.5
+             All legacy seed data is inserted by the time this changeset runs.
+          2. THIS CHANGESET runs — wipes all tests and panels.
+          3. Liquibase finishes. DATABASECHANGELOG records this as executed.
+          4. Spring ContextRefreshedEvent fires.
+          5. ConfigurationInitializationService runs OCL import (load order 400).
+             OCL upserts tests/panels from the ZIP — creates or updates.
 
-        <!-- 1.b Remove test_analyte mapping to avoid FK violation from test_result -->
-        <sql>
-            DELETE FROM clinlims.test_analyte
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
-                )
-            );
-        </sql>
+        IDEMPOTENCY:
+          Liquibase's DATABASECHANGELOG table ensures this runs EXACTLY ONCE.
+          On every subsequent restart (normal or down/up without -v), Liquibase
+          sees this changeset ID already recorded and skips it entirely.
+          OCL then runs its own checksum check and skips if ZIP unchanged.
 
-        <!-- 1.c Remove test_result references -->
-        <sql>
-            DELETE FROM clinlims.test_result 
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
-                )
-            );
-        </sql>
+        VOLUME WIPE (down -v):
+          Fresh DB → all legacy changesets re-seed data → this changeset runs
+          again (fresh DATABASECHANGELOG) → wipes again → OCL re-imports.
+          Identical outcome. Clean slate every time.
 
-        <!-- 2. Remove tests -->
-        <sql>
-            DELETE FROM clinlims.test 
-            WHERE description IN (
-                'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin'
-            );
-        </sql>
+        PRODUCTION SAFETY:
+          onFail="MARK_RAN" on the precondition block means:
+          If ANY patient data exists (sample, analysis, result, patient rows),
+          Liquibase marks this changeset as executed WITHOUT running the SQL.
+          The application starts normally. No crash. No data loss.
+          This mirrors the isDatabaseSafeToClean() logic in TestPanelCleanupService.
 
-        <!-- 3. Remove orphaned sample types (tissue antemortem/postmortem) -->
-        <sql>
-            DELETE FROM clinlims.type_of_sample 
-            WHERE description IN ('Tissue antemortem', 'Tissue post mortem');
-        </sql>
+        FK DELETION ORDER:
+          Mirrors TestPanelCleanupService.cleanupAllTestsAndPanels() exactly:
+          Phase 1: 14 test child tables
+          Phase 2: 3 panel child tables
+          Phase 3: system_module panel entries
+          Phase 4: DELETE clinlims.test
+          Phase 5: DELETE clinlims.panel
+          Phase 6: DELETE orphaned localizations (test name + panel name rows
+                   no longer referenced by any test or panel)
 
-        <!-- 4. Cleanup orphaned localizations created by these specific legacy elements -->
-        <sql>
-            DELETE FROM clinlims.localization 
-            WHERE english IN (
-                'Histopathology examination', 'Anti-Pan Keratin', 'AMACR (p504 s)', 'BCL 2', 'BCL 6', 'BerEp4', 'Calponin', 'Calretinin', 'Anti-CD10', 'Anti-CD15', 'Anti-CD20', 'Anti-CD22', 'Anti-CD 3', 'Anti-CD30', 'Anti-CD34', 'Anti-CD45', 'Anti-CD 5', 'Anti-CD56', 'Anti-CD7', 'Anti-CD79a', 'Anti-CD99 (O13)', 'Anti-CDX-2 (EPR2764Y)', 'Anti-Chromogranin A', 'Anti-Cytokeratin 20', 'Anti-Cytokeratin 5/6', 'Anti-Cytokeratin 7', 'Anti-Cyclin D1 (SP4-R)', 'Anti-Desmin', 'DOG1 (SP31)', 'Anti-E-Cadherin', 'Anti-EMA (E29)', 'Anti-ER', 'Anti-Gata 3', 'Glial Fibrillary Acidic Protein', 'Anti-hepatocyte Specific Antigen (Hep Par-1)', 'Her2 Dual ISH', 'Anti-HER2', 'Anti-melanosome (HMB45)', 'Inhibin', 'Anti-Ki67', 'Anti-MUC2', 'Anti-MUM1', 'Myogenin (F5D)', 'Napsin A (MRQ-60)', 'CINtec® p16 Histology', 'Anti-p40 (BC28)', 'P 53', 'Anti-p63 (4A4)', 'Pax 5', 'Pax 8', 'Anti-PR', 'Anti-S100', 'Actin Smooth Muscle', 'Anti-Synaptophysin (SP11)', 'Anti-Thyroid Transcription Factor', 'Thyroglobulin (2H11+6E1)', 'Wilms'' tumor 1 protein (WT1)', 'Anti-Vimentin',
-                'Tissue antemortem', 'Tissue post mortem'
-            );
-        </sql>
-
-        <!-- 5. Remove orphaned system modules from failed panel imports -->
-        <sql>
-            DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%';
-        </sql>
-    </changeSet>
-
-    <changeSet id="nidan-cleanup-legacy-data-002" author="nidan">
+        NOT TOUCHED:
+          - clinlims.type_of_sample  (sample types — OCL depends on these)
+          - clinlims.test_section    (sections — OCL depends on these)
+          - clinlims.dictionary      (dictionary values — shared infrastructure)
+          - clinlims.localization    rows for non-test/panel entities
+          - All other tables
+    -->
+    <changeSet id="nidan-cleanup-all-tests-and-panels" author="nidan">
         <preConditions onFail="MARK_RAN">
             <!--
-                Guard 1: No analysis rows exist for any of the 20 legacy tests from new_tests.xml.
-                If any hospital has real patient data tied to these tests, we skip entirely.
-                onFail="MARK_RAN" means Liquibase marks this changeset as executed and moves on —
-                the application will NOT crash on startup.
+                SAFETY GUARD 1: No sample records exist.
+                clinlims.sample is the root of all patient encounter data.
             -->
             <sqlCheck expectedResult="0">
-                SELECT count(*) FROM clinlims.analysis WHERE test_id IN (
-                    SELECT id FROM clinlims.test WHERE description IN (
-                        'COVIDPCR(Respiratory Swab)',
-                        'COVIDPCR(Sputum)',
-                        'COVIDPCR(Fluid)',
-                        'COVID-19ANTIBODYIgM(Serum)',
-                        'COVID-19ANTIBODYIgM(Plasma)',
-                        'COVID-19ANTIBODYIgG(Serum)',
-                        'COVID-19ANTIBODYIgG(Plasma)',
-                        'DENGUEPCR(Serum)',
-                        'DENGUEPCR(Plasma)',
-                        'DENGUEPCR(DBS)',
-                        'HIVINFANTVIRALLOAD(Serum)',
-                        'HIVINFANTVIRALLOAD(Plasma)',
-                        'HIVINFANTVIRALLOAD(DBS)',
-                        'HIVVIRALLOAD(Serum)',
-                        'HIVVIRALLOAD(Plasma)',
-                        'HIVVIRALLOAD(DBS)',
-                        'HEPATITISCVIRALLOAD(Serum)',
-                        'HEPATITISCVIRALLOAD(Plasma)',
-                        'HEPATITISBVIRALLOAD(Serum)',
-                        'HEPATITISBVIRALLOAD(Plasma)'
-                    )
-                )
+                SELECT count(*) FROM clinlims.sample
             </sqlCheck>
             <!--
-                Guard 2: No sample_item rows exist for the Respiratory Swab sample type.
-                This is the only sample type we are deleting — the other 5 (Sputum, Fluid,
-                Serum, Plasma, DBS) are shared infrastructure and are NOT touched.
+                SAFETY GUARD 2: No analysis records exist.
+                clinlims.analysis.test_id is the direct FK to clinlims.test.
+                If any analysis row exists, deleting tests would orphan it.
             -->
             <sqlCheck expectedResult="0">
-                SELECT count(*) FROM clinlims.sample_item WHERE typeosamp_id IN (
-                    SELECT id FROM clinlims.type_of_sample WHERE description = 'Respiratory Swab'
-                )
+                SELECT count(*) FROM clinlims.analysis
+            </sqlCheck>
+            <!--
+                SAFETY GUARD 3: No result records exist.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.result
+            </sqlCheck>
+            <!--
+                SAFETY GUARD 4: No patient records exist.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.patient
             </sqlCheck>
         </preConditions>
         <comment>
-            Wave 2 cleanup: removes 20 legacy tests seeded by 2.3.x.x/new_tests.xml
-            (COVID PCR, COVID Antibody IgM/IgG, Dengue PCR, HIV Infant Viral Load,
-            HIV Viral Load, Hepatitis C Viral Load, Hepatitis B Viral Load) and the
-            Respiratory Swab sample type which is exclusively owned by these tests.
-
-            NOT deleted: Sputum, Fluid, Serum, Plasma, DBS sample types — these are
-            shared by OCL import, TB tests, and RetroCI Java code.
-            NOT deleted: 'Inconclusive' and 'Invalid' dictionary entries — shared across
-            multiple test groups and cannot be proven exclusive to these tests.
-
-            Safety: MARK_RAN if any patient analysis data exists for these tests.
+            Nuclear cleanup: wipes all tests and panels so OCL import gets a
+            clean slate. Runs once via DATABASECHANGELOG. Safe on production
+            via onFail=MARK_RAN patient data guards. FK order mirrors
+            TestPanelCleanupService.cleanupAllTestsAndPanels().
         </comment>
 
-        <!--
-            STEP 1 — result_limits
-            FK: result_limits.test_id → test.id
-            Must go before test_result because result_limits.normal_dictionary_id
-            points into dictionary, and test_result.value also points into dictionary.
-            Clearing result_limits first avoids any cascade confusion.
-        -->
-        <sql>
-            DELETE FROM clinlims.result_limits
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'COVIDPCR(Respiratory Swab)',
-                    'COVIDPCR(Sputum)',
-                    'COVIDPCR(Fluid)',
-                    'COVID-19ANTIBODYIgM(Serum)',
-                    'COVID-19ANTIBODYIgM(Plasma)',
-                    'COVID-19ANTIBODYIgG(Serum)',
-                    'COVID-19ANTIBODYIgG(Plasma)',
-                    'DENGUEPCR(Serum)',
-                    'DENGUEPCR(Plasma)',
-                    'DENGUEPCR(DBS)',
-                    'HIVINFANTVIRALLOAD(Serum)',
-                    'HIVINFANTVIRALLOAD(Plasma)',
-                    'HIVINFANTVIRALLOAD(DBS)',
-                    'HIVVIRALLOAD(Serum)',
-                    'HIVVIRALLOAD(Plasma)',
-                    'HIVVIRALLOAD(DBS)',
-                    'HEPATITISCVIRALLOAD(Serum)',
-                    'HEPATITISCVIRALLOAD(Plasma)',
-                    'HEPATITISBVIRALLOAD(Serum)',
-                    'HEPATITISBVIRALLOAD(Plasma)'
-                )
-            );
-        </sql>
+        <!-- ================================================================
+             PHASE 1 — Test child tables (14 tables, same order as service)
+             All reference clinlims.test via test_id FK.
+             ================================================================ -->
 
-        <!--
-            STEP 2 — test_analyte
-            FK: test_analyte.test_id → test.id
-            These tests have no analyte rows per forensic analysis, but we delete
-            defensively to guarantee no FK violation when we delete the test rows.
-        -->
-        <sql>
-            DELETE FROM clinlims.test_analyte
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'COVIDPCR(Respiratory Swab)',
-                    'COVIDPCR(Sputum)',
-                    'COVIDPCR(Fluid)',
-                    'COVID-19ANTIBODYIgM(Serum)',
-                    'COVID-19ANTIBODYIgM(Plasma)',
-                    'COVID-19ANTIBODYIgG(Serum)',
-                    'COVID-19ANTIBODYIgG(Plasma)',
-                    'DENGUEPCR(Serum)',
-                    'DENGUEPCR(Plasma)',
-                    'DENGUEPCR(DBS)',
-                    'HIVINFANTVIRALLOAD(Serum)',
-                    'HIVINFANTVIRALLOAD(Plasma)',
-                    'HIVINFANTVIRALLOAD(DBS)',
-                    'HIVVIRALLOAD(Serum)',
-                    'HIVVIRALLOAD(Plasma)',
-                    'HIVVIRALLOAD(DBS)',
-                    'HEPATITISCVIRALLOAD(Serum)',
-                    'HEPATITISCVIRALLOAD(Plasma)',
-                    'HEPATITISBVIRALLOAD(Serum)',
-                    'HEPATITISBVIRALLOAD(Plasma)'
-                )
-            );
-        </sql>
+        <sql>DELETE FROM clinlims.test_dictionary;</sql>
+        <sql>DELETE FROM clinlims.test_code;</sql>
+        <sql>DELETE FROM clinlims.test_worksheets;</sql>
+        <sql>DELETE FROM clinlims.test_notification_config;</sql>
+        <sql>DELETE FROM clinlims.test_operations;</sql>
+        <sql>DELETE FROM clinlims.test_result_map;</sql>
+        <sql>DELETE FROM clinlims.test_reflex;</sql>
+        <sql>DELETE FROM clinlims.test_analyte;</sql>
+        <sql>DELETE FROM clinlims.test_result;</sql>
+        <sql>DELETE FROM clinlims.result_limits;</sql>
+        <sql>DELETE FROM clinlims.sampletype_test;</sql>
+        <sql>DELETE FROM clinlims.analyzer_test_map;</sql>
+        <sql>DELETE FROM clinlims.qa_event;</sql>
+        <sql>DELETE FROM clinlims.referral_result;</sql>
 
-        <!--
-            STEP 3 — test_result
-            FK: test_result.test_id → test.id
-            Also: test.default_test_result_id → test_result.id
-            We must clear test.default_test_result_id first (set to NULL) before
-            deleting test_result rows, because the FK goes both ways:
-              test.default_test_result_id → test_result.id
-            If we delete test_result while test.default_test_result_id still points
-            to it, PostgreSQL will throw a FK violation.
-        -->
-        <sql>
-            UPDATE clinlims.test
-            SET default_test_result_id = NULL
-            WHERE description IN (
-                'COVIDPCR(Respiratory Swab)',
-                'COVIDPCR(Sputum)',
-                'COVIDPCR(Fluid)',
-                'COVID-19ANTIBODYIgM(Serum)',
-                'COVID-19ANTIBODYIgM(Plasma)',
-                'COVID-19ANTIBODYIgG(Serum)',
-                'COVID-19ANTIBODYIgG(Plasma)',
-                'DENGUEPCR(Serum)',
-                'DENGUEPCR(Plasma)',
-                'DENGUEPCR(DBS)',
-                'HIVINFANTVIRALLOAD(Serum)',
-                'HIVINFANTVIRALLOAD(Plasma)',
-                'HIVINFANTVIRALLOAD(DBS)',
-                'HIVVIRALLOAD(Serum)',
-                'HIVVIRALLOAD(Plasma)',
-                'HIVVIRALLOAD(DBS)',
-                'HEPATITISCVIRALLOAD(Serum)',
-                'HEPATITISCVIRALLOAD(Plasma)',
-                'HEPATITISBVIRALLOAD(Serum)',
-                'HEPATITISBVIRALLOAD(Plasma)'
-            );
-        </sql>
-        <sql>
-            DELETE FROM clinlims.test_result
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'COVIDPCR(Respiratory Swab)',
-                    'COVIDPCR(Sputum)',
-                    'COVIDPCR(Fluid)',
-                    'COVID-19ANTIBODYIgM(Serum)',
-                    'COVID-19ANTIBODYIgM(Plasma)',
-                    'COVID-19ANTIBODYIgG(Serum)',
-                    'COVID-19ANTIBODYIgG(Plasma)',
-                    'DENGUEPCR(Serum)',
-                    'DENGUEPCR(Plasma)',
-                    'DENGUEPCR(DBS)',
-                    'HIVINFANTVIRALLOAD(Serum)',
-                    'HIVINFANTVIRALLOAD(Plasma)',
-                    'HIVINFANTVIRALLOAD(DBS)',
-                    'HIVVIRALLOAD(Serum)',
-                    'HIVVIRALLOAD(Plasma)',
-                    'HIVVIRALLOAD(DBS)',
-                    'HEPATITISCVIRALLOAD(Serum)',
-                    'HEPATITISCVIRALLOAD(Plasma)',
-                    'HEPATITISBVIRALLOAD(Serum)',
-                    'HEPATITISBVIRALLOAD(Plasma)'
-                )
-            );
-        </sql>
+        <!-- ================================================================
+             PHASE 2 — Panel child tables (3 tables, same order as service)
+             All reference clinlims.panel via panel_id FK.
+             ================================================================ -->
 
-        <!--
-            STEP 4 — sampletype_test
-            FK: sampletype_test.test_id → test.id
-            FK: sampletype_test.sample_type_id → type_of_sample.id
-            Clears the M:N mapping table. Must happen before deleting test rows
-            AND before deleting the Respiratory Swab type_of_sample row.
-        -->
-        <sql>
-            DELETE FROM clinlims.sampletype_test
-            WHERE test_id IN (
-                SELECT id FROM clinlims.test WHERE description IN (
-                    'COVIDPCR(Respiratory Swab)',
-                    'COVIDPCR(Sputum)',
-                    'COVIDPCR(Fluid)',
-                    'COVID-19ANTIBODYIgM(Serum)',
-                    'COVID-19ANTIBODYIgM(Plasma)',
-                    'COVID-19ANTIBODYIgG(Serum)',
-                    'COVID-19ANTIBODYIgG(Plasma)',
-                    'DENGUEPCR(Serum)',
-                    'DENGUEPCR(Plasma)',
-                    'DENGUEPCR(DBS)',
-                    'HIVINFANTVIRALLOAD(Serum)',
-                    'HIVINFANTVIRALLOAD(Plasma)',
-                    'HIVINFANTVIRALLOAD(DBS)',
-                    'HIVVIRALLOAD(Serum)',
-                    'HIVVIRALLOAD(Plasma)',
-                    'HIVVIRALLOAD(DBS)',
-                    'HEPATITISCVIRALLOAD(Serum)',
-                    'HEPATITISCVIRALLOAD(Plasma)',
-                    'HEPATITISBVIRALLOAD(Serum)',
-                    'HEPATITISBVIRALLOAD(Plasma)'
-                )
-            );
-        </sql>
+        <sql>DELETE FROM clinlims.panel_item;</sql>
+        <sql>DELETE FROM clinlims.sampletype_panel;</sql>
+        <sql>DELETE FROM clinlims.notebook_page_panels;</sql>
 
-        <!--
-            STEP 5 — test (the parent rows)
-            All child FKs are now cleared. Safe to delete.
-        -->
-        <sql>
-            DELETE FROM clinlims.test
-            WHERE description IN (
-                'COVIDPCR(Respiratory Swab)',
-                'COVIDPCR(Sputum)',
-                'COVIDPCR(Fluid)',
-                'COVID-19ANTIBODYIgM(Serum)',
-                'COVID-19ANTIBODYIgM(Plasma)',
-                'COVID-19ANTIBODYIgG(Serum)',
-                'COVID-19ANTIBODYIgG(Plasma)',
-                'DENGUEPCR(Serum)',
-                'DENGUEPCR(Plasma)',
-                'DENGUEPCR(DBS)',
-                'HIVINFANTVIRALLOAD(Serum)',
-                'HIVINFANTVIRALLOAD(Plasma)',
-                'HIVINFANTVIRALLOAD(DBS)',
-                'HIVVIRALLOAD(Serum)',
-                'HIVVIRALLOAD(Plasma)',
-                'HIVVIRALLOAD(DBS)',
-                'HEPATITISCVIRALLOAD(Serum)',
-                'HEPATITISCVIRALLOAD(Plasma)',
-                'HEPATITISBVIRALLOAD(Serum)',
-                'HEPATITISBVIRALLOAD(Plasma)'
-            );
-        </sql>
+        <!-- ================================================================
+             PHASE 3 — System modules for panels
+             OCL creates system_module rows with description LIKE '%=>panel=>%'
+             for each panel. Wipe them all — OCL will recreate on import.
+             ================================================================ -->
 
-        <!--
-            STEP 6 — type_of_sample: Respiratory Swab only
-            sampletype_test rows for this sample type were cleared in STEP 4.
-            The other 5 sample types (Sputum, Fluid, Serum, Plasma, DBS) are
-            intentionally NOT deleted — they are shared by OCL import, TB tests,
-            and RetroCI Java code (AnalyzerResultsAcceptServiceImpl, ARVFormMapper,
-            EIDFormMapper all do a string-based lookup for "DBS").
-        -->
-        <sql>
-            DELETE FROM clinlims.type_of_sample
-            WHERE description = 'Respiratory Swab';
-        </sql>
+        <sql>DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%';</sql>
 
-        <!--
-            STEP 7 — dictionary entries exclusively owned by these tests
-            These entries were seeded by new_tests.xml changesets id="100" and id="624"
-            and are only referenced by test_result rows for the tests deleted above.
-            Those test_result rows were cleared in STEP 3, so no FK violation is possible.
+        <!-- ================================================================
+             PHASE 4 — Delete all tests
+             All child FKs cleared in Phase 1. Safe to delete.
+             ================================================================ -->
 
-            NOT deleted: 'Inconclusive' — used across multiple test groups in this file
-            and potentially by other Haiti Lab tests not audited here.
-            NOT deleted: 'Invalid' — same reason.
-        -->
-        <sql>
-            DELETE FROM clinlims.dictionary
-            WHERE dict_entry IN (
-                'IgM DETECTED',
-                'IgM NOT DETECTED',
-                'IgG DETECTED',
-                'IgG NOT DETECTED',
-                'DENGUE VIRUS NOT DETECTED',
-                'DENGUE VIRUS TYPE1 DETECTED',
-                'DENGUE VIRUS TYPE2 DETECTED',
-                'HIV-1 DNA NOT DETECTED',
-                'HIV-1 DNA DETECTED',
-                'SARS-COV-2 RNA NOT DETECTED',
-                'SARS-CoV-2 RNA DETECTED',
-                'RETEST - INCONCLUSIVE'
-            );
-        </sql>
+        <sql>DELETE FROM clinlims.test;</sql>
 
-        <!--
-            STEP 8 — orphaned localization rows
-            Targets only the localization rows created by new_tests.xml for:
-              - test names and report names for the 20 deleted tests
-              - the Respiratory Swab sample type name
-            The localization rows for Sputum, Fluid, Serum, Plasma, DBS are
-            intentionally NOT deleted — those sample types are staying.
-            We match by the exact english values inserted by new_tests.xml.
-        -->
+        <!-- ================================================================
+             PHASE 5 — Delete all panels
+             All child FKs cleared in Phase 2. Safe to delete.
+             ================================================================ -->
+
+        <sql>DELETE FROM clinlims.panel;</sql>
+
+        <!-- ================================================================
+             PHASE 6 — Delete orphaned localization rows
+             Tests and panels are now gone. Any localization row with
+             description IN ('test name', 'test reporting name', 'panel name')
+             that is no longer referenced by any test or panel is orphaned.
+
+             We use NOT IN against both FK columns on test and panel to be
+             safe — this handles the case where some localizations are shared
+             or referenced by other entities we haven't deleted.
+
+             After deleting all tests and panels above, the NOT IN subqueries
+             return empty sets, so this deletes ALL rows with those descriptions.
+             That is correct — test name and panel name localizations have no
+             other consumers.
+             ================================================================ -->
+
         <sql>
             DELETE FROM clinlims.localization
-            WHERE english IN (
-                'COVID-19 PCR',
-                'SARS-CoV-2 RNA by qRT-PCR',
-                'COVID-19 ANTIBODY IgM',
-                'IgM to SARS-CoV-2 by EIA or LFA',
-                'COVID-19 ANTIBODY IgG',
-                'IgG to SARS-CoV-2 by EIA or LFA',
-                'DENGUE PCR',
-                'Dengue virus RNA by qRT-PCR',
-                'HIV INFANT VIRAL LOAD',
-                'HIV-1 DNA by qRT-PCR',
-                'HIV VIRAL LOAD',
-                'HIV-1 RNA by qRT-PCR',
-                'HEPATITIS C VIRAL LOAD',
-                'HCV RNA by qRT-PCR',
-                'HEPATITIS B VIRAL LOAD',
-                'HBV RNA by qRT-PCR',
-                'Respiratory Swab'
+            WHERE description IN ('test name', 'test reporting name', 'panel name')
+            AND id NOT IN (
+                SELECT name_localization_id
+                FROM clinlims.test
+                WHERE name_localization_id IS NOT NULL
+                UNION
+                SELECT reporting_name_localization_id
+                FROM clinlims.test
+                WHERE reporting_name_localization_id IS NOT NULL
+                UNION
+                SELECT name_localization_id
+                FROM clinlims.panel
+                WHERE name_localization_id IS NOT NULL
             );
         </sql>
+
     </changeSet>
 
 </databaseChangeLog>
