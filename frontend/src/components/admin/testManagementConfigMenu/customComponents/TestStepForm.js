@@ -7,6 +7,7 @@ import {
   Section,
   Select,
   SelectItem,
+  Dropdown,
   TextInput,
   Checkbox,
   Row,
@@ -1844,26 +1845,41 @@ export const StepFiveSelectListOptionsAndResultOrder = ({
                     <Column lg={8} md={8} sm={4}>
                       <FormattedMessage id="label.select.list.options" />
                       <br />
-                      <Select
-                        onBlur={handleBlur}
-                        id={`select-list-options`}
-                        name="dictionary"
+                      <Dropdown
+                        id="select-list-options"
+                        label="Select List Option"
                         hideLabel
-                        required
-                        onChange={(e) => handelSelectListOptions(e)}
+                        items={dictionaryList || []}
+                        itemToString={(item) => (item ? item.value : "")}
                         invalid={touched.dictionary && !!errors.dictionary}
                         invalidText={touched.dictionary && errors.dictionary}
-                        value={values.dictionary.map((item) => item.id)}
-                      >
-                        <SelectItem value="0" text="Select List Option" />
-                        {dictionaryList?.map((test) => (
-                          <SelectItem
-                            key={test.id}
-                            value={test.id}
-                            text={`${test.value}`}
-                          />
-                        ))}
-                      </Select>
+                        selectedItem={null}
+                        onChange={({ selectedItem }) => {
+                          if (!selectedItem) return;
+                          setSingleSelectDictionaryList((prev) => [
+                            ...prev,
+                            selectedItem,
+                          ]);
+                          setMultiSelectDictionaryList((prev) => [
+                            ...prev,
+                            selectedItem,
+                          ]);
+                          setDictionaryListTag((prev) => [
+                            ...prev,
+                            selectedItem,
+                          ]);
+                          if (
+                            !values.dictionary?.some(
+                              (item) => item.id === selectedItem.id,
+                            )
+                          ) {
+                            setFieldValue("dictionary", [
+                              ...(values.dictionary || []),
+                              { id: selectedItem.id, qualified: "N" },
+                            ]);
+                          }
+                        }}
+                      />
                       <br />
                       {dictionaryListTag && dictionaryListTag.length ? (
                         <div style={{ marginBottom: "1.188rem" }}>
