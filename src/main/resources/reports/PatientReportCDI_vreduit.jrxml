@@ -382,7 +382,7 @@
 	<group name="section name" isStartNewPage="true" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{testSection}]]></groupExpression>
 		<groupHeader>
-			<band height="30" splitType="Prevent">
+			<band height="33" splitType="Prevent">
 				<!-- Department name: centered, bold, font 10, no border -->
 				<textField>
 					<reportElement x="0" y="0" width="553" height="16" forecolor="#000000"/>
@@ -394,7 +394,7 @@
 				</textField>
 				<!-- Test Name -->
 				<staticText>
-					<reportElement x="0" y="18" width="200" height="12"/>
+					<reportElement x="0" y="18" width="200" height="15"/>
 					<box topPadding="2" leftPadding="4" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -403,14 +403,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement verticalAlignment="Middle">
-						<font size="6" isBold="true"/>
+						<font size="8" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Test Name]]></text>
 				</staticText>
 				<!-- Result -->
 				<staticText>
-					<reportElement x="200" y="18" width="190" height="12"/>
+					<reportElement x="200" y="18" width="190" height="15"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -419,14 +419,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="6" isBold="true"/>
+						<font size="8" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Result]]></text>
 				</staticText>
 				<!-- Alert -->
 				<staticText>
-					<reportElement x="390" y="18" width="30" height="12"/>
+					<reportElement x="390" y="18" width="30" height="15"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -435,14 +435,14 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="6" isBold="true"/>
+						<font size="8" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Alert]]></text>
 				</staticText>
 				<!-- Reference Value (Unit) -->
 				<staticText>
-					<reportElement x="420" y="18" width="133" height="12"/>
+					<reportElement x="420" y="18" width="133" height="15"/>
 					<box topPadding="2" bottomPadding="2">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -451,7 +451,7 @@
 						<rightPen lineWidth="0.5"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="6" isBold="true"/>
+						<font size="8" isBold="true"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
 					<text><![CDATA[Reference Value (Unit)]]></text>
