@@ -261,13 +261,13 @@
 						<reportElement mode="Opaque" x="1" y="13" width="110" height="13" backcolor="#E6E6E6"/>
 						<box leftPadding="4"><pen lineWidth="0.5"/><topPen lineWidth="0.5"/><leftPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
 						<textElement verticalAlignment="Middle"><font size="8" isBold="true"/><paragraph lineSpacing="Single"/></textElement>
-						<textFieldExpression><![CDATA[$R{label.patient_name}]]></textFieldExpression>
+						<textFieldExpression><![CDATA["Full Name"]]></textFieldExpression>
 					</textField>
 					<textField isBlankWhenNull="true">
 						<reportElement x="111" y="13" width="165" height="13"/>
 						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
 						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
-						<textFieldExpression><![CDATA[$F{patientName}]]></textFieldExpression>
+						<textFieldExpression><![CDATA[($F{patientName} != null && $F{patientName}.contains(",")) ? ($F{patientName}.split(",")[1].trim() + " " + $F{patientName}.split(",")[0].trim()) : $F{patientName}]]></textFieldExpression>
 					</textField>
 					<textField>
 						<reportElement mode="Opaque" x="277" y="13" width="110" height="13" backcolor="#E6E6E6"/>
