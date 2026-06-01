@@ -55,8 +55,8 @@ public class AddressHierarchyRestController {
             if (level > 0) {
                 String defaultValue = getDefaultValueForLevel(level);
                 String defaultId = resolveDefaultValueToId(defaultValue, orgType.getName());
-                levels.add(
-                        new AddressHierarchyLevel(level, orgType.getId(), orgType.getName(), defaultValue, defaultId));
+                levels.add(new AddressHierarchyLevel(level, orgType.getId(), orgType.getName(),
+                        resolveDisplayKey(orgType), defaultValue, defaultId));
             }
         }
 
@@ -72,14 +72,14 @@ public class AddressHierarchyRestController {
             if (healthRegion != null) {
                 String defaultValue = getDefaultValueForLevel(1);
                 String defaultId = resolveDefaultValueToId(defaultValue, healthRegion.getName());
-                levels.add(new AddressHierarchyLevel(1, healthRegion.getId(), healthRegion.getName(), defaultValue,
-                        defaultId));
+                levels.add(new AddressHierarchyLevel(1, healthRegion.getId(), healthRegion.getName(),
+                        resolveDisplayKey(healthRegion), defaultValue, defaultId));
             }
             if (healthDistrict != null) {
                 String defaultValue = getDefaultValueForLevel(2);
                 String defaultId = resolveDefaultValueToId(defaultValue, healthDistrict.getName());
-                levels.add(new AddressHierarchyLevel(2, healthDistrict.getId(), healthDistrict.getName(), defaultValue,
-                        defaultId));
+                levels.add(new AddressHierarchyLevel(2, healthDistrict.getId(), healthDistrict.getName(),
+                        resolveDisplayKey(healthDistrict), defaultValue, defaultId));
             }
         }
 
@@ -345,21 +345,36 @@ public class AddressHierarchyRestController {
     /**
      * DTO for address hierarchy level information.
      */
+    private String resolveDisplayKey(OrganizationType orgType) {
+        if (orgType == null) {
+            return null;
+        }
+        // Prefer explicit displayKey from description if available
+        if (!GenericValidator.isBlankOrNull(orgType.getDescription())) {
+            return orgType.getDescription();
+        }
+        // Fallback to type name as key
+        return orgType.getName();
+    }
+
     public static class AddressHierarchyLevel {
         private int level;
         private String typeId;
         private String typeName;
+        private String displayKey;
         private String defaultValue;
         private String defaultId;
 
         public AddressHierarchyLevel(int level, String typeId, String typeName) {
-            this(level, typeId, typeName, null, null);
+            this(level, typeId, typeName, null, null, null);
         }
 
-        public AddressHierarchyLevel(int level, String typeId, String typeName, String defaultValue, String defaultId) {
+        public AddressHierarchyLevel(int level, String typeId, String typeName, String displayKey, String defaultValue,
+                String defaultId) {
             this.level = level;
             this.typeId = typeId;
             this.typeName = typeName;
+            this.displayKey = displayKey;
             this.defaultValue = defaultValue;
             this.defaultId = defaultId;
         }
@@ -386,6 +401,14 @@ public class AddressHierarchyRestController {
 
         public void setTypeName(String typeName) {
             this.typeName = typeName;
+        }
+
+        public String getDisplayKey() {
+            return displayKey;
+        }
+
+        public void setDisplayKey(String displayKey) {
+            this.displayKey = displayKey;
         }
 
         public String getDefaultValue() {

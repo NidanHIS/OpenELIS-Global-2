@@ -1335,7 +1335,14 @@ function CreatePatientForm(props) {
                                       ] || ""
                                     }
                                     name={field.name}
-                                    labelText={level.typeName}
+                                    labelText={
+                                      level.displayKey
+                                        ? intl.formatMessage({
+                                            id: level.displayKey,
+                                            defaultMessage: level.typeName,
+                                          })
+                                        : level.typeName
+                                    }
                                     onChange={(e) => {
                                       setFieldValue(
                                         `addressHierarchy_${levelIndex}`,
