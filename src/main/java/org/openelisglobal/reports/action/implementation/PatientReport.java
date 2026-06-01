@@ -64,7 +64,11 @@ import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.service.PatientServiceImpl;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.patientidentity.service.PatientIdentityService;
+import org.openelisglobal.organization.service.OrganizationService;
+import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.patientidentity.valueholder.PatientIdentity;
+import org.openelisglobal.patientidentitytype.service.PatientIdentityTypeService;
+import org.openelisglobal.patientidentitytype.valueholder.PatientIdentityType;
 import org.openelisglobal.person.service.PersonService;
 import org.openelisglobal.person.valueholder.Person;
 import org.openelisglobal.provider.service.ProviderService;
@@ -361,7 +365,7 @@ public abstract class PatientReport extends Report {
         }
     }
 
-    private void findContactInfo() {
+    protected void findContactInfo() {
         currentContactInfo = "";
         currentSiteInfo = "";
         currentProvider = null;
@@ -520,7 +524,7 @@ public abstract class PatientReport extends Report {
 
     protected String getLazyPatientIdentity(Patient patient, String identity, String id) {
         if (identity == null) {
-            identity = " ";
+            identity = "";
             List<PatientIdentity> identities = patientService.getIdentityList(patient);
             for (PatientIdentity patientIdentity : identities) {
                 if (patientIdentity.getIdentityTypeId().equals(id)) {
@@ -531,6 +535,39 @@ public abstract class PatientReport extends Report {
         }
 
         return identity;
+    }
+
+    protected String getFormattedPatientAddress(Patient patient) {
+        if (patient == null) {
+            return "";
+        }
+
+        List<String> addressParts = new ArrayList<>();
+        OrganizationService organizationService = SpringContext.getBean(OrganizationService.class);
+
+        // Fetch up to 5 levels of address hierarchy (0 to 4)
+        for (int i = 0; i < 5; i++) {
+            String identityTypeName = "ADDRESS_HIERARCHY_" + i;
+            PatientIdentityType type = SpringContext.getBean(PatientIdentityTypeService.class)
+                    .getNamedIdentityType(identityTypeName);
+            if (type != null) {
+                String id = getLazyPatientIdentity(patient, null, type.getId());
+                // Only attempt to resolve if we actually have an ID and it's not blank
+                if (!GenericValidator.isBlankOrNull(id) && !id.trim().isEmpty()) {
+                    Organization org = organizationService.getOrganizationById(id);
+                    if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
+                        addressParts.add(org.getOrganizationName());
+                    } else {
+                        // Fallback to the ID if it's not a standard null/empty
+                        addressParts.add(id);
+                    }
+                }
+            }
+        }
+
+        // Standard format: lower levels first (e.g., Village, District, Province)
+        Collections.reverse(addressParts);
+        return String.join(", ", addressParts);
     }
 
     protected void setPatientName(ClinicalPatientData data) {

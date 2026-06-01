@@ -304,7 +304,7 @@
 						<reportElement x="387" y="26" width="166" height="13"/>
 						<box leftPadding="4"><topPen lineWidth="0.5"/><bottomPen lineWidth="0.5"/><rightPen lineWidth="0.5"/></box>
 						<textElement verticalAlignment="Middle"><font size="8"/><paragraph lineSpacing="Single"/></textElement>
-						<textFieldExpression><![CDATA[$F{siteInfo}.split("\\|", 2)[1]]]></textFieldExpression>
+						<textFieldExpression><![CDATA[$F{siteInfo}.split("\\|", 2).length > 1 ? $F{siteInfo}.split("\\|", 2)[1] : ""]]></textFieldExpression>
 					</textField>
 					<!-- ROW 4: Address (left) | Collector (right) -->
 					<textField>
