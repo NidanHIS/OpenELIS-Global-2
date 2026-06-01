@@ -333,7 +333,13 @@ const TestCatalog = () => {
       <br />
       <PageBreadCrumb breadcrumbs={breadcrumbs} />
       <br />
-      <div style={{ backgroundColor: "#fff", padding: "1rem", borderRadius: "5px" }}>
+      <div
+        style={{
+          backgroundColor: "#fff",
+          padding: "1rem",
+          borderRadius: "5px",
+        }}
+      >
         <Grid fullWidth={true}>
           <Column lg={12} md={6} sm={3}>
             <h1>
