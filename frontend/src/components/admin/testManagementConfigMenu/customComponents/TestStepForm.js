@@ -1587,12 +1587,9 @@ export const StepFourSelectSampleTypeAndTestDisplayOrder = ({
                       {Array.isArray(selectedSampleTypeResp) &&
                       selectedSampleTypeResp.length > 0 ? (
                         selectedSampleTypeResp.map((item) => (
-                          <>
-                            <div
-                              className="gridBoundary"
-                              key={item.sampleTypeId}
-                            >
-                              <Section key={item.sampleTypeId}>
+                          <React.Fragment key={item.sampleTypeId}>
+                            <div className="gridBoundary">
+                              <Section>
                                 <CustomCommonSortableOrderList
                                   key={item.sampleTypeId}
                                   test={item.tests}
@@ -1616,7 +1613,7 @@ export const StepFourSelectSampleTypeAndTestDisplayOrder = ({
                               </Section>
                             </div>
                             <br />
-                          </>
+                          </React.Fragment>
                         ))
                       ) : (
                         <></>
