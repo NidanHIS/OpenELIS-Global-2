@@ -2032,9 +2032,7 @@ export const StepFiveSelectListOptionsAndResultOrder = ({
                               ? "At least one dictionary item must be qualified as 'Y'"
                               : "")
                         }
-                        value={values.dictionary
-                          .filter((item) => item.qualified === "Y")
-                          .map((item) => item.id)}
+                        value={"0"}
                         name="dictionary"
                       >
                         <SelectItem
