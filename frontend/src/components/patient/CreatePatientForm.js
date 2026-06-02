@@ -1436,7 +1436,7 @@ function CreatePatientForm(props) {
                                     {healthDistricts.map((district, index) => (
                                       <SelectItem
                                         text={district.value}
-                                        value={district.value}
+                                        value={district.id}
                                         key={index}
                                       />
                                     ))}

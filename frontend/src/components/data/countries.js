@@ -820,6 +820,10 @@ const nationalityDetails = [
     value: "NEPALESE",
   },
   {
+    label: "NEPAL",
+    value: "NEPALI",
+  },
+  {
     label: "NETHERLAND",
     value: "DUTCH",
   },
