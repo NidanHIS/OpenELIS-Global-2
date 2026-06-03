@@ -543,28 +543,51 @@ public abstract class PatientReport extends Report {
         List<String> addressParts = new ArrayList<>();
         OrganizationService organizationService = SpringContext.getBean(OrganizationService.class);
 
-        // Fetch up to 5 levels of address hierarchy (0 to 4)
-        for (int i = 0; i < 5; i++) {
-            String identityTypeName = "ADDRESS_HIERARCHY_" + i;
-            PatientIdentityType type = SpringContext.getBean(PatientIdentityTypeService.class)
-                    .getNamedIdentityType(identityTypeName);
-            if (type != null) {
-                String id = getLazyPatientIdentity(patient, null, type.getId());
-                // Only attempt to resolve if we actually have an ID and it's not blank
-                if (!GenericValidator.isBlankOrNull(id) && !id.trim().isEmpty()) {
-                    Organization org = organizationService.getOrganizationById(id);
-                    if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
-                        addressParts.add(org.getOrganizationName());
-                    } else {
-                        // Fallback to the ID if it's not a standard null/empty
-                        addressParts.add(id);
-                    }
+        // 1. Tole (Street Address)
+        if (patient.getPerson() != null && !GenericValidator.isBlankOrNull(patient.getPerson().getStreetAddress())) {
+            addressParts.add(patient.getPerson().getStreetAddress());
+        }
+
+        // 2. Village/Municipality (ADDRESS_HIERARCHY_1)
+        PatientIdentityType villageType = SpringContext.getBean(PatientIdentityTypeService.class)
+                .getNamedIdentityType("ADDRESS_HIERARCHY_1");
+        if (villageType != null) {
+            String id = getLazyPatientIdentity(patient, null, villageType.getId());
+            if (!GenericValidator.isBlankOrNull(id)) {
+                Organization org = organizationService.getOrganizationById(id);
+                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
+                    addressParts.add(org.getOrganizationName());
+                } else {
+                    addressParts.add(id);
                 }
             }
         }
 
-        // Standard format: lower levels first (e.g., Village, District, Province)
-        Collections.reverse(addressParts);
+        // 3. District (HEALTH DISTRICT)
+        PatientIdentityType districtType = SpringContext.getBean(PatientIdentityTypeService.class)
+                .getNamedIdentityType("HEALTH DISTRICT");
+        if (districtType != null) {
+            String id = getLazyPatientIdentity(patient, null, districtType.getId());
+            if (!GenericValidator.isBlankOrNull(id)) {
+                Organization org = organizationService.getOrganizationById(id);
+                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
+                    addressParts.add(org.getOrganizationName());
+                } else {
+                    addressParts.add(id);
+                }
+            }
+        }
+
+        // 4. Nationality (NATIONALITY)
+        PatientIdentityType nationalityType = SpringContext.getBean(PatientIdentityTypeService.class)
+                .getNamedIdentityType("NATIONALITY");
+        if (nationalityType != null) {
+            String nationality = getLazyPatientIdentity(patient, null, nationalityType.getId());
+            if (!GenericValidator.isBlankOrNull(nationality)) {
+                addressParts.add(nationality);
+            }
+        }
+
         return String.join(", ", addressParts);
     }
 
@@ -933,7 +956,7 @@ public abstract class PatientReport extends Report {
         }
         ObservationHistoryService observationHistoryService = SpringContext.getBean(ObservationHistoryService.class);
 
-        data.setContactInfo(currentContactInfo);
+        data.setContactInfo(getFormattedPatientAddress(currentPatient));
         data.setSiteInfo(currentSiteInfo);
         data.setReceivedDate(receivedDate);
         data.setDob(getPatientDOB(currentPatient));
