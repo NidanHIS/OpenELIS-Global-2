@@ -40,8 +40,8 @@ public class TestOrderClient {
         if (notification.tests() != null) {
             for (int i = 0; i < notification.tests().size(); i++) {
                 TestOrderNotification.TestRef t = notification.tests().get(i);
-                LOG.info("[NIDAN-TESTORDER]   test[{}] testGuid={} panelGuid={} loinc={}",
-                        i, blank(t.testGuid()), blank(t.panelGuid()), blank(t.loincCode()));
+                LOG.info("[NIDAN-TESTORDER]   test[{}] testGuid={} panelGuid={} loinc={}", i, blank(t.testGuid()),
+                        blank(t.panelGuid()), blank(t.loincCode()));
             }
         }
 
@@ -52,7 +52,8 @@ public class TestOrderClient {
         }
 
         if (GenericValidator.isBlankOrNull(endpointUrl)) {
-            LOG.warn("[NIDAN-TESTORDER] enabled=true but org.openelisglobal.nidan.testorder.url not set — skipping HTTP");
+            LOG.warn(
+                    "[NIDAN-TESTORDER] enabled=true but org.openelisglobal.nidan.testorder.url not set — skipping HTTP");
             LOG.info("[NIDAN-TESTORDER] ══════════════════════════════════════════");
             return;
         }

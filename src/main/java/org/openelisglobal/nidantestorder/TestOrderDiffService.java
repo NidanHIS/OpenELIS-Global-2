@@ -24,20 +24,22 @@ import org.springframework.stereotype.Component;
  * Computes the net-new tests in a collected sample relative to what was already
  * known from the original external order held in incoming_orders.
  *
- * <p>Rules:
+ * <p>
+ * Rules:
  * <ul>
- *   <li>If the sample has NO externalOrderNumber (manual ELIS entry) → all tests
- *       are net-new; caller should send the full list as-is.</li>
- *   <li>If the externalOrderNumber IS set → fetch the original holding, expand
- *       its tests + panels into a canonical key-set, then return only the
- *       collected tests whose key is NOT in that set.</li>
- *   <li>If the holding is missing (race / already finalized) → treat
- *       conservatively: return empty list so we send nothing (safer than
- *       re-duplicating).</li>
+ * <li>If the sample has NO externalOrderNumber (manual ELIS entry) → all tests
+ * are net-new; caller should send the full list as-is.</li>
+ * <li>If the externalOrderNumber IS set → fetch the original holding, expand
+ * its tests + panels into a canonical key-set, then return only the collected
+ * tests whose key is NOT in that set.</li>
+ * <li>If the holding is missing (race / already finalized) → treat
+ * conservatively: return empty list so we send nothing (safer than
+ * re-duplicating).</li>
  * </ul>
  *
- * <p>Canonical key precedence: guid wins over loinc.
- * Key format: {@code "guid:<value>"} or {@code "loinc:<value>"}.
+ * <p>
+ * Canonical key precedence: guid wins over loinc. Key format:
+ * {@code "guid:<value>"} or {@code "loinc:<value>"}.
  */
 @Component
 public class TestOrderDiffService {
@@ -87,7 +89,8 @@ public class TestOrderDiffService {
 
         LOG.info("[NIDAN-DIFF] externalOrder detected visitUuid={}", visitUuid);
 
-        // ── Fetch the original holding ────────────────────────────────────────────────
+        // ── Fetch the original holding
+        // ────────────────────────────────────────────────
         Optional<IncomingOrder> holdingOpt = incomingOrderService.getOrderByExternalOrderNumber(visitUuid);
         if (holdingOpt.isEmpty()) {
             // Row already finalized or never existed — play it safe, send nothing
@@ -105,13 +108,16 @@ public class TestOrderDiffService {
             return new DiffResult(true, List.of());
         }
 
-        // ── Build canonical key-set from the original order ───────────────────────────
+        // ── Build canonical key-set from the original order
+        // ───────────────────────────
         Set<String> originalKeys = buildOriginalKeySet(original, visitUuid);
         LOG.info("[NIDAN-DIFF] original key-set size={} for visitUuid={}", originalKeys.size(), visitUuid);
 
-        // ── Filter collected tests — keep only net-new ones ───────────────────────────
+        // ── Filter collected tests — keep only net-new ones
+        // ───────────────────────────
         List<TestOrderNotification.TestRef> netNew = new ArrayList<>();
-        for (TestOrderNotification.TestRef ref : collectedTests != null ? collectedTests : List.<TestOrderNotification.TestRef>of()) {
+        for (TestOrderNotification.TestRef ref : collectedTests != null ? collectedTests
+                : List.<TestOrderNotification.TestRef>of()) {
             String key = canonicalKey(ref.testGuid(), ref.loincCode());
             if (key == null) {
                 // No identifier at all — can't match, treat as net-new to avoid data loss
@@ -128,10 +134,7 @@ public class TestOrderDiffService {
         }
 
         LOG.info("[NIDAN-DIFF] result: collected={} original={} netNew={} for visitUuid={}",
-                collectedTests != null ? collectedTests.size() : 0,
-                originalKeys.size(),
-                netNew.size(),
-                visitUuid);
+                collectedTests != null ? collectedTests.size() : 0, originalKeys.size(), netNew.size(), visitUuid);
 
         return new DiffResult(true, netNew);
     }
@@ -177,8 +180,8 @@ public class TestOrderDiffService {
      * Resolves a panel reference to its constituent tests and adds their canonical
      * keys to the provided set.
      */
-    private void expandPanelIntoKeys(ExternalOrderRequest.ExternalOrderPanelRef panelRef,
-            Set<String> keys, String visitUuid) {
+    private void expandPanelIntoKeys(ExternalOrderRequest.ExternalOrderPanelRef panelRef, Set<String> keys,
+            String visitUuid) {
         Panel panel = resolvePanel(panelRef);
         if (panel == null) {
             LOG.warn("[NIDAN-DIFF] could not resolve panel panelGuid={} loinc={} for visitUuid={}",
@@ -222,8 +225,8 @@ public class TestOrderDiffService {
     }
 
     /**
-     * Canonical key: guid wins, loinc is fallback. Returns null if both absent.
-     * All comparisons are trim + lowercase to be resilient to whitespace/case.
+     * Canonical key: guid wins, loinc is fallback. Returns null if both absent. All
+     * comparisons are trim + lowercase to be resilient to whitespace/case.
      */
     private static String canonicalKey(String guid, String loinc) {
         if (guid != null && !guid.isBlank()) {

@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openelisglobal.common.services.SampleAddService;
 import org.openelisglobal.common.services.SampleAddService.SampleTestCollection;
+import org.openelisglobal.nidantestorder.TestOrderDiffService.DiffResult;
 import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.sample.action.util.SamplePatientUpdateData;
 import org.openelisglobal.sample.event.SamplePatientUpdateDataCreatedEvent;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.openelisglobal.nidantestorder.TestOrderDiffService.DiffResult;
 
 @Component
 public class TestOrderEventListener {
@@ -40,8 +40,7 @@ public class TestOrderEventListener {
 
             // patientGuid — null if not a NIDAN patient
             String patientGuid = null;
-            if (event.getPatientInfo() != null
-                    && !GenericValidator.isBlankOrNull(event.getPatientInfo().getGuid())) {
+            if (event.getPatientInfo() != null && !GenericValidator.isBlankOrNull(event.getPatientInfo().getGuid())) {
                 patientGuid = event.getPatientInfo().getGuid();
             }
 
@@ -87,15 +86,13 @@ public class TestOrderEventListener {
                             } catch (Exception panelEx) {
                                 // getPanelForTest throws if createSampleTestCollection not called first
                                 // or if panel can't be resolved — safe to swallow
-                                LOG.debug("[NIDAN-TESTORDER] panel resolution skipped for testId={}: {}",
-                                        full.getId(), panelEx.getMessage());
+                                LOG.debug("[NIDAN-TESTORDER] panel resolution skipped for testId={}: {}", full.getId(),
+                                        panelEx.getMessage());
                             }
                         }
 
-                        LOG.info("[NIDAN-TESTORDER] resolved testId={} testGuid={} panelGuid={} loinc={}",
-                                full.getId(),
-                                testGuid != null ? testGuid : "<null>",
-                                panelGuid != null ? panelGuid : "<null>",
+                        LOG.info("[NIDAN-TESTORDER] resolved testId={} testGuid={} panelGuid={} loinc={}", full.getId(),
+                                testGuid != null ? testGuid : "<null>", panelGuid != null ? panelGuid : "<null>",
                                 loinc != null ? loinc : "<null>");
 
                         testRefs.add(new TestOrderNotification.TestRef(testGuid, panelGuid, loinc));
@@ -103,7 +100,8 @@ public class TestOrderEventListener {
                 }
             }
 
-            // ── Diff filter ───────────────────────────────────────────────────────────────
+            // ── Diff filter
+            // ───────────────────────────────────────────────────────────────
             // If this sample came from an external order (visitUuid set), only forward
             // tests that were NOT already present in the original order — those were sent
             // to middleware/Odoo at order-receipt time and must not be duplicated.
@@ -111,17 +109,16 @@ public class TestOrderEventListener {
             DiffResult diff = testOrderDiffService.diff(visitUuid, testRefs);
 
             if (diff.isExternalOrder() && diff.netNewTests().isEmpty()) {
-                LOG.info("[NIDAN-TESTORDER] all tests were in original order — suppressing notification for accession={}",
+                LOG.info(
+                        "[NIDAN-TESTORDER] all tests were in original order — suppressing notification for accession={}",
                         accessionNumber);
                 return;
             }
 
-            List<TestOrderNotification.TestRef> testsToSend = diff.isExternalOrder()
-                    ? diff.netNewTests()
-                    : testRefs;
+            List<TestOrderNotification.TestRef> testsToSend = diff.isExternalOrder() ? diff.netNewTests() : testRefs;
 
-            testOrderClient.sendTestOrder(new TestOrderNotification(
-                    patientGuid, visitUuid, accessionNumber, testsToSend));
+            testOrderClient
+                    .sendTestOrder(new TestOrderNotification(patientGuid, visitUuid, accessionNumber, testsToSend));
 
         } catch (Exception e) {
             LOG.error("[NIDAN-TESTORDER] failed for accession={}: {}",
