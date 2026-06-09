@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.openelisglobal.nidantestorder.TestOrderDiffService.DiffResult;
 
 @Component
 public class TestOrderEventListener {
@@ -24,6 +25,9 @@ public class TestOrderEventListener {
 
     @Autowired
     private TestOrderClient testOrderClient;
+
+    @Autowired
+    private TestOrderDiffService testOrderDiffService;
 
     @Autowired
     private TestService testService;
@@ -99,8 +103,25 @@ public class TestOrderEventListener {
                 }
             }
 
+            // ── Diff filter ───────────────────────────────────────────────────────────────
+            // If this sample came from an external order (visitUuid set), only forward
+            // tests that were NOT already present in the original order — those were sent
+            // to middleware/Odoo at order-receipt time and must not be duplicated.
+            // Manual ELIS entries (visitUuid null) always pass through unchanged.
+            DiffResult diff = testOrderDiffService.diff(visitUuid, testRefs);
+
+            if (diff.isExternalOrder() && diff.netNewTests().isEmpty()) {
+                LOG.info("[NIDAN-TESTORDER] all tests were in original order — suppressing notification for accession={}",
+                        accessionNumber);
+                return;
+            }
+
+            List<TestOrderNotification.TestRef> testsToSend = diff.isExternalOrder()
+                    ? diff.netNewTests()
+                    : testRefs;
+
             testOrderClient.sendTestOrder(new TestOrderNotification(
-                    patientGuid, visitUuid, accessionNumber, testRefs));
+                    patientGuid, visitUuid, accessionNumber, testsToSend));
 
         } catch (Exception e) {
             LOG.error("[NIDAN-TESTORDER] failed for accession={}: {}",
