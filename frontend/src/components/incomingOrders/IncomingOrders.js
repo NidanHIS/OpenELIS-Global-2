@@ -1,8 +1,12 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   Button,
+  ComposedModal,
   DataTable,
   InlineLoading,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   Pagination,
   Table,
   TableBody,
@@ -36,12 +40,15 @@ export default function IncomingOrders() {
   const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState("");
 
-  // Debounce ref — cancels in-flight timeout on rapid keystrokes
   const searchDebounceRef = useRef(null);
-  // Sequence counter — discards stale responses
   const fetchSeqRef = useRef(0);
 
-  // Format timestamp to mm/dd hh:mm (24-hour) — unchanged from original
+  // ── PAYWALL STATE ─────────────────────────────────────────────────────────────
+  // Which row is currently being paywall-checked (shows spinner on that button)
+  const [checkingOrderNumber, setCheckingOrderNumber] = useState(null);
+  // Blocked modal
+  const [blockedModalOpen, setBlockedModalOpen] = useState(false);
+
   const formatReceivedTimestamp = (timestamp) => {
     if (!timestamp) return "";
     try {
@@ -82,10 +89,6 @@ export default function IncomingOrders() {
     },
   ];
 
-  /**
-   * Fetches a single page from the paginated backend endpoint.
-   * All filtering (search) is done server-side — no in-memory filtering here.
-   */
   const loadRows = (targetPage, targetPageSize, searchTerm) => {
     if (!componentMounted.current) return;
 
@@ -107,7 +110,6 @@ export default function IncomingOrders() {
       const list = Array.isArray(data?.items) ? data.items : [];
       const mapped = list.map((item) => ({
         id: String(item.externalOrderNumber || ""),
-        // Keep externalOrderNumber for collection flow — unchanged
         externalOrderNumber: item.externalOrderNumber || "",
         patientName: item.patientName || "",
         receivedTimestamp: formatReceivedTimestamp(item.receivedTimestamp),
@@ -121,7 +123,6 @@ export default function IncomingOrders() {
     });
   };
 
-  // Initial load on mount
   useEffect(() => {
     componentMounted.current = true;
     loadRows(page, pageSize, search);
@@ -130,13 +131,11 @@ export default function IncomingOrders() {
     };
   }, []);
 
-  // Re-fetch when page or pageSize changes (immediate)
   useEffect(() => {
     if (!componentMounted.current) return;
     loadRows(page, pageSize, search);
   }, [page, pageSize]);
 
-  // Re-fetch when search changes (debounced 350ms, resets to page 1)
   useEffect(() => {
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
@@ -152,9 +151,16 @@ export default function IncomingOrders() {
     };
   }, [search]);
 
-  // onCollect is unchanged — collection flow is not affected
+  /**
+   * Collect click handler.
+   * 1. Shows loading spinner on this row's button.
+   * 2. Calls /paywall-check — one live call per click.
+   * 3. blocked → show modal, stay on page.
+   * 4. allowed / outage → navigate to SamplePatientEntry.
+   */
   const onCollect = (row) => {
     if (!row) return;
+    console.log("[PAYWALL] onCollect clicked for", row.id);
 
     const externalOrderNumber = row.id || row.externalOrderNumber || "";
     if (!externalOrderNumber) {
@@ -167,15 +173,66 @@ export default function IncomingOrders() {
       return;
     }
 
-    history.push(
-      "/SamplePatientEntry?incomingOrderNumber=" +
-        encodeURIComponent(externalOrderNumber),
-    );
+    setCheckingOrderNumber(externalOrderNumber);
+
+    getFromOpenElisServerV2(
+      `/rest/incoming-orders/${encodeURIComponent(externalOrderNumber)}/paywall-check`,
+    )
+      .then((data) => {
+        setCheckingOrderNumber(null);
+        if (data && data.blocked === true) {
+          setBlockedModalOpen(true);
+        } else {
+          // allow or outage — proceed
+          history.push(
+            "/SamplePatientEntry?incomingOrderNumber=" +
+              encodeURIComponent(externalOrderNumber),
+          );
+        }
+      })
+      .catch(() => {
+        // network error — fail-open
+        setCheckingOrderNumber(null);
+        history.push(
+          "/SamplePatientEntry?incomingOrderNumber=" +
+            encodeURIComponent(externalOrderNumber),
+        );
+      });
   };
 
   return (
     <>
       {notificationVisible === true ? <AlertDialog /> : ""}
+
+      {/* ── Payment blocked modal ─────────────────────────────────────────── */}
+      <ComposedModal
+        open={blockedModalOpen}
+        onClose={() => setBlockedModalOpen(false)}
+      >
+        <ModalHeader
+          title={intl.formatMessage({
+            id: "paywall.blocked.title",
+            defaultMessage: "Payment Required",
+          })}
+        />
+        <ModalBody>
+          <p>
+            {intl.formatMessage({
+              id: "paywall.blocked.message",
+              defaultMessage:
+                "This patient has an outstanding balance. Please settle payment before collecting the sample.",
+            })}
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="primary" onClick={() => setBlockedModalOpen(false)}>
+            {intl.formatMessage({
+              id: "label.button.ok",
+              defaultMessage: "OK",
+            })}
+          </Button>
+        </ModalFooter>
+      </ComposedModal>
 
       <TableContainer
         title={intl.formatMessage({ id: "incomingOrders.title" })}
@@ -187,7 +244,6 @@ export default function IncomingOrders() {
           />
         ) : null}
 
-        {/* Search bar — drives server-side filtering */}
         <div style={{ padding: "0.75rem 0 0.5rem" }}>
           <TextInput
             id="incoming-orders-search"
@@ -222,17 +278,20 @@ export default function IncomingOrders() {
                   <TableRow key={row.id}>
                     {row.cells.map((cell) => {
                       if (cell.info.header === "actions") {
+                        const isChecking = checkingOrderNumber === row.id;
                         return (
                           <TableCell key={cell.id}>
                             <Button
                               size="sm"
                               kind="primary"
-                              disabled={loading}
-                              onClick={() => {
-                                onCollect(row);
-                              }}
+                              disabled={loading || isChecking}
+                              onClick={() => onCollect(row)}
                             >
-                              <FormattedMessage id="incomingOrders.collect" />
+                              {isChecking ? (
+                                <InlineLoading status="active" />
+                              ) : (
+                                <FormattedMessage id="incomingOrders.collect" />
+                              )}
                             </Button>
                           </TableCell>
                         );
