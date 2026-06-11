@@ -6,6 +6,10 @@ import {
   Grid,
   Button,
   Column,
+  ComposedModal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   TextInput,
   DataTable,
   TableContainer,
@@ -144,6 +148,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   );
   // Track in-flight fetch sequence so stale responses are discarded
   const leftFetchSeq = useRef(0);
+
+  // ── PAYWALL STATE ─────────────────────────────────────────────────────────────
+  const [paywallCheckingId, setPaywallCheckingId] = useState<string | null>(null);
+  const [paywallBlockedOpen, setPaywallBlockedOpen] = useState(false);
 
   // ── RIGHT PANEL SERVER-SIDE PAGINATION STATE ─────────────────────────────────
   // Drives the paginated /rest/home-dashboard/grouped-orders/paged calls.
@@ -859,6 +867,33 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       : setSelectedTestSection(testSections[0]?.id);
   };
 
+  const handleCollect = (externalOrderNumber: string) => {
+    if (!externalOrderNumber) return;
+    setPaywallCheckingId(externalOrderNumber);
+    getFromOpenElisServerV2(
+      `/rest/incoming-orders/${encodeURIComponent(externalOrderNumber)}/paywall-check`,
+    )
+      .then((data: any) => {
+        setPaywallCheckingId(null);
+        if (data && data.blocked === true) {
+          setPaywallBlockedOpen(true);
+        } else {
+          window.location.href = getFullPath(
+            "/SamplePatientEntry?incomingOrderNumber=" +
+              encodeURIComponent(externalOrderNumber),
+          );
+        }
+      })
+      .catch(() => {
+        setPaywallCheckingId(null);
+        // fail-open
+        window.location.href = getFullPath(
+          "/SamplePatientEntry?incomingOrderNumber=" +
+            encodeURIComponent(externalOrderNumber),
+        );
+      });
+  };
+
   const handleMaximizeClick = (tile) => {
     if (tile?.type === "SAMPLES_TO_COLLECT") {
       window.location.href = getFullPath("/IncomingOrders");
@@ -1426,6 +1461,19 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       {loading && <Loading description="Loading Dashboard..." />}
       {notificationVisible === true && <AlertDialog />}
 
+      <ComposedModal
+        open={paywallBlockedOpen}
+        onClose={() => setPaywallBlockedOpen(false)}
+      >
+        <ModalHeader title="Payment Required" />
+        <ModalBody>
+          <p>This patient has an outstanding balance. Please settle payment before collecting the sample.</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="primary" onClick={() => setPaywallBlockedOpen(false)}>OK</Button>
+        </ModalFooter>
+      </ComposedModal>
+
       {selectedTile == null ? (
         <div className="home-dashboard-container">
           {tileList.map((tile, index) => (
@@ -1625,34 +1673,32 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             );
                                             if (h.key === "actions") {
                                               // row.id IS the externalOrderNumber
-                                              const collectUrl = getFullPath(
-                                                "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
-                                              );
+                                              const isChecking = paywallCheckingId === row.id;
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
-                                                  <a
-                                                    href={collectUrl}
+                                                  <button
+                                                    disabled={!!paywallCheckingId}
+                                                    onClick={() => handleCollect(row.id)}
                                                     style={{
                                                       display: "inline-flex",
                                                       alignItems: "center",
                                                       gap: "0.35rem",
-                                                      padding:
-                                                        "0.35rem 0.85rem",
+                                                      padding: "0.35rem 0.85rem",
                                                       borderRadius: "1rem",
-                                                      background: "#0f62fe",
+                                                      background: paywallCheckingId ? "#8d8d8d" : "#0f62fe",
                                                       color: "#fff",
                                                       fontSize: "0.78rem",
                                                       fontWeight: 600,
-                                                      textDecoration: "none",
+                                                      border: "none",
+                                                      cursor: paywallCheckingId ? "not-allowed" : "pointer",
                                                       letterSpacing: "0.3px",
                                                       whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    Collect
-                                                  </a>
+                                                    {isChecking ? "..." : "Collect"}
+                                                  </button>
                                                 </TableCell>
                                               );
                                             }
@@ -1768,34 +1814,32 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                         <TableRow key={row.id}>
                                           {headers.map((h) => {
                                             if (h.key === "actions") {
-                                              const collectUrl = getFullPath(
-                                                "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
-                                              );
+                                              const isChecking = paywallCheckingId === row.id;
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
-                                                  <a
-                                                    href={collectUrl}
+                                                  <button
+                                                    disabled={!!paywallCheckingId}
+                                                    onClick={() => handleCollect(row.id)}
                                                     style={{
                                                       display: "inline-flex",
                                                       alignItems: "center",
                                                       gap: "0.35rem",
-                                                      padding:
-                                                        "0.35rem 0.85rem",
+                                                      padding: "0.35rem 0.85rem",
                                                       borderRadius: "1rem",
-                                                      background: "#0f62fe",
+                                                      background: paywallCheckingId ? "#8d8d8d" : "#0f62fe",
                                                       color: "#fff",
                                                       fontSize: "0.78rem",
                                                       fontWeight: 600,
-                                                      textDecoration: "none",
+                                                      border: "none",
+                                                      cursor: paywallCheckingId ? "not-allowed" : "pointer",
                                                       letterSpacing: "0.3px",
                                                       whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    Collect
-                                                  </a>
+                                                    {isChecking ? "..." : "Collect"}
+                                                  </button>
                                                 </TableCell>
                                               );
                                             }
