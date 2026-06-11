@@ -1335,7 +1335,14 @@ function CreatePatientForm(props) {
                                       ] || ""
                                     }
                                     name={field.name}
-                                    labelText={level.typeName}
+                                    labelText={
+                                      level.displayKey
+                                        ? intl.formatMessage({
+                                            id: level.displayKey,
+                                            defaultMessage: level.typeName,
+                                          })
+                                        : level.typeName
+                                    }
                                     onChange={(e) => {
                                       setFieldValue(
                                         `addressHierarchy_${levelIndex}`,
@@ -1429,7 +1436,7 @@ function CreatePatientForm(props) {
                                     {healthDistricts.map((district, index) => (
                                       <SelectItem
                                         text={district.value}
-                                        value={district.value}
+                                        value={district.id}
                                         key={index}
                                       />
                                     ))}

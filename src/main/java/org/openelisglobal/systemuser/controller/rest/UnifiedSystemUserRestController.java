@@ -52,6 +52,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
@@ -439,19 +440,18 @@ public class UnifiedSystemUserRestController extends BaseController {
     }
 
     @PostMapping(value = "/UnifiedSystemUser")
-    public Map<String, String> showUpdateUnifiedSystemUser(HttpServletRequest request,
+    public Map<String, Object> showUpdateUnifiedSystemUser(HttpServletRequest request,
             @RequestBody @Valid UnifiedSystemUserForm form, BindingResult result) {
         boolean doFiltering = true;
         formValidator.validate(form, result);
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
 
         if (result.hasErrors()) {
             saveErrors(result);
             setupRoles(form, request, doFiltering);
-            // return findForward(FWD_FAIL_INSERT, form);
             response.put("forward", findForward(FWD_FAIL_INSERT));
-            // return response;
-            // return findForward(FWD_FAIL_INSERT);
+            response.put("errors", extractErrorMessages(result, request));
+            return response;
         }
 
         request.setAttribute(ALLOW_EDITS_KEY, "true");
@@ -467,21 +467,25 @@ public class UnifiedSystemUserRestController extends BaseController {
         String forward = validateAndUpdateSystemUser(request, form);
 
         if (forward.equals(FWD_SUCCESS_INSERT)) {
-            // redirectAttributes.addFlashAttribute(FWD_SUCCESS, true);
-            Map<String, String> params = new HashMap<>();
-            params.put("forward", FWD_SUCCESS);
-            params.put("ID", ID);
-            // return getForwardWithParameters(findForward(forward, form), params);
-            // redirectAttributes.addFlashAttribute("ID", ID);
-            // return "redirect:/UnifiedSystemUser";
             response.put("forward", "redirect:/UnifiedSystemUser");
         } else {
             setupRoles(form, request, doFiltering);
-            // return findForward(forward);
             response.put("forward", findForward(forward));
+            Errors errors = (Errors) request.getAttribute(Constants.REQUEST_ERRORS);
+            if (errors != null && errors.hasErrors()) {
+                response.put("errors", extractErrorMessages(errors, request));
+            }
         }
 
         return response;
+    }
+
+    private List<String> extractErrorMessages(Errors errors, HttpServletRequest request) {
+        List<String> messages = new ArrayList<>();
+        for (ObjectError error : errors.getAllErrors()) {
+            messages.add(getMessageForKey(request, error.getCode()));
+        }
+        return messages;
     }
 
     private String validateAndUpdateSystemUser(HttpServletRequest request, UnifiedSystemUserForm form) {
@@ -532,10 +536,11 @@ public class UnifiedSystemUserRestController extends BaseController {
                 }
             }
             ID = systemUser.getId() + "-" + loginUser.getId();
-        } catch (LIMSRuntimeException e) {
-            if (e.getCause() instanceof org.hibernate.StaleObjectStateException) {
+        } catch (Exception e) {
+            LogEvent.logError(e.getMessage(), e);
+            if (e instanceof LIMSRuntimeException && e.getCause() instanceof org.hibernate.StaleObjectStateException) {
                 errors.reject("errors.OptimisticLockException", "errors.OptimisticLockException");
-            } else if (e.getCause() instanceof LIMSDuplicateRecordException) {
+            } else if (e instanceof LIMSRuntimeException && e.getCause() instanceof LIMSDuplicateRecordException) {
                 errors.reject("errors.DuplicateRecordException", "errors.DuplicateRecordException");
             } else {
                 errors.reject("errors.UpdateException", "errors.UpdateException");

@@ -8,6 +8,7 @@ export default function CascadingMultiSelect({
   dictionaryValues = [],
   value = "{}",
   onChange,
+  direction = "bottom",
 }) {
   const items = useMemo(
     () =>
@@ -98,6 +99,7 @@ export default function CascadingMultiSelect({
                     label=""
                     selectionFeedback="top-after-reopen"
                     style={{ minWidth: "250px" }}
+                    direction={direction}
                   />
                 </Column>
 

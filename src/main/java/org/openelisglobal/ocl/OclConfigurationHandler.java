@@ -55,17 +55,8 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
     @Value("${org.openelisglobal.ocl.import.default.sampletype:Whole Blood}")
     private String defaultSampleType;
 
-    @Value("${org.openelisglobal.ocl.import.cleanup.enabled:true}")
-    private boolean cleanupEnabled;
-
-    @Value("${org.openelisglobal.ocl.import.cleanup.force:false}")
-    private boolean forceCleanup;
-
     @Autowired
     private OclZipImporter oclZipImporter;
-
-    @Autowired
-    private TestPanelCleanupService cleanupService;
 
     @Autowired
     private TestAddService testAddService;
@@ -142,25 +133,6 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
     public void performImport(List<JsonNode> oclNodes) {
         log.info("OCL Import: Found {} nodes to process.", oclNodes.size());
 
-        // Step 1: Cleanup existing demo tests/panels before import
-        if (cleanupEnabled) {
-            log.info("OCL Import: Cleanup enabled, checking database...");
-            if (forceCleanup) {
-                log.warn(
-                        "OCL Import: Force cleanup enabled - will remove ALL tests/panels regardless of patient data!");
-                int removed = cleanupService.cleanupAllTestsAndPanels();
-                log.info("OCL Import: Removed {} tests/panels during force cleanup", removed);
-            } else {
-                int removed = cleanupService.safeCleanup();
-                if (removed < 0) {
-                    log.warn("OCL Import: Database contains patient data, skipping cleanup. "
-                            + "Set org.openelisglobal.ocl.import.cleanup.force=true to override.");
-                } else {
-                    log.info("OCL Import: Removed {} tests/panels during safe cleanup", removed);
-                }
-            }
-        }
-
         int conceptCount = 0;
         int testsCreated = 0;
         int testsSkipped = 0;
@@ -169,6 +141,16 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
             // If the node is a Collection Version, get its concepts array
             if (node.has("concepts") && node.get("concepts").isArray()) {
                 log.info("OCL Import: Node has a concepts array of size {}.", node.get("concepts").size());
+
+                // Step 1: upsert test sections from ConvSet concepts BEFORE processing
+                // Test concepts so that mapTestSection() can resolve them by name.
+                try {
+                    int sectionsProcessed = mapper.upsertTestSections(node);
+                    log.info("OCL Import: Section pre-pass complete — {} sections created/verified.",
+                            sectionsProcessed);
+                } catch (Exception ex) {
+                    log.error("OCL Import: Section pre-pass failed — tests will fall back to default section.", ex);
+                }
 
                 // Map all concepts in this node to TestAddForms
                 List<TestAddForm> testForms = mapper.mapConceptsToTestAddForms(node);

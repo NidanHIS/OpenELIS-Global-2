@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        NUCLEAR CLEANUP CHANGESET
+        =========================
+        Wipes ALL tests and panels seeded by legacy Liquibase migrations
+        (2.0.x.x through 3.3.x.x) so that OCL import gets a clean slate.
+
+        EXECUTION POSITION IN STARTUP SEQUENCE:
+          1. Liquibase runs base-changelog.xml top-to-bottom:
+               2.0 → 2.1 → ... → 3.3 → [nidan/base.xml] → 3.4 → 3.5
+             All legacy seed data is inserted by the time this changeset runs.
+          2. THIS CHANGESET runs — wipes all tests and panels.
+          3. Liquibase finishes. DATABASECHANGELOG records this as executed.
+          4. Spring ContextRefreshedEvent fires.
+          5. ConfigurationInitializationService runs OCL import (load order 400).
+             OCL upserts tests/panels from the ZIP — creates or updates.
+
+        IDEMPOTENCY:
+          Liquibase's DATABASECHANGELOG table ensures this runs EXACTLY ONCE.
+          On every subsequent restart (normal or down/up without -v), Liquibase
+          sees this changeset ID already recorded and skips it entirely.
+          OCL then runs its own checksum check and skips if ZIP unchanged.
+
+        VOLUME WIPE (down -v):
+          Fresh DB → all legacy changesets re-seed data → this changeset runs
+          again (fresh DATABASECHANGELOG) → wipes again → OCL re-imports.
+          Identical outcome. Clean slate every time.
+
+        PRODUCTION SAFETY:
+          onFail="MARK_RAN" on the precondition block means:
+          If ANY patient data exists (sample, analysis, result, patient rows),
+          Liquibase marks this changeset as executed WITHOUT running the SQL.
+          The application starts normally. No crash. No data loss.
+          This mirrors the isDatabaseSafeToClean() logic in TestPanelCleanupService.
+
+        FK DELETION ORDER:
+          Mirrors TestPanelCleanupService.cleanupAllTestsAndPanels() exactly:
+          Phase 1: 14 test child tables
+          Phase 2: 3 panel child tables
+          Phase 3: system_module panel entries
+          Phase 4: DELETE clinlims.test
+          Phase 5: DELETE clinlims.panel
+          Phase 6: DELETE orphaned localizations (test name + panel name rows
+                   no longer referenced by any test or panel)
+
+        NOT TOUCHED:
+          - clinlims.type_of_sample  (sample types — OCL depends on these)
+          - clinlims.test_section    (sections — OCL depends on these)
+          - clinlims.dictionary      (dictionary values — shared infrastructure)
+          - clinlims.localization    rows for non-test/panel entities
+          - All other tables
+    -->
+    <changeSet id="nidan-cleanup-all-tests-and-panels" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <!--
+                SAFETY GUARD 1: No sample records exist.
+                clinlims.sample is the root of all patient encounter data.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.sample
+            </sqlCheck>
+            <!--
+                SAFETY GUARD 2: No analysis records exist.
+                clinlims.analysis.test_id is the direct FK to clinlims.test.
+                If any analysis row exists, deleting tests would orphan it.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.analysis
+            </sqlCheck>
+            <!--
+                SAFETY GUARD 3: No result records exist.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.result
+            </sqlCheck>
+            <!--
+                SAFETY GUARD 4: No patient records exist.
+            -->
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM clinlims.patient
+            </sqlCheck>
+        </preConditions>
+        <comment>
+            Nuclear cleanup: wipes all tests and panels so OCL import gets a
+            clean slate. Runs once via DATABASECHANGELOG. Safe on production
+            via onFail=MARK_RAN patient data guards. FK order mirrors
+            TestPanelCleanupService.cleanupAllTestsAndPanels().
+        </comment>
+
+        <!-- ================================================================
+             PHASE 1 — Test child tables (14 tables, same order as service)
+             All reference clinlims.test via test_id FK.
+             ================================================================ -->
+
+        <sql>DELETE FROM clinlims.test_dictionary;</sql>
+        <sql>DELETE FROM clinlims.test_code;</sql>
+        <sql>DELETE FROM clinlims.test_worksheets;</sql>
+        <sql>DELETE FROM clinlims.test_notification_config;</sql>
+        <sql>DELETE FROM clinlims.test_operations;</sql>
+        <sql>DELETE FROM clinlims.test_result_map;</sql>
+        <sql>DELETE FROM clinlims.test_reflex;</sql>
+        <sql>DELETE FROM clinlims.test_analyte;</sql>
+        <sql>DELETE FROM clinlims.test_result;</sql>
+        <sql>DELETE FROM clinlims.result_limits;</sql>
+        <sql>DELETE FROM clinlims.sampletype_test;</sql>
+        <sql>DELETE FROM clinlims.analyzer_test_map;</sql>
+        <sql>DELETE FROM clinlims.qa_event;</sql>
+        <sql>DELETE FROM clinlims.referral_result;</sql>
+
+        <!-- ================================================================
+             PHASE 2 — Panel child tables (3 tables, same order as service)
+             All reference clinlims.panel via panel_id FK.
+             ================================================================ -->
+
+        <sql>DELETE FROM clinlims.panel_item;</sql>
+        <sql>DELETE FROM clinlims.sampletype_panel;</sql>
+        <sql>DELETE FROM clinlims.notebook_page_panels;</sql>
+
+        <!-- ================================================================
+             PHASE 3 — System modules for panels
+             OCL creates system_module rows with description LIKE '%=>panel=>%'
+             for each panel. Wipe them all — OCL will recreate on import.
+             ================================================================ -->
+
+        <sql>DELETE FROM clinlims.system_module WHERE description LIKE '%=>panel=>%';</sql>
+
+        <!-- ================================================================
+             PHASE 4 — Delete all tests
+             All child FKs cleared in Phase 1. Safe to delete.
+             ================================================================ -->
+
+        <sql>DELETE FROM clinlims.test;</sql>
+
+        <!-- ================================================================
+             PHASE 5 — Delete all panels
+             All child FKs cleared in Phase 2. Safe to delete.
+             ================================================================ -->
+
+        <sql>DELETE FROM clinlims.panel;</sql>
+
+        <!-- ================================================================
+             PHASE 6 — Delete orphaned localization rows
+             Tests and panels are now gone. Any localization row with
+             description IN ('test name', 'test reporting name', 'panel name')
+             that is no longer referenced by any test or panel is orphaned.
+
+             We use NOT IN against both FK columns on test and panel to be
+             safe — this handles the case where some localizations are shared
+             or referenced by other entities we haven't deleted.
+
+             After deleting all tests and panels above, the NOT IN subqueries
+             return empty sets, so this deletes ALL rows with those descriptions.
+             That is correct — test name and panel name localizations have no
+             other consumers.
+             ================================================================ -->
+
+        <sql>
+            DELETE FROM clinlims.localization
+            WHERE description IN ('test name', 'test reporting name', 'panel name')
+            AND id NOT IN (
+                SELECT name_localization_id
+                FROM clinlims.test
+                WHERE name_localization_id IS NOT NULL
+                UNION
+                SELECT reporting_name_localization_id
+                FROM clinlims.test
+                WHERE reporting_name_localization_id IS NOT NULL
+                UNION
+                SELECT name_localization_id
+                FROM clinlims.panel
+                WHERE name_localization_id IS NOT NULL
+            );
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

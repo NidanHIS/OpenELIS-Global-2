@@ -7,6 +7,7 @@ export default function ResultMultiSelect({
   dictionaryValues = [],
   value = "{}",
   onChange,
+  direction = "bottom",
 }) {
   const selectedIds = useMemo(() => {
     try {
@@ -56,6 +57,7 @@ export default function ResultMultiSelect({
           onChange={handleChange}
           selectionFeedback="top-after-reopen"
           label=""
+          direction={direction}
         />
       </Column>
     </>

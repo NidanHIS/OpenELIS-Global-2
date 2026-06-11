@@ -131,7 +131,13 @@ const AddressSearch = ({
 
   const getLevelName = (levelNum) => {
     const level = addressHierarchyLevels.find((l) => l.level === levelNum);
-    return level ? level.typeName : `Level ${levelNum}`;
+    if (!level) return `Level ${levelNum}`;
+    return level.displayKey
+      ? intl.formatMessage({
+          id: level.displayKey,
+          defaultMessage: level.typeName,
+        })
+      : level.typeName;
   };
 
   const defaultPlaceholder = intl.formatMessage({

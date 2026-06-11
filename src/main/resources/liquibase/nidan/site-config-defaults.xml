@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Nidan site_information defaults.
+
+        1. default date locale  → en-US  (upstream seeds fr-FR)
+        2. useNewAddressHierarchy → false (upstream seeds true; nidan uses legacy region/district)
+
+        Each changeset uses onFail="MARK_RAN" so it is skipped safely if the
+        row is already at the desired value or if the row is missing entirely.
+        A separate INSERT changeset handles the missing-row case for each property.
+    -->
+
+    <!-- ── default date locale: UPDATE if row exists with wrong value ──────── -->
+    <changeSet id="nidan-site-config-date-locale-update" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'default date locale' AND value != 'en-US'
+            </sqlCheck>
+        </preConditions>
+        <comment>Set default date locale to en-US (was fr-FR in upstream seed)</comment>
+        <update schemaName="clinlims" tableName="site_information">
+            <column name="value" value="en-US" />
+            <column name="lastupdated" valueComputed="now()" />
+            <where>name = 'default date locale'</where>
+        </update>
+    </changeSet>
+
+    <!-- ── default date locale: INSERT if row is missing entirely ───────────── -->
+    <changeSet id="nidan-site-config-date-locale-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'default date locale'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert default date locale as en-US if row is missing</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="default date locale" />
+            <column name="lastupdated" valueComputed="now()" />
+            <column name="description" value="The default date locale" />
+            <column name="value" value="en-US" />
+            <column name="encrypted" value="false" />
+            <column name="value_type" value="dictionary" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'siteIdentity')" />
+            <column name="group" value="0" />
+            <column name="description_key" value="siteInfo.default.date.locale" />
+        </insert>
+    </changeSet>
+
+    <!-- ── useNewAddressHierarchy: UPDATE if row exists with wrong value ────── -->
+    <changeSet id="nidan-site-config-address-hierarchy-update" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'useNewAddressHierarchy' AND value != 'false'
+            </sqlCheck>
+        </preConditions>
+        <comment>Set useNewAddressHierarchy to false (nidan uses legacy Health Region/District)</comment>
+        <update schemaName="clinlims" tableName="site_information">
+            <column name="value" value="false" />
+            <column name="lastupdated" valueComputed="now()" />
+            <where>name = 'useNewAddressHierarchy'</where>
+        </update>
+    </changeSet>
+
+    <!-- ── useNewAddressHierarchy: INSERT if row is missing entirely ─────────── -->
+    <changeSet id="nidan-site-config-address-hierarchy-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'useNewAddressHierarchy'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert useNewAddressHierarchy as false if row is missing</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="useNewAddressHierarchy" />
+            <column name="lastupdated" valueComputed="now()" />
+            <column name="description" value="Use new configurable address hierarchy instead of legacy Health Region/District" />
+            <column name="value" value="false" />
+            <column name="encrypted" value="false" />
+            <column name="value_type" value="boolean" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')" />
+            <column name="group" value="0" />
+            <column name="description_key" value="siteInfo.useNewAddressHierarchy" />
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

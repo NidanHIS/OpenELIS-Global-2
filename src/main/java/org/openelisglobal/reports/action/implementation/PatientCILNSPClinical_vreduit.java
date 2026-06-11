@@ -296,6 +296,12 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
         }
     }
 
+    @Override
+    protected void findContactInfo() {
+        super.findContactInfo();
+        this.currentContactInfo = getFormattedPatientAddress(currentPatient);
+    }
+
     private void buildReport() {
         Collections.sort(reportItems, new Comparator<ClinicalPatientData>() {
             @Override

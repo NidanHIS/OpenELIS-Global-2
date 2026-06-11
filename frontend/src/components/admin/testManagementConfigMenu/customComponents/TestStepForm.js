@@ -7,6 +7,7 @@ import {
   Section,
   Select,
   SelectItem,
+  Dropdown,
   TextInput,
   Checkbox,
   Row,
@@ -1586,12 +1587,9 @@ export const StepFourSelectSampleTypeAndTestDisplayOrder = ({
                       {Array.isArray(selectedSampleTypeResp) &&
                       selectedSampleTypeResp.length > 0 ? (
                         selectedSampleTypeResp.map((item) => (
-                          <>
-                            <div
-                              className="gridBoundary"
-                              key={item.sampleTypeId}
-                            >
-                              <Section key={item.sampleTypeId}>
+                          <React.Fragment key={item.sampleTypeId}>
+                            <div className="gridBoundary">
+                              <Section>
                                 <CustomCommonSortableOrderList
                                   key={item.sampleTypeId}
                                   test={item.tests}
@@ -1615,7 +1613,7 @@ export const StepFourSelectSampleTypeAndTestDisplayOrder = ({
                               </Section>
                             </div>
                             <br />
-                          </>
+                          </React.Fragment>
                         ))
                       ) : (
                         <></>
@@ -1844,26 +1842,41 @@ export const StepFiveSelectListOptionsAndResultOrder = ({
                     <Column lg={8} md={8} sm={4}>
                       <FormattedMessage id="label.select.list.options" />
                       <br />
-                      <Select
-                        onBlur={handleBlur}
-                        id={`select-list-options`}
-                        name="dictionary"
+                      <Dropdown
+                        id="select-list-options"
+                        label="Select List Option"
                         hideLabel
-                        required
-                        onChange={(e) => handelSelectListOptions(e)}
+                        items={dictionaryList || []}
+                        itemToString={(item) => (item ? item.value : "")}
                         invalid={touched.dictionary && !!errors.dictionary}
                         invalidText={touched.dictionary && errors.dictionary}
-                        value={values.dictionary.map((item) => item.id)}
-                      >
-                        <SelectItem value="0" text="Select List Option" />
-                        {dictionaryList?.map((test) => (
-                          <SelectItem
-                            key={test.id}
-                            value={test.id}
-                            text={`${test.value}`}
-                          />
-                        ))}
-                      </Select>
+                        selectedItem={null}
+                        onChange={({ selectedItem }) => {
+                          if (!selectedItem) return;
+                          setSingleSelectDictionaryList((prev) => [
+                            ...prev,
+                            selectedItem,
+                          ]);
+                          setMultiSelectDictionaryList((prev) => [
+                            ...prev,
+                            selectedItem,
+                          ]);
+                          setDictionaryListTag((prev) => [
+                            ...prev,
+                            selectedItem,
+                          ]);
+                          if (
+                            !values.dictionary?.some(
+                              (item) => item.id === selectedItem.id,
+                            )
+                          ) {
+                            setFieldValue("dictionary", [
+                              ...(values.dictionary || []),
+                              { id: selectedItem.id, qualified: "N" },
+                            ]);
+                          }
+                        }}
+                      />
                       <br />
                       {dictionaryListTag && dictionaryListTag.length ? (
                         <div style={{ marginBottom: "1.188rem" }}>
@@ -2016,9 +2029,7 @@ export const StepFiveSelectListOptionsAndResultOrder = ({
                               ? "At least one dictionary item must be qualified as 'Y'"
                               : "")
                         }
-                        value={values.dictionary
-                          .filter((item) => item.qualified === "Y")
-                          .map((item) => item.id)}
+                        value={"0"}
                         name="dictionary"
                       >
                         <SelectItem

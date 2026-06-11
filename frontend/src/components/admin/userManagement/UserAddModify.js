@@ -46,9 +46,22 @@ const breadcrumbs = [
   },
 ];
 
-const passwordPatternRegex = /^(?=.*[*$#!])(?=.*[a-zA-Z0-9]).{7,}$/;
-const loginNameRegex = /^[a-zA-Z]+$/;
-const nameRegex = /^(?=.*[a-zA-Z])[a-zA-Z .'_@-]*$/;
+const loginNameRegex = /^[a-zA-Z]{3,}$/;
+const nameRegex = /^[a-zA-Z .'_ -]{3,}$/;
+
+const isValidPassword = (password) => {
+  if (!password || password.length < 8) return false;
+  // Allowed: a-z, A-Z, 0-9, _, %, $, #, !
+  if (/[^a-zA-Z0-9_%$#!]/.test(password)) return false;
+
+  let classes = 0;
+  if (/[a-z]/.test(password)) classes++;
+  if (/[A-Z]/.test(password)) classes++;
+  if (/[0-9]/.test(password)) classes++;
+  if (/[%$#!]/.test(password)) classes++;
+
+  return classes >= 3;
+};
 
 function UserAddModify() {
   const { notificationVisible, setNotificationVisible, addNotification } =
@@ -121,6 +134,7 @@ function UserAddModify() {
       setIsLoading(true);
     } else {
       setUserData(res);
+      setIsLoading(false);
       if (res.loginUserId) {
         setValidation({
           validatepassword: true,
@@ -154,6 +168,7 @@ function UserAddModify() {
       setIsLoading(true);
     } else {
       setCopyUserPermissionList(res);
+      setIsLoading(false);
     }
   };
 
@@ -339,6 +354,16 @@ function UserAddModify() {
   }, [selectedTestSectionLabUnits]);
 
   function userSavePostCall() {
+    const isInvalid = Object.values(validation).some((value) => !value);
+    if (isInvalid) {
+      addNotification({
+        kind: NotificationKinds.error,
+        title: intl.formatMessage({ id: "notification.title" }),
+        message: intl.formatMessage({ id: "import.error.validationFailed" }),
+      });
+      setNotificationVisible(true);
+      return;
+    }
     setIsLoading(true);
     postToOpenElisServerJsonResponse(
       `/rest/UnifiedSystemUser`,
@@ -350,7 +375,7 @@ function UserAddModify() {
   }
 
   function userSavePostCallback(res) {
-    if (res) {
+    if (res && res.forward === "redirect:/UnifiedSystemUser") {
       setIsLoading(false);
       addNotification({
         title: intl.formatMessage({
@@ -365,16 +390,24 @@ function UserAddModify() {
       setTimeout(() => {
         window.location.reload();
       }, 200);
+    } else if (res && res.errors) {
+      setIsLoading(false);
+      res.errors.forEach((error) => {
+        addNotification({
+          kind: NotificationKinds.error,
+          title: intl.formatMessage({ id: "notification.title" }),
+          message: error,
+        });
+      });
+      setNotificationVisible(true);
     } else {
+      setIsLoading(false);
       addNotification({
         kind: NotificationKinds.error,
         title: intl.formatMessage({ id: "notification.title" }),
         message: intl.formatMessage({ id: "server.error.msg" }),
       });
       setNotificationVisible(true);
-      setTimeout(() => {
-        window.location.reload();
-      }, 200);
     }
   }
 
@@ -417,7 +450,7 @@ function UserAddModify() {
       userPassword: true,
     }));
     const value = e.target.value.trim();
-    const isValid = passwordPatternRegex.test(value);
+    const isValid = isValidPassword(value);
 
     if (value && !isValid) {
       if (!notificationVisible) {
@@ -454,7 +487,7 @@ function UserAddModify() {
       confirmPassword: true,
     }));
     const value = e.target.value.trim();
-    const isValid = passwordPatternRegex.test(value);
+    const isValid = isValidPassword(value);
 
     if (value && !isValid) {
       if (!notificationVisible) {
@@ -765,7 +798,7 @@ function UserAddModify() {
     }
   };
 
-  if (!isLoading) {
+  if (isLoading) {
     return (
       <>
         <Loading />
@@ -818,9 +851,11 @@ function UserAddModify() {
                         id: "login.login.name",
                       })}
                       invalid={
-                        userDataShow &&
-                        userDataShow.userLoginName &&
-                        !loginNameRegex.test(userDataShow.userLoginName)
+                        !!(
+                          userDataShow &&
+                          userDataShow.userLoginName &&
+                          !loginNameRegex.test(userDataShow.userLoginName)
+                        )
                       }
                       // invalidText={errors.order}
                       required={true}
@@ -878,10 +913,12 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        passwordTouched.userPassword &&
-                        userDataShow &&
-                        userDataShow.userPassword &&
-                        !passwordPatternRegex.test(userDataShow.userPassword)
+                        !!(
+                          passwordTouched.userPassword &&
+                          userDataShow &&
+                          userDataShow.userPassword &&
+                          !isValidPassword(userDataShow.userPassword)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
@@ -912,16 +949,16 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        (passwordTouched.confirmPassword &&
-                          userDataShow &&
-                          userDataShow.userPassword &&
-                          userDataShow.confirmPassword &&
-                          !passwordPatternRegex.test(
-                            userDataShow.confirmPassword,
-                          )) ||
-                        (passwordTouched.confirmPassword &&
-                          userDataShow.confirmPassword !==
-                            userDataShow.userPassword)
+                        !!(
+                          (passwordTouched.confirmPassword &&
+                            userDataShow &&
+                            userDataShow.userPassword &&
+                            userDataShow.confirmPassword &&
+                            !isValidPassword(userDataShow.confirmPassword)) ||
+                          (passwordTouched.confirmPassword &&
+                            userDataShow.confirmPassword !==
+                              userDataShow.userPassword)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
@@ -953,9 +990,11 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        userDataShow &&
-                        userDataShow.userFirstName &&
-                        !nameRegex.test(userDataShow.userFirstName)
+                        !!(
+                          userDataShow &&
+                          userDataShow.userFirstName &&
+                          !nameRegex.test(userDataShow.userFirstName)
+                        )
                       }
                       // invalidText={errors.order}
                       value={
@@ -986,9 +1025,11 @@ function UserAddModify() {
                       })}
                       required={true}
                       invalid={
-                        userDataShow &&
-                        userDataShow.userLastName &&
-                        !nameRegex.test(userDataShow.userLastName)
+                        !!(
+                          userDataShow &&
+                          userDataShow.userLastName &&
+                          !nameRegex.test(userDataShow.userLastName)
+                        )
                       }
                       // invalidText={errors.order}
                       value={

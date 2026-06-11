@@ -1857,4 +1857,126 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
 
         return null;
     }
+
+    /**
+     * Returns a page of distinct sample IDs (as Strings) that have at least one
+     * analysis with one of the given status IDs, ordered by accession number
+     * descending.
+     *
+     * <p>
+     * The unit of pagination is the sample (accession), not the analysis row. This
+     * is Query 1 of the 4-query paged grouped-orders strategy.
+     *
+     * <p>
+     * Uses native SQL because HQL path navigation (a.sampleItem.sample.id) causes
+     * Hibernate to expand the join and select the full Sample entity, which breaks
+     * PostgreSQL's GROUP BY requirement. Native SQL projects the scalar samp_id
+     * directly, avoiding the entity expansion entirely.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getPagedDistinctSampleIdsForStatuses(List<String> statusIds, int offset, int limit,
+            String search) throws LIMSRuntimeException {
+        if (statusIds == null || statusIds.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+        try {
+            List<Integer> intIds = statusIds.stream().map(Integer::parseInt).collect(Collectors.toList());
+
+            boolean hasSearch = search != null && !search.trim().isEmpty();
+
+            // Native SQL: GROUP BY instead of DISTINCT so PostgreSQL allows ORDER BY
+            // on accession_number. DISTINCT + ORDER BY on a different column is rejected
+            // by PostgreSQL. GROUP BY samp_id + accession_number is safe because each
+            // sample has exactly one accession_number (1-to-1), so grouping by both
+            // is equivalent to grouping by samp_id alone.
+            //
+            // LEFT JOINs to sample_human / patient / person are used (not INNER JOIN)
+            // so that samples without a linked patient (e.g. QC samples) are still
+            // visible when no search term is provided.
+            StringBuilder sql = new StringBuilder("SELECT si.samp_id" + " FROM analysis a"
+                    + " JOIN sample_item si ON si.id = a.sampitem_id" + " JOIN sample s       ON s.id  = si.samp_id"
+                    + " LEFT JOIN sample_human sh ON sh.samp_id    = si.samp_id"
+                    + " LEFT JOIN patient      p  ON p.id          = sh.patient_id"
+                    + " LEFT JOIN person       per ON per.id       = p.person_id"
+                    + " WHERE a.status_id IN (:statusIds)");
+
+            if (hasSearch) {
+                sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR p.national_id   ILIKE :search"
+                        + " OR per.last_name   ILIKE :search" + " OR per.first_name  ILIKE :search" + ")");
+            }
+
+            sql.append(" GROUP BY si.samp_id, s.accession_number" + " ORDER BY s.accession_number DESC");
+
+            jakarta.persistence.Query query = entityManager.createNativeQuery(sql.toString())
+                    .setParameter("statusIds", intIds).setFirstResult(offset).setMaxResults(limit);
+
+            if (hasSearch) {
+                query.setParameter("search", "%" + search.trim().toLowerCase() + "%");
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Object> raw = query.getResultList();
+            List<String> result = new java.util.ArrayList<>();
+            for (Object o : raw) {
+                if (o != null) {
+                    result.add(String.valueOf(o));
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            LogEvent.logError(e);
+            throw new LIMSRuntimeException("Error in getPagedDistinctSampleIdsForStatuses", e);
+        }
+    }
+
+    /**
+     * Returns the total count of distinct samples that have at least one analysis
+     * with one of the given status IDs.
+     *
+     * <p>
+     * Uses native SQL for the same reason as
+     * {@link #getPagedDistinctSampleIdsForStatuses} — HQL entity navigation causes
+     * Hibernate to expand the join beyond what PostgreSQL allows in aggregate
+     * contexts.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public long countDistinctSamplesForStatuses(List<String> statusIds, String search) throws LIMSRuntimeException {
+        if (statusIds == null || statusIds.isEmpty()) {
+            return 0L;
+        }
+        try {
+            List<Integer> intIds = statusIds.stream().map(Integer::parseInt).collect(Collectors.toList());
+
+            boolean hasSearch = search != null && !search.trim().isEmpty();
+
+            // Same LEFT JOINs as getPagedDistinctSampleIdsForStatuses so the count
+            // is always consistent with the paged results.
+            StringBuilder sql = new StringBuilder("SELECT COUNT(DISTINCT si.samp_id)" + " FROM analysis a"
+                    + " JOIN sample_item si ON si.id = a.sampitem_id" + " JOIN sample s       ON s.id  = si.samp_id"
+                    + " LEFT JOIN sample_human sh ON sh.samp_id    = si.samp_id"
+                    + " LEFT JOIN patient      p  ON p.id          = sh.patient_id"
+                    + " LEFT JOIN person       per ON per.id       = p.person_id"
+                    + " WHERE a.status_id IN (:statusIds)");
+
+            if (hasSearch) {
+                sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR p.national_id   ILIKE :search"
+                        + " OR per.last_name   ILIKE :search" + " OR per.first_name  ILIKE :search" + ")");
+            }
+
+            jakarta.persistence.Query query = entityManager.createNativeQuery(sql.toString()).setParameter("statusIds",
+                    intIds);
+
+            if (hasSearch) {
+                query.setParameter("search", "%" + search.trim().toLowerCase() + "%");
+            }
+
+            Object result = query.getSingleResult();
+            return result != null ? ((Number) result).longValue() : 0L;
+        } catch (Exception e) {
+            LogEvent.logError(e);
+            throw new LIMSRuntimeException("Error in countDistinctSamplesForStatuses", e);
+        }
+    }
 }

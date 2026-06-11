@@ -50,6 +50,24 @@ public class ValidationResult {
         return vr;
     }
 
+    /**
+     * The test/panel GUID resolved successfully but has no sample type mapping in
+     * the database. The item is rejected so it cannot cause a stuck order at
+     * collect time. The resolvedId and resolvedName are preserved so the caller
+     * knows exactly which item was rejected and why.
+     */
+    public static ValidationResult invalidNoSampleTypeMapping(String guid, String loinc, String resolvedId,
+            String resolvedName) {
+        ValidationResult vr = new ValidationResult();
+        vr.setGuid(guid);
+        vr.setLoinc(loinc);
+        vr.setResolvedId(resolvedId);
+        vr.setResolvedName(resolvedName);
+        vr.setRejectionReason("NO_SAMPLE_TYPE_MAPPING");
+        vr.setValid(false);
+        return vr;
+    }
+
     // Getters and Setters
     public String getGuid() {
         return guid;

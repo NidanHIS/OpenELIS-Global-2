@@ -24,7 +24,7 @@ import {
 } from "@carbon/react";
 import "./Dashboard.css";
 import { Minimize, Maximize, ArrowLeft, ArrowRight } from "@carbon/react/icons";
-import { Copy, CheckmarkFilled } from "@carbon/icons-react";
+import { Copy, CheckmarkFilled, Printer } from "@carbon/icons-react";
 import {
   useState,
   useEffect,
@@ -132,9 +132,75 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const [rightSearch, setRightSearch] = useState("");
   const [leftSearch, setLeftSearch] = useState("");
 
-  const [rightPanelView, setRightPanelView] = useState<PanelView>("ACTIVE");
-  const [leftPanelView, setLeftPanelView] = useState<PanelView>("ACTIVE");
-  const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">("RIGHT");
+  // ── LEFT PANEL SERVER-SIDE PAGINATION STATE ──────────────────────────────────
+  // These drive the paginated /rest/incoming-orders/paged calls.
+  // leftPage / leftPageSize are kept as the source of truth for what the
+  // backend should return; the Carbon <Pagination> component reads them back.
+  const [leftTotalCount, setLeftTotalCount] = useState(0);
+  const [leftTotalPages, setLeftTotalPages] = useState(0);
+  // Debounce ref: holds the setTimeout id so we can cancel on rapid keystrokes
+  const leftSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  // Track in-flight fetch sequence so stale responses are discarded
+  const leftFetchSeq = useRef(0);
+
+  // ── RIGHT PANEL SERVER-SIDE PAGINATION STATE ─────────────────────────────────
+  // Drives the paginated /rest/home-dashboard/grouped-orders/paged calls.
+  // rightTotalCount is the server's total count of distinct samples — used as
+  // totalItems in the Carbon <Pagination> component instead of the local array length.
+  const [rightTotalCount, setRightTotalCount] = useState(0);
+  const rightSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const [rightPanelView, setRightPanelView] = useState<PanelView>(() => {
+    try {
+      const stored = localStorage.getItem("dashboard_right_panel");
+      return (stored as PanelView) || "ACTIVE";
+    } catch {
+      return "ACTIVE";
+    }
+  });
+  const [leftPanelView, setLeftPanelView] = useState<PanelView>(() => {
+    try {
+      const stored = localStorage.getItem("dashboard_left_panel");
+      return (stored as PanelView) || "ACTIVE";
+    } catch {
+      return "ACTIVE";
+    }
+  });
+  const [dashboardTab, setDashboardTab] = useState<"LEFT" | "RIGHT">(() => {
+    try {
+      const stored = localStorage.getItem("dashboard_tab");
+      return (stored as "LEFT" | "RIGHT") || "RIGHT";
+    } catch {
+      return "RIGHT";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard_right_panel", rightPanelView);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+  }, [rightPanelView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard_left_panel", leftPanelView);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+  }, [leftPanelView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard_tab", dashboardTab);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+  }, [dashboardTab]);
 
   const componentMounted = useRef(true);
   const tileLoadSequence = useRef(0);
@@ -147,7 +213,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     useContext(NotificationContext) as Notification;
 
   const isSplitLayout = (type?: MetricType | null) =>
-    type === "ON_GOING_ORDERS" || type === "ORDERS_IN_PROGRESS";
+    type === "ON_GOING_ORDERS" ||
+    type === "ORDERS_IN_PROGRESS" ||
+    type === "ORDERS_READY_FOR_VALIDATION";
 
   // -- DATA FETCHING --
   const usesInProgressView = (type?: MetricType | null) =>
@@ -193,28 +261,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   useEffect(() => {
     getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
-    getFromOpenElisServer("/rest/incoming-orders", (res) => {
-      if (!componentMounted.current) return;
-      const raw = Array.isArray(res) ? res : [];
-      // Normalize field names to match table header keys + set row id
-      const list = raw.map((item) => ({
-        ...item,
-        id: item.externalOrderNumber,
-        received: item.receivedTimestamp
-          ? new Date(item.receivedTimestamp).toLocaleString([], {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-",
-        tests: item.testCount != null ? String(item.testCount) : "-",
-        source: item.source ?? "-",
-      }));
-      setIncomingOrdersData(list);
-      setCounts((prev) => ({ ...prev, samplesToCollect: list.length }));
-    });
+    // Initial left-panel load: today's orders, page 1, pageSize 10
+    fetchIncomingOrdersPage(1, leftPageSize, leftPanelView, leftSearch);
     return () => {
       componentMounted.current = false;
     };
@@ -253,8 +301,18 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   useEffect(() => {
     setRightSearch("");
     setLeftSearch("");
-    setRightPanelView("ACTIVE");
-    setLeftPanelView("ACTIVE");
+    try {
+      setRightPanelView(
+        (localStorage.getItem("dashboard_right_panel") as PanelView) ||
+          "ACTIVE",
+      );
+      setLeftPanelView(
+        (localStorage.getItem("dashboard_left_panel") as PanelView) || "ACTIVE",
+      );
+    } catch {
+      setRightPanelView("ACTIVE");
+      setLeftPanelView("ACTIVE");
+    }
     setRightPage(1);
     setLeftPage(1);
     patientNameCache.current = {};
@@ -266,6 +324,67 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   useEffect(() => {
     setLeftPage(1);
   }, [leftSearch, leftPanelView]);
+
+  // ── REACTIVE LEFT PANEL FETCH ─────────────────────────────────────────────────
+  // Fires whenever page, pageSize, or view changes — immediate re-fetch.
+  useEffect(() => {
+    fetchIncomingOrdersPage(leftPage, leftPageSize, leftPanelView, leftSearch);
+  }, [leftPage, leftPageSize, leftPanelView]);
+
+  // ── REACTIVE RIGHT PANEL FETCH ────────────────────────────────────────────────
+  // Fires whenever rightPage or rightPageSize changes on the ON_GOING_ORDERS tile.
+  // Only active when the selected tile uses the split layout (ON_GOING_ORDERS /
+  // ORDERS_IN_PROGRESS) — other tiles use the old session-based paging path.
+  useEffect(() => {
+    if (selectedTile == null || !isSplitLayout(selectedTile.type)) return;
+    const seq = ++tileLoadSequence.current;
+    setLoading(true);
+    fetchGroupedOrdersPage(rightPage, rightPageSize, seq);
+  }, [rightPage, rightPageSize]);
+
+  // Search is debounced: wait 350ms after the user stops typing before fetching.
+  // This avoids hammering the backend on every keystroke.
+  useEffect(() => {
+    if (leftSearchDebounceRef.current) {
+      clearTimeout(leftSearchDebounceRef.current);
+    }
+    leftSearchDebounceRef.current = setTimeout(() => {
+      // Reset to page 1 whenever search term changes, then fetch
+      setLeftPage(1);
+      fetchIncomingOrdersPage(1, leftPageSize, leftPanelView, leftSearch);
+    }, 350);
+    return () => {
+      if (leftSearchDebounceRef.current) {
+        clearTimeout(leftSearchDebounceRef.current);
+      }
+    };
+  }, [leftSearch]);
+
+  // Right panel search is also debounced — same 350ms pattern as left panel.
+  // Only active when a split-layout tile is selected (ON_GOING_ORDERS,
+  // ORDERS_IN_PROGRESS, ORDERS_READY_FOR_VALIDATION).
+  useEffect(() => {
+    if (!selectedTile || !isSplitLayout(selectedTile.type)) return;
+
+    if (rightSearchDebounceRef.current) {
+      clearTimeout(rightSearchDebounceRef.current);
+    }
+    rightSearchDebounceRef.current = setTimeout(() => {
+      // Reset to page 1 whenever search term changes, then fetch
+      setRightPage(1);
+      const seq = ++tileLoadSequence.current;
+      const endpoint =
+        selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
+          ? "/rest/home-dashboard/validation-orders/paged"
+          : "/rest/home-dashboard/grouped-orders/paged";
+      fetchGroupedOrdersPage(1, rightPageSize, seq, endpoint, rightSearch);
+    }, 350);
+    return () => {
+      if (rightSearchDebounceRef.current) {
+        clearTimeout(rightSearchDebounceRef.current);
+      }
+    };
+  }, [rightSearch]);
 
   const fetchTestSections = (res) => {
     setTestSections(res);
@@ -302,6 +421,83 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       }));
       setLoading(false);
     }
+  };
+
+  // ── LEFT PANEL FETCH FUNCTION ─────────────────────────────────────────────────
+  /**
+   * Fetches a page of incoming orders from the new paginated backend endpoint.
+   *
+   * - "ACTIVE" view  → dateFrom = today midnight (orders received today)
+   * - "BACKLOG" view → dateTo   = today midnight (orders received before today)
+   * - search         → forwarded as-is to the backend
+   *
+   * Results replace incomingOrdersData. The Carbon <Pagination> component is
+   * driven by leftTotalCount (total matching records on the server).
+   */
+  const fetchIncomingOrdersPage = (
+    page: number,
+    pageSize: number,
+    panelView: PanelView,
+    searchTerm: string,
+  ) => {
+    if (!componentMounted.current) return;
+
+    const seq = ++leftFetchSeq.current;
+
+    // Build today's midnight as an ISO date string (yyyy-MM-dd)
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+
+    if (panelView === "ACTIVE") {
+      // Today: received >= midnight today
+      params.set("dateFrom", todayIso);
+    } else {
+      // Backlog: received < midnight today
+      params.set("dateTo", todayIso);
+    }
+
+    if (searchTerm && searchTerm.trim()) {
+      params.set("search", searchTerm.trim());
+    }
+
+    const url = `/rest/incoming-orders/paged?${params.toString()}`;
+
+    getFromOpenElisServerV2(url).then((res: any) => {
+      if (!componentMounted.current || seq !== leftFetchSeq.current) return;
+
+      const raw: any[] = Array.isArray(res?.items) ? res.items : [];
+      const list = raw.map((item: any) => ({
+        ...item,
+        id: item.externalOrderNumber,
+        received: item.receivedTimestamp
+          ? new Date(item.receivedTimestamp).toLocaleString([], {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+        tests: item.testCount != null ? String(item.testCount) : "—",
+        source: item.source ?? "—",
+      }));
+
+      setIncomingOrdersData(list);
+      setLeftTotalCount(res?.totalCount ?? 0);
+      setLeftTotalPages(res?.totalPages ?? 0);
+      // Update the tile count with the server's total for the active view
+      if (panelView === "ACTIVE") {
+        setCounts((prev) => ({
+          ...prev,
+          samplesToCollect: res?.totalCount ?? 0,
+        }));
+      }
+    });
   };
 
   const hasPendingValidationField = (items = []) =>
@@ -486,14 +682,61 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     return { ...first, displayItems: all };
   };
 
-  const loadOngoingOrdersData = async (seq: number) => {
+  /**
+   * Fetches a single page of grouped orders from the new paginated endpoint.
+   *
+   * Used by both "On Going Orders" / "Orders In Progress" (grouped-orders/paged)
+   * and "Orders Ready for Validation" (validation-orders/paged) tiles.
+   * The server returns exactly one page of OrderDisplayBeans — no looping,
+   * no session-based fake pagination.
+   *
+   * rightTotalCount is set from res.totalCount so the Carbon <Pagination>
+   * component shows the correct total without loading all records.
+   */
+  const fetchGroupedOrdersPage = async (
+    page: number,
+    pageSize: number,
+    seq: number,
+    endpoint = "/rest/home-dashboard/grouped-orders/paged",
+    search = "",
+  ) => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    if (search && search.trim()) {
+      params.set("search", search.trim());
+    }
+    const url = `${endpoint}?${params.toString()}`;
+
     try {
-      // ORDERS-All-Grouped returns NotStarted + TechnicalAcceptance + Finalized
-      // so completed records persist in the dashboard after validation.
-      const orders = await fetchAllGroupedPages(
-        "/rest/home-dashboard/ORDERS-All-Grouped",
+      const res: any = await getFromOpenElisServerV2(url);
+      if (seq !== tileLoadSequence.current) return;
+
+      const items = Array.isArray(res?.items) ? res.items : [];
+      setRightTotalCount(res?.totalCount ?? 0);
+      // Wrap in the displayItems shape that loadData expects
+      loadData({ displayItems: items }, true, seq);
+    } catch {
+      if (seq === tileLoadSequence.current) {
+        loadData({ displayItems: [] }, true, seq);
+      }
+    }
+  };
+
+  const loadOngoingOrdersData = async (seq: number) => {
+    // Pick the right paged endpoint based on which tile is active.
+    const endpoint =
+      selectedTile?.type === "ORDERS_READY_FOR_VALIDATION"
+        ? "/rest/home-dashboard/validation-orders/paged"
+        : "/rest/home-dashboard/grouped-orders/paged";
+    try {
+      await fetchGroupedOrdersPage(
+        rightPage,
+        rightPageSize,
+        seq,
+        endpoint,
+        rightSearch,
       );
-      loadData(orders, true, seq);
     } catch {
       loadData({ displayItems: [] }, true, seq);
     }
@@ -743,40 +986,6 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     );
   }, [backlogTableData, rightSearch]);
 
-  // Today midnight - same boundary used by the backlog filter so the two
-  // views are mutually exclusive: received >= todayMidnight -> Today,
-  // received < todayMidnight -> Backlog.
-  const todayMidnight = useMemo(
-    () => new Date(new Date().setHours(0, 0, 0, 0)),
-    [],
-  );
-
-  const todayIncomingOrders = useMemo(
-    () =>
-      incomingOrdersData.filter((item) => {
-        if (!item.receivedTimestamp) return true; // no timestamp -> show in Today so nothing is lost
-        return new Date(item.receivedTimestamp) >= todayMidnight;
-      }),
-    [incomingOrdersData, todayMidnight],
-  );
-
-  const filteredLeftData = useMemo(() => {
-    const q = leftSearch.trim().toLowerCase();
-    if (!q) return todayIncomingOrders;
-    return todayIncomingOrders.filter(
-      (item) =>
-        String(item.patientName ?? "")
-          .toLowerCase()
-          .includes(q) ||
-        String(item.source ?? "")
-          .toLowerCase()
-          .includes(q) ||
-        String(item.labNumber ?? "")
-          .toLowerCase()
-          .includes(q),
-    );
-  }, [todayIncomingOrders, leftSearch]);
-
   // Workflow summary counters
   const workflowOrderCount = useMemo(
     () =>
@@ -888,7 +1097,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   // -- TABLE HEADERS --
   const groupedOrderHeaders = [
-    { key: "priority", header: "Priority" },
+    { key: "patientId", header: "Patient ID" },
     {
       key: "orderDate",
       header: <FormattedMessage id="sample.label.orderdate" />,
@@ -914,7 +1123,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   ];
 
   const orderHeaders = [
-    { key: "priority", header: "Priority" },
+    { key: "patientId", header: "Patient ID" },
     {
       key: "orderDate",
       header: <FormattedMessage id="sample.label.orderdate" />,
@@ -930,6 +1139,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const incomingOrderHeaders = [
     { key: "patientName", header: "Patient Name" },
+    { key: "patientId", header: "Patient ID" },
     { key: "received", header: "Received" },
     { key: "tests", header: "Tests" },
     { key: "source", header: "Source" },
@@ -969,8 +1179,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               hasIconOnly
               renderIcon={Copy}
             />
-            {usesInProgressView(selectedTile.type) ||
-            selectedTile.type === "ORDERS_READY_FOR_VALIDATION" ? (
+            {isSplitLayout(selectedTile.type) ? (
               <Link
                 style={{ color: "blue" }}
                 href={
@@ -1093,11 +1302,14 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               title="Report"
               target="_blank"
               rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                color: "black",
+              }}
             >
-              <img
-                src={reportIcon}
-                alt="Report"
+              <Printer
+                size={20}
                 style={{ width: "1.1rem", height: "1.1rem" }}
               />
             </a>
@@ -1369,10 +1581,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       {leftPanelView === "ACTIVE" ? (
                         <>
                           <DataTable
-                            rows={filteredLeftData.slice(
-                              (leftPage - 1) * leftPageSize,
-                              leftPage * leftPageSize,
-                            )}
+                            rows={incomingOrdersData}
                             headers={incomingOrderHeaders}
                             isSortable
                           >
@@ -1474,7 +1683,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={leftPage}
                             pageSize={leftPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={filteredLeftData.length}
+                            totalItems={leftTotalCount}
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
@@ -1516,35 +1725,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       ) : (
                         <>
                           <DataTable
-                            rows={incomingOrdersData
-                              .filter((item) => {
-                                // Left panel backlog: incoming orders received before today
-                                const received = item.receivedTimestamp
-                                  ? new Date(item.receivedTimestamp)
-                                  : null;
-                                const isBeforeToday = received
-                                  ? received <
-                                    new Date(new Date().setHours(0, 0, 0, 0))
-                                  : false;
-                                if (!isBeforeToday) return false;
-                                const q = leftSearch.trim().toLowerCase();
-                                if (!q) return true;
-                                return (
-                                  String(item.patientName ?? "")
-                                    .toLowerCase()
-                                    .includes(q) ||
-                                  String(item.source ?? "")
-                                    .toLowerCase()
-                                    .includes(q) ||
-                                  String(item.externalOrderNumber ?? "")
-                                    .toLowerCase()
-                                    .includes(q)
-                                );
-                              })
-                              .slice(
-                                (leftPage - 1) * leftPageSize,
-                                leftPage * leftPageSize,
-                              )}
+                            rows={incomingOrdersData}
                             headers={incomingOrderHeaders}
                             isSortable
                           >
@@ -1648,17 +1829,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={leftPage}
                             pageSize={leftPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={
-                              incomingOrdersData.filter((item) => {
-                                const received = item.receivedTimestamp
-                                  ? new Date(item.receivedTimestamp)
-                                  : null;
-                                return received
-                                  ? received <
-                                      new Date(new Date().setHours(0, 0, 0, 0))
-                                  : false;
-                              }).length
-                            }
+                            totalItems={leftTotalCount}
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
@@ -1810,14 +1981,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       {rightPanelView === "ACTIVE" ? (
                         <>
                           <DataTable
-                            rows={filteredRightData.slice(
-                              (rightPage - 1) * rightPageSize,
-                              rightPage * rightPageSize,
-                            )}
+                            rows={
+                              isSplitLayout(selectedTile?.type)
+                                ? filteredRightData
+                                : filteredRightData.slice(
+                                    (rightPage - 1) * rightPageSize,
+                                    rightPage * rightPageSize,
+                                  )
+                            }
                             headers={
-                              usesInProgressView(selectedTile.type) ||
-                              selectedTile.type ===
-                                "ORDERS_READY_FOR_VALIDATION"
+                              isSplitLayout(selectedTile.type)
                                 ? groupedOrderHeaders
                                 : selectedTile.type !==
                                     "ORDERS_ENTERED_BY_USER_TODAY"
@@ -1885,7 +2058,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                             page={rightPage}
                             pageSize={rightPageSize}
                             pageSizes={[10, 20, 50, 100]}
-                            totalItems={filteredRightData.length}
+                            totalItems={
+                              isSplitLayout(selectedTile?.type)
+                                ? rightTotalCount
+                                : filteredRightData.length
+                            }
                             forwardText={intl.formatMessage({
                               id: "pagination.forward",
                             })}
@@ -2173,8 +2350,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                     headers={
                       selectedTile.type === "ORDERS_ENTERED_BY_USER_TODAY"
                         ? userHeaders
-                        : usesInProgressView(selectedTile.type) ||
-                            selectedTile.type === "ORDERS_READY_FOR_VALIDATION"
+                        : isSplitLayout(selectedTile.type)
                           ? groupedOrderHeaders
                           : orderHeaders
                     }

@@ -1019,6 +1019,7 @@ export function SearchResults(props) {
       selector: (row) => row.analysisMethod,
       sortable: true,
       width: "7rem",
+      omit: true,
     },
     {
       id: "testName",
@@ -1060,6 +1061,7 @@ export function SearchResults(props) {
         return renderCell(row, index, column, id);
       },
       width: "10rem",
+      omit: true,
     },
     {
       id: "notes",
@@ -1278,7 +1280,12 @@ export function SearchResults(props) {
               </Select>
             );
 
-          case "M":
+          case "M": {
+            const currentPageDataM =
+              props.results?.testResult?.slice(
+                (page - 1) * pageSize,
+                page * pageSize,
+              ) || [];
             return (
               <ResultMultiSelect
                 id={`multiResultValue${row.id}`}
@@ -1286,10 +1293,22 @@ export function SearchResults(props) {
                 dictionaryValues={row.dictionaryResults}
                 value={row.multiSelectResultValues}
                 onChange={(e) => handleChange(e, row.id)}
+                direction={
+                  currentPageDataM.length > 2 &&
+                  index >= currentPageDataM.length - 2
+                    ? "top"
+                    : "bottom"
+                }
               />
             );
+          }
 
-          case "C":
+          case "C": {
+            const currentPageDataC =
+              props.results?.testResult?.slice(
+                (page - 1) * pageSize,
+                page * pageSize,
+              ) || [];
             return (
               <CascadingMultiSelect
                 id={`multiResult${row.id}`}
@@ -1297,8 +1316,15 @@ export function SearchResults(props) {
                 dictionaryValues={row.dictionaryResults}
                 value={row.multiSelectResultValues}
                 onChange={(e) => handleChange(e, row.id)}
+                direction={
+                  currentPageDataC.length > 2 &&
+                  index >= currentPageDataC.length - 2
+                    ? "top"
+                    : "bottom"
+                }
               />
             );
+          }
 
           case "N":
             return (
@@ -2090,6 +2116,13 @@ export function SearchResults(props) {
                 //onBlur={handleBlur}
               >
                 <DataTable
+                  customStyles={{
+                    tableWrapper: {
+                      style: {
+                        minHeight: "400px",
+                      },
+                    },
+                  }}
                   data={props.results?.testResult?.slice(
                     (page - 1) * pageSize,
                     page * pageSize,
@@ -2098,7 +2131,7 @@ export function SearchResults(props) {
                   isSortable
                   expandableRows={!isReadOnlyView}
                   expandableRowsComponent={renderReferral}
-                ></DataTable>
+                />
                 <Pagination
                   onChange={handlePageChange}
                   page={page}

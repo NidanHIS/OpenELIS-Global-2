@@ -4,9 +4,12 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
+  <include relativeToChangelogFile="true" file="widen-test-section-name.xml"/>
   <include relativeToChangelogFile="true" file="add-panel-guid.xml"/>
   <include relativeToChangelogFile="true" file="add-test-price.xml"/>
   <include relativeToChangelogFile="true" file="add-panel-price.xml"/>
   <include relativeToChangelogFile="true" file="incoming_orders.xml"/>
   <include relativeToChangelogFile="true" file="add-dictionary-guid.xml"/>
+  <include relativeToChangelogFile="true" file="cleanup-legacy-data.xml"/>
+  <include relativeToChangelogFile="true" file="site-config-defaults.xml"/>
 </databaseChangeLog>

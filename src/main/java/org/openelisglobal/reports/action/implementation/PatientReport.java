@@ -65,6 +65,8 @@ import org.openelisglobal.patient.service.PatientServiceImpl;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.patientidentity.service.PatientIdentityService;
 import org.openelisglobal.patientidentity.valueholder.PatientIdentity;
+import org.openelisglobal.patientidentitytype.service.PatientIdentityTypeService;
+import org.openelisglobal.patientidentitytype.valueholder.PatientIdentityType;
 import org.openelisglobal.person.service.PersonService;
 import org.openelisglobal.person.valueholder.Person;
 import org.openelisglobal.provider.service.ProviderService;
@@ -361,7 +363,7 @@ public abstract class PatientReport extends Report {
         }
     }
 
-    private void findContactInfo() {
+    protected void findContactInfo() {
         currentContactInfo = "";
         currentSiteInfo = "";
         currentProvider = null;
@@ -520,7 +522,7 @@ public abstract class PatientReport extends Report {
 
     protected String getLazyPatientIdentity(Patient patient, String identity, String id) {
         if (identity == null) {
-            identity = " ";
+            identity = "";
             List<PatientIdentity> identities = patientService.getIdentityList(patient);
             for (PatientIdentity patientIdentity : identities) {
                 if (patientIdentity.getIdentityTypeId().equals(id)) {
@@ -531,6 +533,62 @@ public abstract class PatientReport extends Report {
         }
 
         return identity;
+    }
+
+    protected String getFormattedPatientAddress(Patient patient) {
+        if (patient == null) {
+            return "";
+        }
+
+        List<String> addressParts = new ArrayList<>();
+        OrganizationService organizationService = SpringContext.getBean(OrganizationService.class);
+
+        // 1. Tole (Street Address)
+        if (patient.getPerson() != null && !GenericValidator.isBlankOrNull(patient.getPerson().getStreetAddress())) {
+            addressParts.add(patient.getPerson().getStreetAddress());
+        }
+
+        // 2. Village/Municipality (ADDRESS_HIERARCHY_1)
+        PatientIdentityType villageType = SpringContext.getBean(PatientIdentityTypeService.class)
+                .getNamedIdentityType("ADDRESS_HIERARCHY_1");
+        if (villageType != null) {
+            String id = getLazyPatientIdentity(patient, null, villageType.getId());
+            if (!GenericValidator.isBlankOrNull(id)) {
+                Organization org = organizationService.getOrganizationById(id);
+                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
+                    addressParts.add(org.getOrganizationName());
+                } else {
+                    addressParts.add(id);
+                }
+            }
+        }
+
+        // 3. District (HEALTH DISTRICT)
+        PatientIdentityType districtType = SpringContext.getBean(PatientIdentityTypeService.class)
+                .getNamedIdentityType("HEALTH DISTRICT");
+        if (districtType != null) {
+            String id = getLazyPatientIdentity(patient, null, districtType.getId());
+            if (!GenericValidator.isBlankOrNull(id)) {
+                Organization org = organizationService.getOrganizationById(id);
+                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
+                    addressParts.add(org.getOrganizationName());
+                } else {
+                    addressParts.add(id);
+                }
+            }
+        }
+
+        // 4. Nationality (NATIONALITY)
+        PatientIdentityType nationalityType = SpringContext.getBean(PatientIdentityTypeService.class)
+                .getNamedIdentityType("NATIONALITY");
+        if (nationalityType != null) {
+            String nationality = getLazyPatientIdentity(patient, null, nationalityType.getId());
+            if (!GenericValidator.isBlankOrNull(nationality)) {
+                addressParts.add(nationality);
+            }
+        }
+
+        return String.join(", ", addressParts);
     }
 
     protected void setPatientName(ClinicalPatientData data) {
@@ -898,7 +956,7 @@ public abstract class PatientReport extends Report {
         }
         ObservationHistoryService observationHistoryService = SpringContext.getBean(ObservationHistoryService.class);
 
-        data.setContactInfo(currentContactInfo);
+        data.setContactInfo(getFormattedPatientAddress(currentPatient));
         data.setSiteInfo(currentSiteInfo);
         data.setReceivedDate(receivedDate);
         data.setDob(getPatientDOB(currentPatient));
@@ -937,6 +995,10 @@ public abstract class PatientReport extends Report {
             data.setSampleId(sampleService.getAccessionNumber(currentSample) + "-" + data.getSampleSortOrder());
             data.setSampleType(analysisService.getTypeOfSample(currentAnalysis).getLocalizedName());
             data.setCollectionDateTime(DateUtil.convertTimestampToStringDateAndConfiguredHourTime(
+                    currentAnalysis.getSampleItem().getCollectionDate()));
+            // collectionDateOnly captures the clean per-row collection timestamp before
+            // setCollectionTime() overwrites collectionDateTime with a summary string.
+            data.setCollectionDateOnly(DateUtil.convertTimestampToStringDateAndConfiguredHourTime(
                     currentAnalysis.getSampleItem().getCollectionDate()));
             // Collector is stored on SampleItem — set by SampleAddService from the
             // sample XML collector attribute (populated with the logged-in user's name

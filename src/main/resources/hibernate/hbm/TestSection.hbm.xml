@@ -22,7 +22,7 @@
             <column name="ORG_ID" precision="10" scale="0" />
         </many-to-one>
         <property name="testSectionName" type="java.lang.String">
-            <column name="NAME" length="20" />
+            <column name="NAME" length="60" />
         </property>
         <property name="description" type="java.lang.String">
             <column name="DESCRIPTION" length="60" not-null="true" />

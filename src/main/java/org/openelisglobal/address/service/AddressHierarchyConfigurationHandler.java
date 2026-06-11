@@ -232,6 +232,9 @@ public class AddressHierarchyConfigurationHandler implements DomainConfiguration
     private void updateOrganizationType(OrganizationType orgType, int level, String[] values, int displayKeyIndex) {
         orgType.setHierarchyLevel(level);
         orgType.setSysUserId("1");
+        if (displayKeyIndex >= 0 && displayKeyIndex < values.length) {
+            orgType.setDescription(values[displayKeyIndex]);
+        }
     }
 
     private void updateSiteInformationLabel(int level, String typeName) {

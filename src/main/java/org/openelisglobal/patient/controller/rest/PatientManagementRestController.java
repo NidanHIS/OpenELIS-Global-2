@@ -4,16 +4,26 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.GenericValidator;
 import org.hibernate.StaleObjectStateException;
+import org.openelisglobal.address.service.AddressHierarchyConfigurationHandler;
+import org.openelisglobal.common.action.IActionConstants;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
 import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.rest.BaseRestController;
+import org.openelisglobal.common.services.DisplayListService;
+import org.openelisglobal.common.services.DisplayListService.ListType;
 import org.openelisglobal.dataexchange.fhir.exception.FhirPersistanceException;
 import org.openelisglobal.dataexchange.fhir.exception.FhirTransformationException;
 import org.openelisglobal.dataexchange.fhir.service.FhirTransformService;
+import org.openelisglobal.organization.service.OrganizationService;
+import org.openelisglobal.organization.service.OrganizationTypeService;
+import org.openelisglobal.organization.valueholder.Organization;
+import org.openelisglobal.organization.valueholder.OrganizationType;
 import org.openelisglobal.patient.action.IPatientUpdate.PatientUpdateStatus;
 import org.openelisglobal.patient.action.bean.PatientManagementInfo;
 import org.openelisglobal.patient.service.PatientPhotoService;
@@ -30,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
@@ -54,6 +65,10 @@ public class PatientManagementRestController extends BaseRestController {
     FhirTransformService fhirTransformService;
     @Autowired
     PatientPhotoService photoService;
+    @Autowired
+    OrganizationService organizationService;
+    @Autowired
+    OrganizationTypeService organizationTypeService;
 
     @PostMapping(value = "PatientManagement", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -143,6 +158,7 @@ public class PatientManagementRestController extends BaseRestController {
                 return ResponseEntity.badRequest().body(body);
             }
 
+            resolveHealthRegionAndDistrict(patientInfo, getSysUserId(request));
             patientService.persistPatientData(patientInfo, patient, getSysUserId(request), true);
             fhirTransformService.transformPersistPatient(patientInfo,
                     (patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
@@ -248,5 +264,130 @@ public class PatientManagementRestController extends BaseRestController {
         Patient patient = patientService.get(patientInfo.getPatientPK());
         patientInfo.setPatientIdentities(patientIdentityService.getPatientIdentitiesForPatient(patient.getId()));
         return patient;
+    }
+
+    /**
+     * Resolves healthRegion and healthDistrict name strings (sent by external
+     * systems) to internal Organization IDs before persisting.
+     *
+     * Type resolution order per field: 1. Use the OrganizationType that has
+     * hierarchy_level = 1 (region) or 2 (district). 2. Fall back to legacy "Health
+     * Region" / "Health District" type names if no hierarchy-level type exists in
+     * this installation.
+     *
+     * This ensures the resolved org ID matches exactly what the UI dropdown holds,
+     * because the dropdown (health-regions endpoint) uses the same type-resolution
+     * logic.
+     *
+     * Only called from saveCredentialPatient — never touches the UI form path.
+     */
+    @Transactional
+    private void resolveHealthRegionAndDistrict(PatientManagementInfo patientInfo, String sysUserId) {
+        String regionTypeName = getOrgTypeNameForHierarchyLevel(1, "Health Region");
+        String resolvedRegionId = resolveOrgNameToId(patientInfo.getHealthRegion(), regionTypeName, null, sysUserId);
+        if (resolvedRegionId != null) {
+            patientInfo.setHealthRegion(resolvedRegionId);
+        }
+
+        String districtTypeName = getOrgTypeNameForHierarchyLevel(2, "Health District");
+        // Pass resolved region ID as parent so newly created districts are linked
+        // to their province. If region was blank/unresolved, parentOrgId is null
+        // → district is created without a parent (safe, just won't cascade in
+        // dropdown).
+        String resolvedDistrictId = resolveOrgNameToId(patientInfo.getHealthDistrict(), districtTypeName,
+                resolvedRegionId, sysUserId);
+        if (resolvedDistrictId != null) {
+            patientInfo.setHealthDistrict(resolvedDistrictId);
+        }
+    }
+
+    /**
+     * Returns the OrganizationType name for the given hierarchy level. Iterates all
+     * org types and returns the first one whose hierarchy_level matches. Falls back
+     * to the provided fallbackTypeName if none found (null-safe).
+     */
+    private String getOrgTypeNameForHierarchyLevel(int level, String fallbackTypeName) {
+        try {
+            List<OrganizationType> allTypes = organizationTypeService.getAllOrganizationTypes();
+            if (allTypes != null) {
+                for (OrganizationType orgType : allTypes) {
+                    if (AddressHierarchyConfigurationHandler.getHierarchyLevel(orgType) == level) {
+                        return orgType.getName();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LogEvent.logWarn(this.getClass().getSimpleName(), "getOrgTypeNameForHierarchyLevel",
+                    "Could not resolve hierarchy level " + level + ", falling back to: " + fallbackTypeName);
+        }
+        return fallbackTypeName;
+    }
+
+    /**
+     * Returns the Organization ID for the given name+typeName. Looks up
+     * case-insensitively; creates new org if not found. Returns null if
+     * incomingValue is blank (nothing to do).
+     *
+     * @param parentOrgId optional — if provided and a new org is created, sets this
+     *                    as the parent (used to link districts to provinces).
+     *                    Null-safe: if null or org not found, parent is not set.
+     */
+    @Transactional
+    private String resolveOrgNameToId(String incomingValue, String orgTypeName, String parentOrgId, String sysUserId) {
+        if (GenericValidator.isBlankOrNull(incomingValue)) {
+            return null;
+        }
+
+        // Fetch all active orgs of this type
+        List<Organization> orgs = organizationService.getOrganizationsByTypeName("organizationName", orgTypeName);
+
+        // Case-insensitive name match
+        String trimmedIncoming = incomingValue.trim().toLowerCase();
+        for (Organization org : orgs) {
+            if (org.getOrganizationName() != null
+                    && org.getOrganizationName().trim().toLowerCase().equals(trimmedIncoming)) {
+                return org.getId();
+            }
+        }
+
+        // No match — create new org of this type
+        OrganizationType orgType = organizationTypeService.getOrganizationTypeByName(orgTypeName);
+        if (orgType == null) {
+            // Type doesn't exist in this installation — store raw string as-is
+            LogEvent.logWarn(this.getClass().getSimpleName(), "resolveOrgNameToId",
+                    "OrganizationType not found: " + orgTypeName + " — storing raw value: " + incomingValue);
+            return null;
+        }
+
+        Organization newOrg = new Organization();
+        newOrg.setOrganizationName(incomingValue.trim());
+        newOrg.setShortName(
+                incomingValue.trim().length() > 15 ? incomingValue.trim().substring(0, 15) : incomingValue.trim());
+        newOrg.setIsActive(IActionConstants.YES);
+        newOrg.setMlsSentinelLabFlag("N");
+        newOrg.setSysUserId(sysUserId);
+
+        // Set parent org if provided — links district to its province
+        if (!GenericValidator.isBlankOrNull(parentOrgId)) {
+            try {
+                Organization parentOrg = organizationService.getOrganizationById(parentOrgId);
+                if (parentOrg != null) {
+                    newOrg.setOrganization(parentOrg);
+                }
+            } catch (Exception e) {
+                // Parent lookup failed — create org without parent, no crash
+                LogEvent.logWarn(this.getClass().getSimpleName(), "resolveOrgNameToId",
+                        "Could not load parent org id=" + parentOrgId + ", creating without parent");
+            }
+        }
+
+        String newId = organizationService.insert(newOrg);
+        organizationService.linkOrganizationAndType(newOrg, orgType.getId());
+        DisplayListService.getInstance().refreshList(ListType.PATIENT_HEALTH_REGIONS);
+
+        LogEvent.logInfo(this.getClass().getSimpleName(), "resolveOrgNameToId",
+                "Created new Organization '" + incomingValue.trim() + "' (id=" + newId + ") for type: " + orgTypeName);
+
+        return newId;
     }
 }
