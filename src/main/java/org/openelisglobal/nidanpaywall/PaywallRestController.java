@@ -19,13 +19,11 @@ public class PaywallRestController {
     private NidanPaywallClient paywallClient;
 
     @GetMapping(value = "/check", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> check(
-            @RequestParam(value = "patientUuid", required = false) String patientUuid,
+    public ResponseEntity<?> check(@RequestParam(value = "patientUuid", required = false) String patientUuid,
             @RequestParam(value = "visitUuid", required = false) String visitUuid) {
 
         if (patientUuid == null || patientUuid.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("patientUuid query parameter is required");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("patientUuid query parameter is required");
         }
 
         PaywallResult result = paywallClient.check(patientUuid, visitUuid);

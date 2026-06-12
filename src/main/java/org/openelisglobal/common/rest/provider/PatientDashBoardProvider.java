@@ -205,7 +205,8 @@ public class PatientDashBoardProvider {
                         orderBean.setPatientId(
                                 patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                         orderBean.setPatientName(getPatientName(patient));
-                        orderBean.setPatientGuid(patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
+                        orderBean.setPatientGuid(
+                                patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                     }
                     orderBean.setOrderDate(analysis.getStartedDateForDisplay());
                     orderBean.setTestName(analysis.getTest() != null ? analysis.getTest().getLocalizedName() : "");
@@ -257,7 +258,8 @@ public class PatientDashBoardProvider {
                     bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
                     bean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                     bean.setPatientName(getPatientName(patient));
-                    bean.setPatientGuid(patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
+                    bean.setPatientGuid(
+                            patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                 }
 
                 bean.setOrderDate(analysis.getStartedDateForDisplay());
@@ -613,7 +615,8 @@ public class PatientDashBoardProvider {
                             bean.setPatientId(
                                     patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                             bean.setPatientName(getPatientName(patient));
-                            bean.setPatientGuid(patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
+                            bean.setPatientGuid(
+                                    patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                         }
                         bean.setOrderDate(analysis.getStartedDateForDisplay());
                         bean.setTestSection(analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");
@@ -865,7 +868,8 @@ public class PatientDashBoardProvider {
                             bean.setPatientId(
                                     patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                             bean.setPatientName(getPatientName(patient));
-                            bean.setPatientGuid(patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
+                            bean.setPatientGuid(
+                                    patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                         }
                         bean.setOrderDate(analysis.getStartedDateForDisplay());
                         bean.setTestSection(analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");

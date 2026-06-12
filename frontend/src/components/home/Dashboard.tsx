@@ -54,7 +54,7 @@ import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 
-interface DashBoardProps { }
+interface DashBoardProps {}
 
 interface Tile {
   title: string | JSX.Element;
@@ -150,7 +150,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const leftFetchSeq = useRef(0);
 
   // ── PAYWALL STATE ─────────────────────────────────────────────────────────────
-  const [paywallCheckingId, setPaywallCheckingId] = useState<string | null>(null);
+  const [paywallCheckingId, setPaywallCheckingId] = useState<string | null>(
+    null,
+  );
   const [paywallBlockedOpen, setPaywallBlockedOpen] = useState(false);
 
   // ── RIGHT PANEL SERVER-SIDE PAGINATION STATE ─────────────────────────────────
@@ -312,7 +314,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     try {
       setRightPanelView(
         (localStorage.getItem("dashboard_right_panel") as PanelView) ||
-        "ACTIVE",
+          "ACTIVE",
       );
       setLeftPanelView(
         (localStorage.getItem("dashboard_left_panel") as PanelView) || "ACTIVE",
@@ -484,12 +486,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         id: item.externalOrderNumber,
         received: item.receivedTimestamp
           ? new Date(item.receivedTimestamp).toLocaleString([], {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
           : "—",
         tests: item.testCount != null ? String(item.testCount) : "—",
         source: item.source ?? "—",
@@ -875,12 +877,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     )
       .then((data: any) => {
         setPaywallCheckingId(null);
-        if (data && data.blocked === true && !hasRole(userSessionDetails, "Global Administrator")) {
+        if (
+          data &&
+          data.blocked === true &&
+          !hasRole(userSessionDetails, "Global Administrator")
+        ) {
           setPaywallBlockedOpen(true);
         } else {
           window.location.href = getFullPath(
             "/SamplePatientEntry?incomingOrderNumber=" +
-            encodeURIComponent(externalOrderNumber),
+              encodeURIComponent(externalOrderNumber),
           );
         }
       })
@@ -889,7 +895,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         // fail-open
         window.location.href = getFullPath(
           "/SamplePatientEntry?incomingOrderNumber=" +
-          encodeURIComponent(externalOrderNumber),
+            encodeURIComponent(externalOrderNumber),
         );
       });
   };
@@ -899,25 +905,45 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
    * Resolves patientGuid from the data array, calls /paywall-check,
    * then opens the target URL if allowed.
    */
-  const handleAction = (patientGuid: string, targetUrl: string, newTab: boolean = false) => {
+  const handleAction = (
+    patientGuid: string,
+    targetUrl: string,
+    newTab: boolean = false,
+  ) => {
     if (!patientGuid) {
       // No guid — fail-open, just navigate
-      if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
+      if (newTab) {
+        window.open(targetUrl, "_blank");
+      } else {
+        window.location.href = targetUrl;
+      }
       return;
     }
     getFromOpenElisServerV2(
       `/rest/nidan/paywall/check?patientUuid=${encodeURIComponent(patientGuid)}`,
     )
       .then((pw: any) => {
-        if (pw && pw.blocked === true && !hasRole(userSessionDetails, "Global Administrator")) {
+        if (
+          pw &&
+          pw.blocked === true &&
+          !hasRole(userSessionDetails, "Global Administrator")
+        ) {
           setPaywallBlockedOpen(true);
         } else {
-          if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
+          if (newTab) {
+            window.open(targetUrl, "_blank");
+          } else {
+            window.location.href = targetUrl;
+          }
         }
       })
       .catch(() => {
         // fail-open
-        if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
+        if (newTab) {
+          window.open(targetUrl, "_blank");
+        } else {
+          window.location.href = targetUrl;
+        }
       });
   };
 
@@ -993,7 +1019,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       (item) =>
         isToday(item.orderDate) &&
         (tilesWithTabs.includes(selectedTile?.type) &&
-          selectedTestSection !== "all"
+        selectedTestSection !== "all"
           ? item.testSection === selectedTestSection
           : true),
     );
@@ -1024,7 +1050,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (item) =>
           !isToday(item.orderDate) &&
           (tilesWithTabs.includes(selectedTile?.type) &&
-            selectedTestSection !== "all"
+          selectedTestSection !== "all"
             ? item.testSection === selectedTestSection
             : true),
       ),
@@ -1246,15 +1272,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 style={{ color: "blue", cursor: "pointer" }}
                 onClick={(e) => {
                   e.preventDefault();
-                  const patientGuid = data.find((item: any) => String(item.id) === String(row.id))?.patientGuid || "";
+                  const patientGuid =
+                    data.find((item: any) => String(item.id) === String(row.id))
+                      ?.patientGuid || "";
                   const targetUrl = usesInProgressView(selectedTile.type)
                     ? getFullPath(
-                      "/result?type=order&doRange=false&accessionNumber=" +
-                      cell.value,
-                    )
+                        "/result?type=order&doRange=false&accessionNumber=" +
+                          cell.value,
+                      )
                     : getFullPath(
-                      "/validation?type=order&accessionNumber=" + cell.value,
-                    );
+                        "/validation?type=order&accessionNumber=" + cell.value,
+                      );
                   handleAction(patientGuid, targetUrl, false);
                 }}
               >
@@ -1292,7 +1320,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (c) => c.info.header === "labNumber",
       )?.value;
       if (!accessionNumber) return <TableCell key={cell.id} />;
-      const patientGuid = data.find((item) => String(item.id) === String(row.id))?.patientGuid || "";
+      const patientGuid =
+        data.find((item) => String(item.id) === String(row.id))?.patientGuid ||
+        "";
       const resultUrl = getFullPath(
         "/result?type=order&doRange=false&accessionNumber=" + accessionNumber,
       );
@@ -1322,7 +1352,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
-              onClick={(e) => { e.preventDefault(); handleAction(patientGuid, barcodeUrl, true); }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAction(patientGuid, barcodeUrl, true);
+              }}
             >
               <img
                 src={barcodeIcon}
@@ -1503,10 +1536,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       >
         <ModalHeader title="Payment Required" />
         <ModalBody>
-          <p>This patient has an outstanding balance. Please settle payment before collecting the sample.</p>
+          <p>
+            This patient has an outstanding balance. Please settle payment
+            before collecting the sample.
+          </p>
         </ModalBody>
         <ModalFooter>
-          <Button kind="primary" onClick={() => setPaywallBlockedOpen(false)}>OK</Button>
+          <Button kind="primary" onClick={() => setPaywallBlockedOpen(false)}>
+            OK
+          </Button>
         </ModalFooter>
       </ComposedModal>
 
@@ -1709,31 +1747,44 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             );
                                             if (h.key === "actions") {
                                               // row.id IS the externalOrderNumber
-                                              const isChecking = paywallCheckingId === row.id;
+                                              const isChecking =
+                                                paywallCheckingId === row.id;
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
                                                   <button
-                                                    disabled={!!paywallCheckingId}
-                                                    onClick={() => handleCollect(row.id)}
+                                                    disabled={
+                                                      !!paywallCheckingId
+                                                    }
+                                                    onClick={() =>
+                                                      handleCollect(row.id)
+                                                    }
                                                     style={{
                                                       display: "inline-flex",
                                                       alignItems: "center",
                                                       gap: "0.35rem",
-                                                      padding: "0.35rem 0.85rem",
+                                                      padding:
+                                                        "0.35rem 0.85rem",
                                                       borderRadius: "1rem",
-                                                      background: paywallCheckingId ? "#8d8d8d" : "#0f62fe",
+                                                      background:
+                                                        paywallCheckingId
+                                                          ? "#8d8d8d"
+                                                          : "#0f62fe",
                                                       color: "#fff",
                                                       fontSize: "0.78rem",
                                                       fontWeight: 600,
                                                       border: "none",
-                                                      cursor: paywallCheckingId ? "not-allowed" : "pointer",
+                                                      cursor: paywallCheckingId
+                                                        ? "not-allowed"
+                                                        : "pointer",
                                                       letterSpacing: "0.3px",
                                                       whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    {isChecking ? "..." : "Collect"}
+                                                    {isChecking
+                                                      ? "..."
+                                                      : "Collect"}
                                                   </button>
                                                 </TableCell>
                                               );
@@ -1850,31 +1901,44 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                         <TableRow key={row.id}>
                                           {headers.map((h) => {
                                             if (h.key === "actions") {
-                                              const isChecking = paywallCheckingId === row.id;
+                                              const isChecking =
+                                                paywallCheckingId === row.id;
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
                                                   <button
-                                                    disabled={!!paywallCheckingId}
-                                                    onClick={() => handleCollect(row.id)}
+                                                    disabled={
+                                                      !!paywallCheckingId
+                                                    }
+                                                    onClick={() =>
+                                                      handleCollect(row.id)
+                                                    }
                                                     style={{
                                                       display: "inline-flex",
                                                       alignItems: "center",
                                                       gap: "0.35rem",
-                                                      padding: "0.35rem 0.85rem",
+                                                      padding:
+                                                        "0.35rem 0.85rem",
                                                       borderRadius: "1rem",
-                                                      background: paywallCheckingId ? "#8d8d8d" : "#0f62fe",
+                                                      background:
+                                                        paywallCheckingId
+                                                          ? "#8d8d8d"
+                                                          : "#0f62fe",
                                                       color: "#fff",
                                                       fontSize: "0.78rem",
                                                       fontWeight: 600,
                                                       border: "none",
-                                                      cursor: paywallCheckingId ? "not-allowed" : "pointer",
+                                                      cursor: paywallCheckingId
+                                                        ? "not-allowed"
+                                                        : "pointer",
                                                       letterSpacing: "0.3px",
                                                       whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    {isChecking ? "..." : "Collect"}
+                                                    {isChecking
+                                                      ? "..."
+                                                      : "Collect"}
                                                   </button>
                                                 </TableCell>
                                               );
@@ -2048,8 +2112,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         placeholder={
                           rightPanelView === "ACTIVE"
                             ? intl.formatMessage({
-                              id: "dashboard.orders.search.placeholder",
-                            })
+                                id: "dashboard.orders.search.placeholder",
+                              })
                             : "Search backlog by lab number, patient..."
                         }
                         value={rightSearch}
@@ -2065,15 +2129,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                               isSplitLayout(selectedTile?.type)
                                 ? filteredRightData
                                 : filteredRightData.slice(
-                                  (rightPage - 1) * rightPageSize,
-                                  rightPage * rightPageSize,
-                                )
+                                    (rightPage - 1) * rightPageSize,
+                                    rightPage * rightPageSize,
+                                  )
                             }
                             headers={
                               isSplitLayout(selectedTile.type)
                                 ? groupedOrderHeaders
                                 : selectedTile.type !==
-                                  "ORDERS_ENTERED_BY_USER_TODAY"
+                                    "ORDERS_ENTERED_BY_USER_TODAY"
                                   ? orderHeaders
                                   : userHeaders
                             }

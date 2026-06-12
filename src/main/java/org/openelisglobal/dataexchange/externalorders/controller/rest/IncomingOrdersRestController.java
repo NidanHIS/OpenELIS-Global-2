@@ -450,38 +450,37 @@ public class IncomingOrdersRestController {
     /**
      * Paywall check for the Collect Sample action.
      *
-     * <p>Called by the frontend before activating the collect-sample workflow for
-     * an incoming order. Returns the Odoo payment decision so the UI can block or
-     * warn accordingly.
+     * <p>
+     * Called by the frontend before activating the collect-sample workflow for an
+     * incoming order. Returns the Odoo payment decision so the UI can block or warn
+     * accordingly.
      *
-     * <p>When the paywall is disabled ({@code nidan.paywall.enabled=false}) this
+     * <p>
+     * When the paywall is disabled ({@code nidan.paywall.enabled=false}) this
      * always returns {@code decision=allow} without contacting Odoo.
      *
      * @param externalOrderNumber the visit UUID / external order number
      */
     @GetMapping(value = "/{externalOrderNumber}/paywall-check", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> paywallCheck(
-            @PathVariable("externalOrderNumber") String externalOrderNumber) {
+    public ResponseEntity<?> paywallCheck(@PathVariable("externalOrderNumber") String externalOrderNumber) {
 
-        Optional<IncomingOrder> holdingOpt = incomingOrderService
-                .getOrderByExternalOrderNumber(externalOrderNumber);
+        Optional<IncomingOrder> holdingOpt = incomingOrderService.getOrderByExternalOrderNumber(externalOrderNumber);
 
         if (holdingOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Unknown externalOrderNumber");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Unknown externalOrderNumber");
         }
 
         IncomingOrder order = holdingOpt.get();
         PaywallResult result = paywallClient.check(order.getPatientGuid(), externalOrderNumber);
 
         java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
-        body.put("decision",          result.decision());
-        body.put("blocked",           result.isBlocked());
+        body.put("decision", result.decision());
+        body.put("blocked", result.isBlocked());
         body.put("outstandingAmount", result.outstandingAmount());
-        body.put("currency",          result.currency());
-        body.put("paymentStatus",     result.paymentStatus());
-        body.put("patientGuid",       order.getPatientGuid());
-        body.put("visitUuid",         externalOrderNumber);
+        body.put("currency", result.currency());
+        body.put("paymentStatus", result.paymentStatus());
+        body.put("patientGuid", order.getPatientGuid());
+        body.put("visitUuid", externalOrderNumber);
         return ResponseEntity.ok(body);
     }
 

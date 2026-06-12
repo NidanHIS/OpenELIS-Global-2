@@ -15,11 +15,13 @@ import org.springframework.stereotype.Component;
  * Calls the Odoo payment-status API and returns a typed decision for a
  * patient/visit. Used to gate the "Collect Sample" action on incoming orders.
  *
- * <p>Config mirrors the {@code org.openelisglobal.nidan.testorder.*} pattern:
+ * <p>
+ * Config mirrors the {@code org.openelisglobal.nidan.testorder.*} pattern:
  * properties in {@code common.properties}, driven by {@code -D} flags in
  * {@code CATALINA_OPTS} from {@code nidan-docker}.
  *
- * <p>When {@code enabled=false} the check is skipped and always returns
+ * <p>
+ * When {@code enabled=false} the check is skipped and always returns
  * {@link PaywallDecision#ALLOW} without contacting Odoo.
  */
 @Component
@@ -46,9 +48,12 @@ public class NidanPaywallClient {
     /**
      * Check whether a patient is cleared to have their sample collected.
      *
-     * @param patientGuid       OpenMRS patient GUID (from {@code IncomingOrder.patientGuid})
-     * @param externalOrderNumber visit UUID sent by CIS (from {@code IncomingOrder.externalOrderNumber})
-     * @return result — never null; {@link PaywallResult#decision()} is the thing to act on
+     * @param patientGuid         OpenMRS patient GUID (from
+     *                            {@code IncomingOrder.patientGuid})
+     * @param externalOrderNumber visit UUID sent by CIS (from
+     *                            {@code IncomingOrder.externalOrderNumber})
+     * @return result — never null; {@link PaywallResult#decision()} is the thing to
+     *         act on
      */
     public PaywallResult check(String patientGuid, String externalOrderNumber) {
         LOG.info("[NIDAN-PAYWALL] ══════════════════════════════════════════");
@@ -62,13 +67,15 @@ public class NidanPaywallClient {
         }
 
         if (GenericValidator.isBlankOrNull(odooUrl)) {
-            LOG.warn("[NIDAN-PAYWALL] enabled=true but org.openelisglobal.nidan.paywall.odoo.url not set — allowing (outage)");
+            LOG.warn(
+                    "[NIDAN-PAYWALL] enabled=true but org.openelisglobal.nidan.paywall.odoo.url not set — allowing (outage)");
             LOG.info("[NIDAN-PAYWALL] ══════════════════════════════════════════");
             return PaywallResult.outage();
         }
 
         if (GenericValidator.isBlankOrNull(secret)) {
-            LOG.warn("[NIDAN-PAYWALL] enabled=true but org.openelisglobal.nidan.paywall.odoo.secret not set — allowing (outage)");
+            LOG.warn(
+                    "[NIDAN-PAYWALL] enabled=true but org.openelisglobal.nidan.paywall.odoo.secret not set — allowing (outage)");
             LOG.info("[NIDAN-PAYWALL] ══════════════════════════════════════════");
             return PaywallResult.outage();
         }
@@ -86,8 +93,8 @@ public class NidanPaywallClient {
             Map<String, Object> body = odooGet(url);
             PaywallResult result = toResult(body, insuranceBypass);
 
-            LOG.info("[NIDAN-PAYWALL] decision={} outstanding={} status={}",
-                    result.decision(), result.outstandingAmount(), result.paymentStatus());
+            LOG.info("[NIDAN-PAYWALL] decision={} outstanding={} status={}", result.decision(),
+                    result.outstandingAmount(), result.paymentStatus());
             LOG.info("[NIDAN-PAYWALL] ══════════════════════════════════════════");
             return result;
 
@@ -124,9 +131,7 @@ public class NidanPaywallClient {
             conn.setReadTimeout(10_000);
 
             int status = conn.getResponseCode();
-            InputStream is = (status >= 200 && status < 300)
-                    ? conn.getInputStream()
-                    : conn.getErrorStream();
+            InputStream is = (status >= 200 && status < 300) ? conn.getInputStream() : conn.getErrorStream();
             if (is == null) {
                 throw new RuntimeException("Odoo returned HTTP " + status + " with no body");
             }
@@ -136,7 +141,9 @@ public class NidanPaywallClient {
                 is.close();
             }
         } finally {
-            if (conn != null) { conn.disconnect(); }
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
     }
 
@@ -145,7 +152,8 @@ public class NidanPaywallClient {
             return PaywallResult.allow(); // null body = no billing = allow
         }
 
-        // Odoo structured error: PATIENT_NOT_FOUND / VISIT_NOT_FOUND = no billing = allow
+        // Odoo structured error: PATIENT_NOT_FOUND / VISIT_NOT_FOUND = no billing =
+        // allow
         if (r.containsKey("error")) {
             String err = String.valueOf(r.get("error"));
             if ("PATIENT_NOT_FOUND".equals(err) || "VISIT_NOT_FOUND".equals(err)) {
@@ -156,15 +164,13 @@ public class NidanPaywallClient {
         }
 
         // ── 1. RAW ODOO FIELDS ───────────────────────────────────────────────
-        LOG.info("[NIDAN-PAYWALL] odoo → is_insured={} is_settled={} due={} cart={} status={}",
-                r.get("is_insured"), r.get("is_settled"),
-                r.get("due_amount"), r.get("cart_amount"),
-                r.get("payment_status"));
+        LOG.info("[NIDAN-PAYWALL] odoo → is_insured={} is_settled={} due={} cart={} status={}", r.get("is_insured"),
+                r.get("is_settled"), r.get("due_amount"), r.get("cart_amount"), r.get("payment_status"));
 
         // ── 2. INSURANCE BYPASS GATE ─────────────────────────────────────────
         boolean insured = r.containsKey("is_insured") ? asBool(r.get("is_insured")) : false;
-        LOG.info("[NIDAN-PAYWALL] insurance-bypass cfg={} patient-insured={} → bypass={}",
-                insuranceBypass, insured, (insuranceBypass && insured));
+        LOG.info("[NIDAN-PAYWALL] insurance-bypass cfg={} patient-insured={} → bypass={}", insuranceBypass, insured,
+                (insuranceBypass && insured));
 
         if (insuranceBypass && insured) {
             LOG.info("[NIDAN-PAYWALL] verdict=allow  reason=insurance-bypass → forwarding to frontend");
@@ -172,41 +178,51 @@ public class NidanPaywallClient {
         }
 
         // ── 3. STANDARD SETTLEMENT CHECK ────────────────────────────────────
-        double due  = asDouble(r.get("due_amount"));
+        double due = asDouble(r.get("due_amount"));
         double cart = asDouble(r.get("cart_amount"));
-        String currency      = asString(r.get("currency"));
+        String currency = asString(r.get("currency"));
         String paymentStatus = asString(r.get("payment_status"));
-        double outstanding   = due + cart;
+        double outstanding = due + cart;
 
-        boolean settled = r.containsKey("is_settled")
-                ? asBool(r.get("is_settled"))
-                : (due <= 0.0 && cart <= 0.0);
+        boolean settled = r.containsKey("is_settled") ? asBool(r.get("is_settled")) : (due <= 0.0 && cart <= 0.0);
 
         if (settled) {
-            LOG.info("[NIDAN-PAYWALL] verdict=allow  reason=settled outstanding={} → forwarding to frontend", outstanding);
+            LOG.info("[NIDAN-PAYWALL] verdict=allow  reason=settled outstanding={} → forwarding to frontend",
+                    outstanding);
             return new PaywallResult("allow", outstanding, currency, paymentStatus);
         }
-        LOG.info("[NIDAN-PAYWALL] verdict=block  reason=outstanding={} settled={} → forwarding to frontend", outstanding, settled);
+        LOG.info("[NIDAN-PAYWALL] verdict=block  reason=outstanding={} settled={} → forwarding to frontend",
+                outstanding, settled);
         return new PaywallResult("block", outstanding, currency, paymentStatus);
     }
 
     // --- tiny type helpers ---
 
     private static boolean asBool(Object o) {
-        if (o instanceof Boolean b) { return b; }
+        if (o instanceof Boolean b) {
+            return b;
+        }
         return o != null && "true".equalsIgnoreCase(o.toString());
     }
 
     private static double asDouble(Object o) {
-        if (o instanceof Number n) { return n.doubleValue(); }
+        if (o instanceof Number n) {
+            return n.doubleValue();
+        }
         if (o != null) {
-            try { return Double.parseDouble(o.toString()); }
-            catch (NumberFormatException ignored) {}
+            try {
+                return Double.parseDouble(o.toString());
+            } catch (NumberFormatException ignored) {
+            }
         }
         return 0.0;
     }
 
-    private static String asString(Object o) { return o != null ? o.toString() : null; }
+    private static String asString(Object o) {
+        return o != null ? o.toString() : null;
+    }
 
-    private static String blank(String s) { return (s == null || s.isBlank()) ? "<null>" : s; }
+    private static String blank(String s) {
+        return (s == null || s.isBlank()) ? "<null>" : s;
+    }
 }
