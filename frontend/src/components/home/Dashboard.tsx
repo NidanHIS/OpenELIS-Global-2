@@ -894,6 +894,33 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       });
   };
 
+  /**
+   * Paywall-aware navigation for the 4 right-panel action buttons.
+   * Resolves patientGuid from the data array, calls /paywall-check,
+   * then opens the target URL if allowed.
+   */
+  const handleAction = (patientGuid: string, targetUrl: string, newTab: boolean = false) => {
+    if (!patientGuid) {
+      // No guid — fail-open, just navigate
+      if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
+      return;
+    }
+    getFromOpenElisServerV2(
+      `/rest/nidan/paywall/check?patientUuid=${encodeURIComponent(patientGuid)}`,
+    )
+      .then((pw: any) => {
+        if (pw && pw.blocked === true) {
+          setPaywallBlockedOpen(true);
+        } else {
+          if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
+        }
+      })
+      .catch(() => {
+        // fail-open
+        if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
+      });
+  };
+
   const handleMaximizeClick = (tile) => {
     if (tile?.type === "SAMPLES_TO_COLLECT") {
       window.location.href = getFullPath("/IncomingOrders");
@@ -1262,6 +1289,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (c) => c.info.header === "labNumber",
       )?.value;
       if (!accessionNumber) return <TableCell key={cell.id} />;
+      const patientGuid = data.find((item) => String(item.id) === String(row.id))?.patientGuid || "";
       const resultUrl = getFullPath(
         "/result?type=order&doRange=false&accessionNumber=" + accessionNumber,
       );
@@ -1291,6 +1319,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
+              onClick={(e) => { e.preventDefault(); handleAction(patientGuid, barcodeUrl, true); }}
             >
               <img
                 src={barcodeIcon}
@@ -1306,7 +1335,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                window.open(resultUrl, "_blank");
+                handleAction(patientGuid, resultUrl, true);
               }}
             >
               <img
@@ -1323,7 +1352,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                window.open(validationUrl, "_blank");
+                handleAction(patientGuid, validationUrl, true);
               }}
             >
               <img
@@ -1341,6 +1370,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 color: "black",
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAction(patientGuid, reportUrl, true);
               }}
             >
               <Printer
