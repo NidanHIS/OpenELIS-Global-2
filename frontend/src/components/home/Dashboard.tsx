@@ -54,7 +54,7 @@ import UserSessionDetailsContext from "../../UserSessionDetailsContext";
 import { NotificationContext } from "../layout/Layout";
 import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 
-interface DashBoardProps {}
+interface DashBoardProps { }
 
 interface Tile {
   title: string | JSX.Element;
@@ -312,7 +312,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     try {
       setRightPanelView(
         (localStorage.getItem("dashboard_right_panel") as PanelView) ||
-          "ACTIVE",
+        "ACTIVE",
       );
       setLeftPanelView(
         (localStorage.getItem("dashboard_left_panel") as PanelView) || "ACTIVE",
@@ -484,12 +484,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         id: item.externalOrderNumber,
         received: item.receivedTimestamp
           ? new Date(item.receivedTimestamp).toLocaleString([], {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "—",
         tests: item.testCount != null ? String(item.testCount) : "—",
         source: item.source ?? "—",
@@ -880,7 +880,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         } else {
           window.location.href = getFullPath(
             "/SamplePatientEntry?incomingOrderNumber=" +
-              encodeURIComponent(externalOrderNumber),
+            encodeURIComponent(externalOrderNumber),
           );
         }
       })
@@ -889,7 +889,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         // fail-open
         window.location.href = getFullPath(
           "/SamplePatientEntry?incomingOrderNumber=" +
-            encodeURIComponent(externalOrderNumber),
+          encodeURIComponent(externalOrderNumber),
         );
       });
   };
@@ -993,7 +993,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       (item) =>
         isToday(item.orderDate) &&
         (tilesWithTabs.includes(selectedTile?.type) &&
-        selectedTestSection !== "all"
+          selectedTestSection !== "all"
           ? item.testSection === selectedTestSection
           : true),
     );
@@ -1024,7 +1024,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (item) =>
           !isToday(item.orderDate) &&
           (tilesWithTabs.includes(selectedTile?.type) &&
-          selectedTestSection !== "all"
+            selectedTestSection !== "all"
             ? item.testSection === selectedTestSection
             : true),
       ),
@@ -1243,17 +1243,20 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             />
             {isSplitLayout(selectedTile.type) ? (
               <Link
-                style={{ color: "blue" }}
-                href={
-                  usesInProgressView(selectedTile.type)
+                style={{ color: "blue", cursor: "pointer" }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const patientGuid = data.find((item: any) => String(item.id) === String(row.id))?.patientGuid || "";
+                  const targetUrl = usesInProgressView(selectedTile.type)
                     ? getFullPath(
-                        "/result?type=order&doRange=false&accessionNumber=" +
-                          cell.value,
-                      )
+                      "/result?type=order&doRange=false&accessionNumber=" +
+                      cell.value,
+                    )
                     : getFullPath(
-                        "/validation?type=order&accessionNumber=" + cell.value,
-                      )
-                }
+                      "/validation?type=order&accessionNumber=" + cell.value,
+                    );
+                  handleAction(patientGuid, targetUrl, false);
+                }}
               >
                 <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
               </Link>
@@ -2045,8 +2048,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         placeholder={
                           rightPanelView === "ACTIVE"
                             ? intl.formatMessage({
-                                id: "dashboard.orders.search.placeholder",
-                              })
+                              id: "dashboard.orders.search.placeholder",
+                            })
                             : "Search backlog by lab number, patient..."
                         }
                         value={rightSearch}
@@ -2062,15 +2065,15 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                               isSplitLayout(selectedTile?.type)
                                 ? filteredRightData
                                 : filteredRightData.slice(
-                                    (rightPage - 1) * rightPageSize,
-                                    rightPage * rightPageSize,
-                                  )
+                                  (rightPage - 1) * rightPageSize,
+                                  rightPage * rightPageSize,
+                                )
                             }
                             headers={
                               isSplitLayout(selectedTile.type)
                                 ? groupedOrderHeaders
                                 : selectedTile.type !==
-                                    "ORDERS_ENTERED_BY_USER_TODAY"
+                                  "ORDERS_ENTERED_BY_USER_TODAY"
                                   ? orderHeaders
                                   : userHeaders
                             }
