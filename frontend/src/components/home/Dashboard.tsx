@@ -875,7 +875,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     )
       .then((data: any) => {
         setPaywallCheckingId(null);
-        if (data && data.blocked === true) {
+        if (data && data.blocked === true && !hasRole(userSessionDetails, "Global Administrator")) {
           setPaywallBlockedOpen(true);
         } else {
           window.location.href = getFullPath(
@@ -909,7 +909,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       `/rest/nidan/paywall/check?patientUuid=${encodeURIComponent(patientGuid)}`,
     )
       .then((pw: any) => {
-        if (pw && pw.blocked === true) {
+        if (pw && pw.blocked === true && !hasRole(userSessionDetails, "Global Administrator")) {
           setPaywallBlockedOpen(true);
         } else {
           if (newTab) { window.open(targetUrl, "_blank"); } else { window.location.href = targetUrl; }
