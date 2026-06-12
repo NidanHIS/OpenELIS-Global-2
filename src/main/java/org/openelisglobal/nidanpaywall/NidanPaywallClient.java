@@ -38,6 +38,9 @@ public class NidanPaywallClient {
     @Value("${org.openelisglobal.nidan.paywall.odoo.secret:}")
     private String secret;
 
+    @Value("${org.openelisglobal.nidan.paywall.insurance.bypass:false}")
+    private boolean insuranceBypass;
+
     private final ObjectMapper json = new ObjectMapper();
 
     /**
@@ -81,7 +84,7 @@ public class NidanPaywallClient {
             LOG.info("[NIDAN-PAYWALL] GET {}", url);
 
             Map<String, Object> body = odooGet(url);
-            PaywallResult result = toResult(body);
+            PaywallResult result = toResult(body, insuranceBypass);
 
             LOG.info("[NIDAN-PAYWALL] decision={} outstanding={} status={}",
                     result.decision(), result.outstandingAmount(), result.paymentStatus());
@@ -137,7 +140,7 @@ public class NidanPaywallClient {
         }
     }
 
-    private static PaywallResult toResult(Map<String, Object> r) {
+    private static PaywallResult toResult(Map<String, Object> r, boolean insuranceBypass) {
         if (r == null) {
             return PaywallResult.allow(); // null body = no billing = allow
         }
@@ -146,11 +149,29 @@ public class NidanPaywallClient {
         if (r.containsKey("error")) {
             String err = String.valueOf(r.get("error"));
             if ("PATIENT_NOT_FOUND".equals(err) || "VISIT_NOT_FOUND".equals(err)) {
+                LOG.info("[NIDAN-PAYWALL] odoo={}  → allow (no billing record)", err);
                 return PaywallResult.allow();
             }
             throw new RuntimeException("Odoo error: " + err);
         }
 
+        // ── 1. RAW ODOO FIELDS ───────────────────────────────────────────────
+        LOG.info("[NIDAN-PAYWALL] odoo → is_insured={} is_settled={} due={} cart={} status={}",
+                r.get("is_insured"), r.get("is_settled"),
+                r.get("due_amount"), r.get("cart_amount"),
+                r.get("payment_status"));
+
+        // ── 2. INSURANCE BYPASS GATE ─────────────────────────────────────────
+        boolean insured = r.containsKey("is_insured") ? asBool(r.get("is_insured")) : false;
+        LOG.info("[NIDAN-PAYWALL] insurance-bypass cfg={} patient-insured={} → bypass={}",
+                insuranceBypass, insured, (insuranceBypass && insured));
+
+        if (insuranceBypass && insured) {
+            LOG.info("[NIDAN-PAYWALL] verdict=allow  reason=insurance-bypass → forwarding to frontend");
+            return new PaywallResult("allow", 0.0, asString(r.get("currency")), asString(r.get("payment_status")));
+        }
+
+        // ── 3. STANDARD SETTLEMENT CHECK ────────────────────────────────────
         double due  = asDouble(r.get("due_amount"));
         double cart = asDouble(r.get("cart_amount"));
         String currency      = asString(r.get("currency"));
@@ -162,8 +183,10 @@ public class NidanPaywallClient {
                 : (due <= 0.0 && cart <= 0.0);
 
         if (settled) {
+            LOG.info("[NIDAN-PAYWALL] verdict=allow  reason=settled outstanding={} → forwarding to frontend", outstanding);
             return new PaywallResult("allow", outstanding, currency, paymentStatus);
         }
+        LOG.info("[NIDAN-PAYWALL] verdict=block  reason=outstanding={} settled={} → forwarding to frontend", outstanding, settled);
         return new PaywallResult("block", outstanding, currency, paymentStatus);
     }
 
