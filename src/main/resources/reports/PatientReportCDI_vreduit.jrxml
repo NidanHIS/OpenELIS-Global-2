@@ -493,7 +493,7 @@
 					<subreportParameterExpression><![CDATA[$P{billingNumberLabel}]]></subreportParameterExpression>
 				</subreportParameter>
 				<subreportParameter name="reportTitle">
-					<subreportParameterExpression><![CDATA[$R{report.analysisReport}]]></subreportParameterExpression>
+					<subreportParameterExpression><![CDATA["Patient Report"]]></subreportParameterExpression>
 				</subreportParameter>
 				<subreportParameter name="rightHeaderImage">
 					<subreportParameterExpression><![CDATA[$P{rightHeaderImage}]]></subreportParameterExpression>
@@ -551,7 +551,9 @@
 				<textFieldExpression><![CDATA[$R{report.correctedReport}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement mode="Opaque" x="1" y="110" width="550" height="13" backcolor="#E6E6E6"/>
+				<reportElement mode="Opaque" x="1" y="110" width="550" height="13" backcolor="#E6E6E6">
+					<printWhenExpression><![CDATA[false]]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="8"/>
 					<paragraph lineSpacing="Single"/>
