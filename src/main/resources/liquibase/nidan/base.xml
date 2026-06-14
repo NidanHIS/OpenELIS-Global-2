@@ -12,4 +12,5 @@
   <include relativeToChangelogFile="true" file="add-dictionary-guid.xml"/>
   <include relativeToChangelogFile="true" file="cleanup-legacy-data.xml"/>
   <include relativeToChangelogFile="true" file="site-config-defaults.xml"/>
+  <include relativeToChangelogFile="true" file="paywall-admin-role.xml"/>
 </databaseChangeLog>

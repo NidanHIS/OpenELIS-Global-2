@@ -47,6 +47,7 @@ import {
   getFromOpenElisServerV2,
   convertAlphaNumLabNumForDisplay,
   hasRole,
+  Roles,
 } from "../utils/Utils.js";
 import { getFullPath } from "../utils/Navigation";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -398,7 +399,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const fetchTestSections = (res) => {
     setTestSections(res);
-    hasRole(userSessionDetails, "Global Administrator")
+    hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)
       ? setSelectedTestSection("all")
       : setSelectedTestSection(res[0]?.id);
   };
@@ -864,7 +865,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   // -- HANDLERS --
   const handleMinimizeClick = () => {
     setSelectedTile(null);
-    hasRole(userSessionDetails, "Global Administrator")
+    hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)
       ? setSelectedTestSection("all")
       : setSelectedTestSection(testSections[0]?.id);
   };
@@ -880,7 +881,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         if (
           data &&
           data.blocked === true &&
-          !hasRole(userSessionDetails, "Global Administrator")
+          !hasRole(userSessionDetails, Roles.PAYWALL_ADMIN)
         ) {
           setPaywallBlockedOpen(true);
         } else {
@@ -926,7 +927,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         if (
           pw &&
           pw.blocked === true &&
-          !hasRole(userSessionDetails, "Global Administrator")
+          !hasRole(userSessionDetails, Roles.PAYWALL_ADMIN)
         ) {
           setPaywallBlockedOpen(true);
         } else {
@@ -962,7 +963,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
     if (
       testSections?.length > 0 ||
-      hasRole(userSessionDetails, "Global Administrator")
+      hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)
     ) {
       setSelectedTile(tile);
     } else {
@@ -2026,10 +2027,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       tilesWithTabs.includes(selectedTile.type) && (
                         <div style={{ marginBottom: "0.75rem" }}>
                           <Tabs>
-                            {hasRole(
-                              userSessionDetails,
-                              "Global Administrator",
-                            ) ? (
+                            {hasRole(userSessionDetails, Roles.GLOBAL_ADMIN) ? (
                               <TabList
                                 style={{ width: "100%" }}
                                 aria-label="Department tabs"
@@ -2424,10 +2422,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                     <Grid>
                       <Column lg={16} md={8} sm={4}>
                         <Tabs>
-                          {hasRole(
-                            userSessionDetails,
-                            "Global Administrator",
-                          ) ? (
+                          {hasRole(userSessionDetails, Roles.GLOBAL_ADMIN) ? (
                             <TabList
                               style={{ width: "100%" }}
                               aria-label="List of tabs"

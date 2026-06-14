@@ -525,6 +525,7 @@ export function urlBase64ToUint8Array(base64String) {
 
 export const Roles = {
   GLOBAL_ADMIN: "Global Administrator",
+  PAYWALL_ADMIN: "Paywall Administration",
   USER_ACCOUNT_ADMIN: "User Account Administrator",
   AUDIT_TRAIL: "Audit Trail",
   ANALYSER_IMPORT: "Analyser Import",

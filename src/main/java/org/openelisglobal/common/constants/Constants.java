@@ -13,6 +13,7 @@ public class Constants {
     public static final String LOGIN_ERRORS = "loginErrors";
     // all active roles
     public static final String ROLE_GLOBAL_ADMIN = "Global Administrator";
+    public static final String ROLE_PAYWALL_ADMIN = "Paywall Administration";
     public static final String ROLE_USER_ACCOUNT_ADMIN = "User Account Administrator";
     public static final String ROLE_AUDIT_TRAIL = "Audit Trail";
     public static final String ROLE_RECEPTION = "Reception";
