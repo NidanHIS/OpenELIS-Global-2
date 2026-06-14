@@ -613,9 +613,9 @@
 						<bottomPen lineWidth="0.0" lineColor="#CCCCCC"/>
 						<rightPen lineWidth="0.0"/>
 					</box>
-					<textElement textAlignment="Right" verticalAlignment="Middle" markup="styled">
+					<textElement textAlignment="Center" verticalAlignment="Middle" markup="styled">
 						<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" pdfFontName="Helvetica" isPdfEmbedded="true"/>
-						<paragraph lineSpacing="Single"/>
+						<paragraph lineSpacing="Single" leftIndent="4"/>
 					</textElement>
 					<textFieldExpression><![CDATA[$F{result}]]></textFieldExpression>
 				</textField>
