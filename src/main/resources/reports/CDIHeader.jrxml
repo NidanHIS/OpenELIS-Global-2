@@ -53,9 +53,9 @@
 				<textFieldExpression><![CDATA[$R{report.labManager} + ": " + $P{directorName}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="2" y="2" width="568" height="13" uuid="6ef08d50-78f6-4989-8710-0fa175e05b29"/>
+				<reportElement x="2" y="2" width="568" height="16" uuid="6ef08d50-78f6-4989-8710-0fa175e05b29"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
+					<font size="13" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{labName1}]]></textFieldExpression>
 			</textField>
