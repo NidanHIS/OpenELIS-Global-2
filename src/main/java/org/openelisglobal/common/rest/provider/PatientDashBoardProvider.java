@@ -32,6 +32,7 @@ import org.openelisglobal.dataexchange.fhir.FhirConfig;
 import org.openelisglobal.dataexchange.fhir.FhirUtil;
 import org.openelisglobal.dataexchange.order.valueholder.ElectronicOrder;
 import org.openelisglobal.dataexchange.service.order.ElectronicOrderService;
+import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.sample.service.SampleService;
 import org.openelisglobal.sample.valueholder.Sample;
@@ -80,6 +81,9 @@ public class PatientDashBoardProvider {
 
     @Autowired
     SystemUserService systemUserService;
+
+    @Autowired
+    private PatientService patientService;
 
     private double calculateAverageReceptionToValidationTime() {
         List<Analysis> analyses = analysisService.getAnalysesCompletedOnByStatusId(DateUtil.getNowAsSqlDate(),
@@ -201,6 +205,8 @@ public class PatientDashBoardProvider {
                         orderBean.setPatientId(
                                 patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                         orderBean.setPatientName(getPatientName(patient));
+                        orderBean.setPatientGuid(
+                                patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                     }
                     orderBean.setOrderDate(analysis.getStartedDateForDisplay());
                     orderBean.setTestName(analysis.getTest() != null ? analysis.getTest().getLocalizedName() : "");
@@ -252,6 +258,8 @@ public class PatientDashBoardProvider {
                     bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
                     bean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                     bean.setPatientName(getPatientName(patient));
+                    bean.setPatientGuid(
+                            patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                 }
 
                 bean.setOrderDate(analysis.getStartedDateForDisplay());
@@ -607,6 +615,8 @@ public class PatientDashBoardProvider {
                             bean.setPatientId(
                                     patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                             bean.setPatientName(getPatientName(patient));
+                            bean.setPatientGuid(
+                                    patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                         }
                         bean.setOrderDate(analysis.getStartedDateForDisplay());
                         bean.setTestSection(analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");
@@ -858,6 +868,8 @@ public class PatientDashBoardProvider {
                             bean.setPatientId(
                                     patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
                             bean.setPatientName(getPatientName(patient));
+                            bean.setPatientGuid(
+                                    patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
                         }
                         bean.setOrderDate(analysis.getStartedDateForDisplay());
                         bean.setTestSection(analysis.getTestSection() != null ? analysis.getTestSection().getId() : "");

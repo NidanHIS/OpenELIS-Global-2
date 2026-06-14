@@ -6,6 +6,10 @@ import {
   Grid,
   Button,
   Column,
+  ComposedModal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   TextInput,
   DataTable,
   TableContainer,
@@ -43,6 +47,7 @@ import {
   getFromOpenElisServerV2,
   convertAlphaNumLabNumForDisplay,
   hasRole,
+  Roles,
 } from "../utils/Utils.js";
 import { getFullPath } from "../utils/Navigation";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -144,6 +149,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   );
   // Track in-flight fetch sequence so stale responses are discarded
   const leftFetchSeq = useRef(0);
+
+  // ── PAYWALL STATE ─────────────────────────────────────────────────────────────
+  const [paywallCheckingId, setPaywallCheckingId] = useState<string | null>(
+    null,
+  );
+  const [paywallBlockedOpen, setPaywallBlockedOpen] = useState(false);
 
   // ── RIGHT PANEL SERVER-SIDE PAGINATION STATE ─────────────────────────────────
   // Drives the paginated /rest/home-dashboard/grouped-orders/paged calls.
@@ -388,7 +399,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const fetchTestSections = (res) => {
     setTestSections(res);
-    hasRole(userSessionDetails, "Global Administrator")
+    hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)
       ? setSelectedTestSection("all")
       : setSelectedTestSection(res[0]?.id);
   };
@@ -854,9 +865,87 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   // -- HANDLERS --
   const handleMinimizeClick = () => {
     setSelectedTile(null);
-    hasRole(userSessionDetails, "Global Administrator")
+    hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)
       ? setSelectedTestSection("all")
       : setSelectedTestSection(testSections[0]?.id);
+  };
+
+  const handleCollect = (externalOrderNumber: string) => {
+    if (!externalOrderNumber) return;
+    setPaywallCheckingId(externalOrderNumber);
+    getFromOpenElisServerV2(
+      `/rest/incoming-orders/${encodeURIComponent(externalOrderNumber)}/paywall-check`,
+    )
+      .then((data: any) => {
+        setPaywallCheckingId(null);
+        if (
+          data &&
+          data.blocked === true &&
+          !hasRole(userSessionDetails, Roles.PAYWALL_ADMIN)
+        ) {
+          setPaywallBlockedOpen(true);
+        } else {
+          window.location.href = getFullPath(
+            "/SamplePatientEntry?incomingOrderNumber=" +
+              encodeURIComponent(externalOrderNumber),
+          );
+        }
+      })
+      .catch(() => {
+        setPaywallCheckingId(null);
+        // fail-open
+        window.location.href = getFullPath(
+          "/SamplePatientEntry?incomingOrderNumber=" +
+            encodeURIComponent(externalOrderNumber),
+        );
+      });
+  };
+
+  /**
+   * Paywall-aware navigation for the 4 right-panel action buttons.
+   * Resolves patientGuid from the data array, calls /paywall-check,
+   * then opens the target URL if allowed.
+   */
+  const handleAction = (
+    patientGuid: string,
+    targetUrl: string,
+    newTab: boolean = false,
+  ) => {
+    if (!patientGuid) {
+      // No guid — fail-open, just navigate
+      if (newTab) {
+        window.open(targetUrl, "_blank");
+      } else {
+        window.location.href = targetUrl;
+      }
+      return;
+    }
+    getFromOpenElisServerV2(
+      `/rest/nidan/paywall/check?patientUuid=${encodeURIComponent(patientGuid)}`,
+    )
+      .then((pw: any) => {
+        if (
+          pw &&
+          pw.blocked === true &&
+          !hasRole(userSessionDetails, Roles.PAYWALL_ADMIN)
+        ) {
+          setPaywallBlockedOpen(true);
+        } else {
+          if (newTab) {
+            window.open(targetUrl, "_blank");
+          } else {
+            window.location.href = targetUrl;
+          }
+        }
+      })
+      .catch(() => {
+        // fail-open
+        if (newTab) {
+          window.open(targetUrl, "_blank");
+        } else {
+          window.location.href = targetUrl;
+        }
+      });
   };
 
   const handleMaximizeClick = (tile) => {
@@ -874,7 +963,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     }
     if (
       testSections?.length > 0 ||
-      hasRole(userSessionDetails, "Global Administrator")
+      hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)
     ) {
       setSelectedTile(tile);
     } else {
@@ -1181,17 +1270,22 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             />
             {isSplitLayout(selectedTile.type) ? (
               <Link
-                style={{ color: "blue" }}
-                href={
-                  usesInProgressView(selectedTile.type)
+                style={{ color: "blue", cursor: "pointer" }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const patientGuid =
+                    data.find((item: any) => String(item.id) === String(row.id))
+                      ?.patientGuid || "";
+                  const targetUrl = usesInProgressView(selectedTile.type)
                     ? getFullPath(
                         "/result?type=order&doRange=false&accessionNumber=" +
                           cell.value,
                       )
                     : getFullPath(
                         "/validation?type=order&accessionNumber=" + cell.value,
-                      )
-                }
+                      );
+                  handleAction(patientGuid, targetUrl, false);
+                }}
               >
                 <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
               </Link>
@@ -1227,6 +1321,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         (c) => c.info.header === "labNumber",
       )?.value;
       if (!accessionNumber) return <TableCell key={cell.id} />;
+      const patientGuid =
+        data.find((item) => String(item.id) === String(row.id))?.patientGuid ||
+        "";
       const resultUrl = getFullPath(
         "/result?type=order&doRange=false&accessionNumber=" + accessionNumber,
       );
@@ -1256,6 +1353,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAction(patientGuid, barcodeUrl, true);
+              }}
             >
               <img
                 src={barcodeIcon}
@@ -1271,7 +1372,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                window.open(resultUrl, "_blank");
+                handleAction(patientGuid, resultUrl, true);
               }}
             >
               <img
@@ -1288,7 +1389,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                window.open(validationUrl, "_blank");
+                handleAction(patientGuid, validationUrl, true);
               }}
             >
               <img
@@ -1306,6 +1407,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 color: "black",
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAction(patientGuid, reportUrl, true);
               }}
             >
               <Printer
@@ -1425,6 +1530,24 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     <>
       {loading && <Loading description="Loading Dashboard..." />}
       {notificationVisible === true && <AlertDialog />}
+
+      <ComposedModal
+        open={paywallBlockedOpen}
+        onClose={() => setPaywallBlockedOpen(false)}
+      >
+        <ModalHeader title="Payment Required" />
+        <ModalBody>
+          <p>
+            This patient has an outstanding balance. Please settle payment
+            before collecting the sample.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="primary" onClick={() => setPaywallBlockedOpen(false)}>
+            OK
+          </Button>
+        </ModalFooter>
+      </ComposedModal>
 
       {selectedTile == null ? (
         <div className="home-dashboard-container">
@@ -1625,16 +1748,19 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             );
                                             if (h.key === "actions") {
                                               // row.id IS the externalOrderNumber
-                                              const collectUrl = getFullPath(
-                                                "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
-                                              );
+                                              const isChecking =
+                                                paywallCheckingId === row.id;
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
-                                                  <a
-                                                    href={collectUrl}
+                                                  <button
+                                                    disabled={
+                                                      !!paywallCheckingId
+                                                    }
+                                                    onClick={() =>
+                                                      handleCollect(row.id)
+                                                    }
                                                     style={{
                                                       display: "inline-flex",
                                                       alignItems: "center",
@@ -1642,17 +1768,25 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                       padding:
                                                         "0.35rem 0.85rem",
                                                       borderRadius: "1rem",
-                                                      background: "#0f62fe",
+                                                      background:
+                                                        paywallCheckingId
+                                                          ? "#8d8d8d"
+                                                          : "#0f62fe",
                                                       color: "#fff",
                                                       fontSize: "0.78rem",
                                                       fontWeight: 600,
-                                                      textDecoration: "none",
+                                                      border: "none",
+                                                      cursor: paywallCheckingId
+                                                        ? "not-allowed"
+                                                        : "pointer",
                                                       letterSpacing: "0.3px",
                                                       whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    Collect
-                                                  </a>
+                                                    {isChecking
+                                                      ? "..."
+                                                      : "Collect"}
+                                                  </button>
                                                 </TableCell>
                                               );
                                             }
@@ -1768,16 +1902,19 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                         <TableRow key={row.id}>
                                           {headers.map((h) => {
                                             if (h.key === "actions") {
-                                              const collectUrl = getFullPath(
-                                                "/SamplePatientEntry?incomingOrderNumber=" +
-                                                  encodeURIComponent(row.id),
-                                              );
+                                              const isChecking =
+                                                paywallCheckingId === row.id;
                                               return (
                                                 <TableCell
                                                   key={`${row.id}-actions`}
                                                 >
-                                                  <a
-                                                    href={collectUrl}
+                                                  <button
+                                                    disabled={
+                                                      !!paywallCheckingId
+                                                    }
+                                                    onClick={() =>
+                                                      handleCollect(row.id)
+                                                    }
                                                     style={{
                                                       display: "inline-flex",
                                                       alignItems: "center",
@@ -1785,17 +1922,25 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                       padding:
                                                         "0.35rem 0.85rem",
                                                       borderRadius: "1rem",
-                                                      background: "#0f62fe",
+                                                      background:
+                                                        paywallCheckingId
+                                                          ? "#8d8d8d"
+                                                          : "#0f62fe",
                                                       color: "#fff",
                                                       fontSize: "0.78rem",
                                                       fontWeight: 600,
-                                                      textDecoration: "none",
+                                                      border: "none",
+                                                      cursor: paywallCheckingId
+                                                        ? "not-allowed"
+                                                        : "pointer",
                                                       letterSpacing: "0.3px",
                                                       whiteSpace: "nowrap",
                                                     }}
                                                   >
-                                                    Collect
-                                                  </a>
+                                                    {isChecking
+                                                      ? "..."
+                                                      : "Collect"}
+                                                  </button>
                                                 </TableCell>
                                               );
                                             }
@@ -1882,10 +2027,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                       tilesWithTabs.includes(selectedTile.type) && (
                         <div style={{ marginBottom: "0.75rem" }}>
                           <Tabs>
-                            {hasRole(
-                              userSessionDetails,
-                              "Global Administrator",
-                            ) ? (
+                            {hasRole(userSessionDetails, Roles.GLOBAL_ADMIN) ? (
                               <TabList
                                 style={{ width: "100%" }}
                                 aria-label="Department tabs"
@@ -2280,10 +2422,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                     <Grid>
                       <Column lg={16} md={8} sm={4}>
                         <Tabs>
-                          {hasRole(
-                            userSessionDetails,
-                            "Global Administrator",
-                          ) ? (
+                          {hasRole(userSessionDetails, Roles.GLOBAL_ADMIN) ? (
                             <TabList
                               style={{ width: "100%" }}
                               aria-label="List of tabs"

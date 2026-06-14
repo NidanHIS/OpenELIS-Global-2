@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Creates the "Paywall Administration" role under the "Global Roles" group.
+        Users assigned this role can override the paywall block on the dashboard,
+        identical to what "Global Administrator" could do — but scoped exclusively
+        for paywall management.
+    -->
+    <changeSet id="nidan-add-paywall-admin-role" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role WHERE name = 'Paywall Administration'
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="system_role" schemaName="clinlims">
+            <column name="id"              valueSequenceNext="system_role_seq"/>
+            <column name="name"            value="Paywall Administration"/>
+            <column name="description"     value="Allows overriding the Nidan paywall block on the dashboard."/>
+            <column name="is_grouping_role" value="false"/>
+            <column name="grouping_parent"
+                valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Global Roles')"/>
+            <column name="display_key"     value="role.paywall.administration"/>
+            <column name="active"          value="true"/>
+            <column name="editable"        value="true"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

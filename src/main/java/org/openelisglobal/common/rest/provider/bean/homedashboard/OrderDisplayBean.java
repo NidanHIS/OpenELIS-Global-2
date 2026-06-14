@@ -32,6 +32,16 @@ public class OrderDisplayBean {
 
     private boolean completed;
 
+    private String patientGuid;
+
+    public String getPatientGuid() {
+        return patientGuid;
+    }
+
+    public void setPatientGuid(String patientGuid) {
+        this.patientGuid = patientGuid;
+    }
+
     public String getUserFirstName() {
         return userFirstName;
     }
