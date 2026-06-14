@@ -909,7 +909,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const handleAction = (
     patientGuid: string,
     targetUrl: string,
-    newTab: boolean = false,
+    newTab = false,
   ) => {
     if (!patientGuid) {
       // No guid — fail-open, just navigate
