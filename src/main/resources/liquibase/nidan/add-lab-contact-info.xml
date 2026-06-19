@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- labEmail: INSERT if row is missing entirely -->
+    <changeSet id="nidan-site-config-lab-email-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'labEmail'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert labEmail site information configuration</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq"/>
+            <column name="name" value="labEmail"/>
+            <column name="lastupdated" valueComputed="now()"/>
+            <column name="description" value="Lab email address"/>
+            <column name="value" value=""/>
+            <column name="encrypted" value="false"/>
+            <column name="value_type" value="text"/>
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'printedReportsConfig')"/>
+            <column name="instruction_key" value="siteInfo.instruction.labemail.i"/>
+            <column name="group" value="0"/>
+            <column name="description_key" value="siteInfo.instruction.labemail.d"/>
+        </insert>
+    </changeSet>
+
+    <!-- labContactNumber: INSERT if row is missing entirely -->
+    <changeSet id="nidan-site-config-lab-contact-number-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'labContactNumber'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert labContactNumber site information configuration</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq"/>
+            <column name="name" value="labContactNumber"/>
+            <column name="lastupdated" valueComputed="now()"/>
+            <column name="description" value="Lab contact number"/>
+            <column name="value" value=""/>
+            <column name="encrypted" value="false"/>
+            <column name="value_type" value="text"/>
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'printedReportsConfig')"/>
+            <column name="instruction_key" value="siteInfo.instruction.labcontact.i"/>
+            <column name="group" value="0"/>
+            <column name="description_key" value="siteInfo.instruction.labcontact.d"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -14,6 +14,8 @@
 		<defaultValueExpression><![CDATA["c:/tomcat 5.5/webapps/openElisGlobal/WEB-INF/reports/"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="directorName" class="java.lang.String"/>
+	<parameter name="labEmail" class="java.lang.String"/>
+	<parameter name="labContactNumber" class="java.lang.String"/>
 	<parameter name="labName1" class="java.lang.String"/>
 	<parameter name="labName2" class="java.lang.String"/>
 	<parameter name="reportTitle" class="java.lang.String"/>
@@ -43,15 +45,6 @@
 	</columnHeader>
 	<detail>
 		<band height="94" splitType="Stretch">
-			<textField isBlankWhenNull="false">
-				<reportElement key="textField-1" x="2" y="80" width="568" height="13" uuid="ebd1a616-3fe3-4d68-a43c-79e06186c97d">
-					<printWhenExpression><![CDATA[$P{directorName} != null]]></printWhenExpression>
-				</reportElement>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$R{report.labManager} + ": " + $P{directorName}]]></textFieldExpression>
-			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement x="2" y="2" width="568" height="16" uuid="6ef08d50-78f6-4989-8710-0fa175e05b29"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
@@ -59,19 +52,22 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{labName1}]]></textFieldExpression>
 			</textField>
-			<textField textAdjust="StretchHeight">
-				<reportElement positionType="Float" x="126" y="42" width="310" height="16" uuid="fad02603-55a0-4de5-abba-42f0a9069a30"/>
-				<textElement textAlignment="Center">
-					<font size="12" isBold="true"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{reportTitle}]]></textFieldExpression>
-			</textField>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 				<reportElement mode="Transparent" x="2" y="21" width="568" height="13" backcolor="#FFFFFF" uuid="afc69626-74f8-4fcc-9824-b820dcd13ec2"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="html">
 					<font size="10" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{labName2}]]></textFieldExpression>
+			</textField>
+			<!-- contact & email in one line -->
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="42" width="568" height="13" uuid="fad02603-55a0-4de5-abba-42f0a9069a30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{labContactNumber} != null && !$P{labContactNumber}.isEmpty() ? "Contact No: " + $P{labContactNumber} : "") + 
+(($P{labContactNumber} != null && !$P{labContactNumber}.isEmpty()) && ($P{labEmail} != null && !$P{labEmail}.isEmpty()) ? " | " : "") + 
+($P{labEmail} != null && !$P{labEmail}.isEmpty() ? "Email: " + $P{labEmail} : "")]]></textFieldExpression>
 			</textField>
 			<elementGroup>
 				<image hAlign="Right" isUsingCache="true" onErrorType="Blank">
@@ -83,6 +79,14 @@
 					<imageExpression><![CDATA[$P{leftHeaderImage}]]></imageExpression>
 				</image>
 			</elementGroup>
+			<!-- report title at old director spot -->
+			<textField textAdjust="StretchHeight">
+				<reportElement positionType="Float" x="126" y="80" width="310" height="13"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{reportTitle}]]></textFieldExpression>
+			</textField>
 		</band>
 	</detail>
 	<columnFooter>
