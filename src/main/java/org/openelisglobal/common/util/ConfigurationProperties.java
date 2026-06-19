@@ -280,6 +280,7 @@ public abstract class ConfigurationProperties {
         GPS_TIMEOUT_SECONDS("gpsTimeoutSeconds", "text"), // timeout in seconds for GPS location requests
         LAB_EMAIL("labEmail", "text"), // Lab email address
         LAB_CONTACT_NUMBER("labContactNumber", "text"), // Lab contact number
+        USE_LETTERHEAD("useLetterhead", "text"), // Use letterhead image instead of default header
         USE_NEW_ADDRESS_HIERARCHY("useNewAddressHierarchy", "text"), // if true, use new configurable address hierarchy
         EQA_ENABLED("eqaEnabled", "text"); // if true, EQA checkbox appears on order entry to mark sample as EQA
 

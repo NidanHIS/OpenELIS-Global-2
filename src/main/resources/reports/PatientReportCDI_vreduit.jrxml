@@ -42,6 +42,10 @@
 	<parameter name="labDirectorSignature" class="java.io.InputStream" isForPrompting="false"/>
 	<parameter name="labEmail" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="labContactNumber" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="useLetterhead" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["false"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="letterheadImage" class="java.io.InputStream" isForPrompting="false"/>
 	<parameter name="imagesPath" class="java.lang.String"/>
 	<parameter name="useBillingNumber" class="java.lang.Boolean" isForPrompting="false">
 		<defaultValueExpression><![CDATA[Boolean.FALSE]]></defaultValueExpression>
@@ -544,6 +548,12 @@
 				</subreportParameter>
 				<subreportParameter name="siteName">
 					<subreportParameterExpression><![CDATA[$P{siteName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="useLetterhead">
+					<subreportParameterExpression><![CDATA[$P{useLetterhead}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="letterheadImage">
+					<subreportParameterExpression><![CDATA[$P{letterheadImage}]]></subreportParameterExpression>
 				</subreportParameter>
 				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.JREmptyDataSource()]]></dataSourceExpression>
 				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + $P{headerName}]]></subreportExpression>

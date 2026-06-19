@@ -13,5 +13,6 @@
   <include relativeToChangelogFile="true" file="cleanup-legacy-data.xml"/>
   <include relativeToChangelogFile="true" file="site-config-defaults.xml"/>
   <include relativeToChangelogFile="true" file="paywall-admin-role.xml"/>
-  <include relativeToChangelogFile="true" file="add-lab-contact-info.xml"/>
+    <include relativeToChangelogFile="true" file="add-lab-contact-info.xml"/>
+    <include relativeToChangelogFile="true" file="add-letterhead-config.xml"/>
 </databaseChangeLog>

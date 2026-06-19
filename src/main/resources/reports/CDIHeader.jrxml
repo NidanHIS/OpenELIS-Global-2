@@ -14,9 +14,11 @@
 		<defaultValueExpression><![CDATA["c:/tomcat 5.5/webapps/openElisGlobal/WEB-INF/reports/"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="directorName" class="java.lang.String"/>
-	<parameter name="labEmail" class="java.lang.String"/>
-	<parameter name="labContactNumber" class="java.lang.String"/>
-	<parameter name="labName1" class="java.lang.String"/>
+    <parameter name="labEmail" class="java.lang.String"/>
+    <parameter name="labContactNumber" class="java.lang.String"/>
+    <parameter name="labName1" class="java.lang.String"/>
+    <parameter name="useLetterhead" class="java.lang.String" isForPrompting="false"/>
+    <parameter name="letterheadImage" class="java.io.InputStream" isForPrompting="false"/>
 	<parameter name="labName2" class="java.lang.String"/>
 	<parameter name="reportTitle" class="java.lang.String"/>
 	<parameter name="completeFlag" class="java.lang.String" isForPrompting="false">
@@ -45,15 +47,27 @@
 	</columnHeader>
 	<detail>
 		<band height="94" splitType="Stretch">
+			<!-- Letterhead Image - only shown when useLetterhead is true and letterheadImage exists -->
+			<image isUsingCache="true" onErrorType="Blank" scaleImage="FillFrame">
+				<reportElement x="0" y="0" width="572" height="94">
+					<printWhenExpression><![CDATA[Boolean.valueOf($P{useLetterhead}) && $P{letterheadImage} != null]]></printWhenExpression>
+				</reportElement>
+				<imageExpression><![CDATA[$P{letterheadImage}]]></imageExpression>
+			</image>
+			<!-- Original Header Elements - only shown when letterhead is not used -->
 			<textField isBlankWhenNull="true">
-				<reportElement x="2" y="2" width="568" height="16" uuid="6ef08d50-78f6-4989-8710-0fa175e05b29"/>
+				<reportElement x="2" y="2" width="568" height="16" uuid="6ef08d50-78f6-4989-8710-0fa175e05b29">
+					<printWhenExpression><![CDATA[!Boolean.valueOf($P{useLetterhead})]]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="13" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{labName1}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-				<reportElement mode="Transparent" x="2" y="21" width="568" height="13" backcolor="#FFFFFF" uuid="afc69626-74f8-4fcc-9824-b820dcd13ec2"/>
+				<reportElement mode="Transparent" x="2" y="21" width="568" height="13" backcolor="#FFFFFF" uuid="afc69626-74f8-4fcc-9824-b820dcd13ec2">
+					<printWhenExpression><![CDATA[!Boolean.valueOf($P{useLetterhead})]]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="html">
 					<font size="10" isBold="true"/>
 				</textElement>
@@ -61,7 +75,9 @@
 			</textField>
 			<!-- contact & email in one line -->
 			<textField isBlankWhenNull="true">
-				<reportElement x="2" y="42" width="568" height="13" uuid="fad02603-55a0-4de5-abba-42f0a9069a30"/>
+				<reportElement x="2" y="42" width="568" height="13" uuid="fad02603-55a0-4de5-abba-42f0a9069a30">
+					<printWhenExpression><![CDATA[!Boolean.valueOf($P{useLetterhead})]]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="10"/>
 				</textElement>
@@ -69,19 +85,23 @@
 (($P{labContactNumber} != null && !$P{labContactNumber}.isEmpty()) && ($P{labEmail} != null && !$P{labEmail}.isEmpty()) ? " | " : "") + 
 ($P{labEmail} != null && !$P{labEmail}.isEmpty() ? "Email: " + $P{labEmail} : "")]]></textFieldExpression>
 			</textField>
-			<elementGroup>
-				<image hAlign="Right" isUsingCache="true" onErrorType="Blank">
-					<reportElement x="468" y="1" width="100" height="88" uuid="8c25b4f1-cbd1-44ac-ba39-f40b530180c5"/>
-					<imageExpression><![CDATA[$P{rightHeaderImage}]]></imageExpression>
-				</image>
-				<image isUsingCache="true">
-					<reportElement x="1" y="1" width="100" height="88" uuid="c464fbb9-16cb-4bfc-9830-59182621aad1"/>
-					<imageExpression><![CDATA[$P{leftHeaderImage}]]></imageExpression>
-				</image>
-			</elementGroup>
+			<image hAlign="Right" isUsingCache="true" onErrorType="Blank">
+				<reportElement x="468" y="1" width="100" height="88" uuid="8c25b4f1-cbd1-44ac-ba39-f40b530180c5">
+					<printWhenExpression><![CDATA[!Boolean.valueOf($P{useLetterhead})]]></printWhenExpression>
+				</reportElement>
+				<imageExpression><![CDATA[$P{rightHeaderImage}]]></imageExpression>
+			</image>
+			<image isUsingCache="true" onErrorType="Blank">
+				<reportElement x="1" y="1" width="100" height="88" uuid="c464fbb9-16cb-4bfc-9830-59182621aad1">
+					<printWhenExpression><![CDATA[!Boolean.valueOf($P{useLetterhead})]]></printWhenExpression>
+				</reportElement>
+				<imageExpression><![CDATA[$P{leftHeaderImage}]]></imageExpression>
+			</image>
 			<!-- report title at old director spot -->
 			<textField textAdjust="StretchHeight">
-				<reportElement positionType="Float" x="126" y="80" width="310" height="13"/>
+				<reportElement positionType="Float" x="126" y="80" width="310" height="13">
+					<printWhenExpression><![CDATA[!Boolean.valueOf($P{useLetterhead})]]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center">
 					<font size="12" isBold="true"/>
 				</textElement>
