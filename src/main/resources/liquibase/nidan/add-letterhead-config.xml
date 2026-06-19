@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- useLetterhead: INSERT if row is missing entirely -->
+    <changeSet id="nidan-site-config-use-letterhead-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'useLetterhead'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert useLetterhead as false if row is missing</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="useLetterhead" />
+            <column name="lastupdated" valueComputed="now()" />
+            <column name="description" value="Use letterhead image instead of default header" />
+            <column name="value" value="false" />
+            <column name="encrypted" value="false" />
+            <column name="value_type" value="boolean" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'printedReportsConfig')" />
+            <column name="group" value="0" />
+            <column name="description_key" value="siteInfo.useLetterhead" />
+            <column name="instruction_key" value="siteInfo.useLetterhead.instruction" />
+        </insert>
+    </changeSet>
+
+    <!-- letterheadImage: INSERT if row is missing entirely -->
+    <changeSet id="nidan-site-config-letterhead-image-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'letterheadImage'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert letterheadImage logo upload field if row is missing</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="letterheadImage" />
+            <column name="lastupdated" valueComputed="now()" />
+            <column name="description" value="Letterhead image for reports" />
+            <column name="value" value="" />
+            <column name="encrypted" value="false" />
+            <column name="value_type" value="logoUpload" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'printedReportsConfig')" />
+            <column name="group" value="0" />
+            <column name="description_key" value="siteInfo.letterheadImage" />
+            <column name="instruction_key" value="siteInfo.letterheadImage.instruction" />
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
