@@ -107,8 +107,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                 ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_DIRECTOR_NAME));
         reportParameters.put("labDirectorTitle",
                 ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_DIRECTOR_TITLE));
-        reportParameters.put("labEmail",
-                ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_EMAIL));
+        reportParameters.put("labEmail", ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_EMAIL));
         reportParameters.put("labContactNumber",
                 ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_CONTACT_NUMBER));
     }
