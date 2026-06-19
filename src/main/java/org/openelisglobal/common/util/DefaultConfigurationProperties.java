@@ -359,6 +359,8 @@ public class DefaultConfigurationProperties extends ConfigurationProperties {
 
         properties.setPropertyValue(Property.LAB_DIRECTOR_NAME, "");
         properties.setPropertyValue(Property.LAB_DIRECTOR_TITLE, "");
+        properties.setPropertyValue(Property.LAB_EMAIL, "");
+        properties.setPropertyValue(Property.LAB_CONTACT_NUMBER, "");
         properties.setPropertyValue(Property.CONTACT_TRACING, "false");
         properties.setPropertyValue(Property.ALPHANUM_ACCESSION_PREFIX, "");
         properties.setPropertyValue(Property.USE_ALPHANUM_ACCESSION_PREFIX, "false");

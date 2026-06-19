@@ -40,6 +40,8 @@
 	<parameter name="labDirectorTitle" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="useLabDirectorSignature" class="java.lang.Boolean" isForPrompting="false"/>
 	<parameter name="labDirectorSignature" class="java.io.InputStream" isForPrompting="false"/>
+	<parameter name="labEmail" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="labContactNumber" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="imagesPath" class="java.lang.String"/>
 	<parameter name="useBillingNumber" class="java.lang.Boolean" isForPrompting="false">
 		<defaultValueExpression><![CDATA[Boolean.FALSE]]></defaultValueExpression>
@@ -533,6 +535,12 @@
 				</subreportParameter>
 				<subreportParameter name="directorName">
 					<subreportParameterExpression><![CDATA[$P{directorName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="labEmail">
+					<subreportParameterExpression><![CDATA[$P{labEmail}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="labContactNumber">
+					<subreportParameterExpression><![CDATA[$P{labContactNumber}]]></subreportParameterExpression>
 				</subreportParameter>
 				<subreportParameter name="siteName">
 					<subreportParameterExpression><![CDATA[$P{siteName}]]></subreportParameterExpression>
