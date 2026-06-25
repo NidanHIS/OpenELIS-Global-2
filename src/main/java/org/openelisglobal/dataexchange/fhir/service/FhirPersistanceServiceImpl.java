@@ -65,6 +65,15 @@ public class FhirPersistanceServiceImpl implements FhirPersistanceService {
 
     IGenericClient localFhirClient;
 
+    private boolean isLocalFhirStoreAvailable() {
+        if (localFhirClient == null) {
+            LogEvent.logDebug(this.getClass().getSimpleName(), "isLocalFhirStoreAvailable",
+                    "Local FHIR store is not configured. Skipping persistence operation.");
+            return false;
+        }
+        return true;
+    }
+
     @PostConstruct
     public void init() {
         if (StringUtils.isNotBlank(fhirConfig.getLocalFhirStorePath())) {
@@ -85,6 +94,9 @@ public class FhirPersistanceServiceImpl implements FhirPersistanceService {
 
     @Override
     public Bundle createFhirResourcesInFhirStore(Map<String, Resource> resources) throws FhirLocalPersistingException {
+        if (!isLocalFhirStoreAvailable()) {
+            return new Bundle();
+        }
         Bundle transactionBundle = makeTransactionBundleForCreate(resources);
         Bundle transactionResponseBundle = new Bundle();
         try {
@@ -98,6 +110,9 @@ public class FhirPersistanceServiceImpl implements FhirPersistanceService {
 
     @Override
     public Bundle updateFhirResourcesInFhirStore(Map<String, Resource> resources) throws FhirLocalPersistingException {
+        if (!isLocalFhirStoreAvailable()) {
+            return new Bundle();
+        }
         Bundle transactionBundle = makeTransactionBundleForUpdate(resources);
         Bundle transactionResponseBundle = new Bundle();
         try {
@@ -112,6 +127,9 @@ public class FhirPersistanceServiceImpl implements FhirPersistanceService {
     @Override
     public Bundle createUpdateFhirResourcesInFhirStore(Map<String, Resource> createResources,
             Map<String, Resource> updateResources) throws FhirLocalPersistingException {
+        if (!isLocalFhirStoreAvailable()) {
+            return new Bundle();
+        }
         Bundle transactionBundle = new Bundle();
         transactionBundle.setType(BundleType.TRANSACTION);
         addUpdatesToTransactionBundle(updateResources, transactionBundle);
@@ -140,6 +158,9 @@ public class FhirPersistanceServiceImpl implements FhirPersistanceService {
     @Override
     public Bundle createUpdateFhirResourcesInFhirStore(List<FhirOperations> fhirOperationsList)
             throws FhirLocalPersistingException {
+        if (!isLocalFhirStoreAvailable()) {
+            return new Bundle();
+        }
         Bundle transactionBundle = new Bundle();
         transactionBundle.setType(BundleType.TRANSACTION);
         for (FhirOperations fhirOperations : fhirOperationsList) {

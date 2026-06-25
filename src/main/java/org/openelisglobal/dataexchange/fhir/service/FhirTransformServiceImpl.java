@@ -213,6 +213,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     @Async
     @Override
     public AsyncResult<Bundle> transformPersistPatients(List<String> patientIds) throws FhirLocalPersistingException {
+        if (GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+            return new AsyncResult<>(new Bundle());
+        }
         LogEvent.logTrace(this.getClass().getSimpleName(), "transformPersistPatients",
                 "transformPersistPatients called");
 
@@ -246,6 +249,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     @Override
     public AsyncResult<Bundle> transformPersistObjectsUnderSamples(List<String> sampleIds)
             throws FhirLocalPersistingException {
+        if (GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+            return new AsyncResult<>(new Bundle());
+        }
         LogEvent.logTrace(this.getClass().getSimpleName(), "transformPersistObjectsUnderSamples",
                 "transformPersistObjectsUnderSamples called");
 
@@ -411,6 +417,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     @Transactional(readOnly = true)
     public void transformPersistPatient(PatientManagementInfo patientInfo, boolean isCreate)
             throws FhirLocalPersistingException {
+        if (GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+            return;
+        }
         LogEvent.logTrace(this.getClass().getSimpleName(), "transformPersistPatient", "transformPersistPatient called");
 
         CountingTempIdGenerator tempIdGenerator = new CountingTempIdGenerator();
@@ -445,6 +454,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     @Async
     @Override
     public void transformPersistOrganization(Organization organization) throws FhirLocalPersistingException {
+        if (GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+            return;
+        }
         String method = "transformPersistOrganization";
         LogEvent.logTrace(this.getClass().getSimpleName(), "transformPersistOrganization",
                 "transformPersistOrganization called");
@@ -466,6 +478,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     public void transformPersistOrderEntryFhirObjects(SamplePatientUpdateData updateData,
             PatientManagementInfo patientInfo, boolean useReferral, List<ReferralItem> referralItems)
             throws FhirLocalPersistingException {
+        if (GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+            return;
+        }
         LogEvent.logTrace(this.getClass().getSimpleName(), "transformPersistOrderEntryFhirObjects",
                 "transformPersistOrderEntryFhirObjects called");
         LogEvent.logTrace(this.getClass().getSimpleName(), "createFhirFromSamplePatient",
@@ -1289,6 +1304,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
     @Transactional(readOnly = true)
     public void transformPersistResultsEntryFhirObjects(ResultsUpdateDataSet actionDataSet)
             throws FhirLocalPersistingException {
+        if (GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+            return;
+        }
         LogEvent.logTrace(this.getClass().getSimpleName(), "transformPersistResultsEntryFhirObjects",
                 "transformPersistResultsEntryFhirObjects called");
         String method = "transformPersistResultsEntryFhirObjects";
@@ -1539,7 +1557,9 @@ public class FhirTransformServiceImpl implements FhirTransformService {
         }
 
         try {
-            fhirPersistanceService.createUpdateFhirResourcesInFhirStore(fhirOperations);
+            if (!GenericValidator.isBlankOrNull(fhirConfig.getLocalFhirStorePath())) {
+                fhirPersistanceService.createUpdateFhirResourcesInFhirStore(fhirOperations);
+            }
         } catch (FhirLocalPersistingException e) {
             LogEvent.logError(this.getClass().getSimpleName(), "transformPersistResultValidationFhirObjects",
                     "Local FHIR store persistence failed; continuing with middleware dispatch. Error: "

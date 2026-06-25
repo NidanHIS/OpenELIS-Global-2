@@ -41,7 +41,7 @@ public class FhirTransformationController extends BaseController {
     // global variable for tracking state as only one process can be run at a time
     private TransformationInfo info;
 
-    @Scheduled(initialDelay = 10 * 1000, fixedRate = Long.MAX_VALUE)
+    // @Scheduled(initialDelay = 10 * 1000, fixedRate = Long.MAX_VALUE)
     private void transformOEObjectsOnBoot() throws FhirLocalPersistingException, IOException {
         transformPersistMissingFhirObjects(false, 100, 1, true);
     }

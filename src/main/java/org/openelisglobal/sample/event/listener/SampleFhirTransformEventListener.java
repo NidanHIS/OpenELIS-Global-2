@@ -20,7 +20,7 @@ public class SampleFhirTransformEventListener {
     private FhirTransformService fhirTransformService;
 
     @Async
-    @EventListener
+    // @EventListener
     public void handleSamplePatientUpdateDataCreatedEvent(SamplePatientUpdateDataCreatedEvent event) {
         try {
             SamplePatientUpdateData updateData = event.getUpdateData();
