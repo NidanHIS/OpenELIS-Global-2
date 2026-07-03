@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * POST /rest/nidan/cis/retry — triggers async CIS dead-letter retry.
- * Returns immediately with {status:"queued", queued:true}.
- * Auth enforced by existing ELIS Spring Security session filter.
+ * POST /rest/nidan/cis/retry — triggers async CIS dead-letter retry. Returns
+ * immediately with {status:"queued", queued:true}. Auth enforced by existing
+ * ELIS Spring Security session filter.
  */
 @RestController
 @RequestMapping("/rest/nidan/cis")

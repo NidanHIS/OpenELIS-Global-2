@@ -43,7 +43,11 @@ import {
   Theme,
 } from "@carbon/react";
 import SlideOverNotifications from "../notifications/SlideOverNotifications";
-import { getFromOpenElisServer, putToOpenElisServer, postToOpenElisServer } from "../utils/Utils";
+import {
+  getFromOpenElisServer,
+  putToOpenElisServer,
+  postToOpenElisServer,
+} from "../utils/Utils";
 import SearchBar from "./search/searchBar";
 import { getFullPath, navigateTo } from "../utils/Navigation";
 import { getBranding } from "../utils/BrandingUtils";
@@ -237,13 +241,9 @@ function OEHeader({
   const triggerCisRetry = () => {
     if (cisRetryInFlight) return;
     setCisRetryInFlight(true);
-    postToOpenElisServer(
-      "/rest/nidan/cis/retry",
-      null,
-      () => {
-        setCisRetryInFlight(false);
-      },
-    );
+    postToOpenElisServer("/rest/nidan/cis/retry", null, () => {
+      setCisRetryInFlight(false);
+    });
   };
 
   useEffect(() => {
@@ -741,8 +741,8 @@ function OEHeader({
                   </HeaderGlobalAction>
                   <HeaderGlobalAction
                     id="cis-retry-Icon"
-                    aria-label="Retry failed sync"
-                    title="Retry failed patient &amp; lab order sync"
+                    aria-label="Sync Patient and Lab Orders"
+                    title="Sync Patient and Lab Orders"
                     onClick={triggerCisRetry}
                     disabled={cisRetryInFlight}
                     style={{ opacity: cisRetryInFlight ? 0.5 : 1 }}

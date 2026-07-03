@@ -16,14 +16,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * HTTP client — GET dead letters from CIS, filter, POST retry.
- * No threading here. Called by {@link NidanCisRetryService} which owns @Async.
+ * HTTP client — GET dead letters from CIS, filter, POST retry. No threading
+ * here. Called by {@link NidanCisRetryService} which owns @Async.
  *
- * <p>Config:
+ * <p>
+ * Config:
  * <ul>
- *   <li>{@code org.openelisglobal.nidan.cisretry.list.url} — full URL to GET dead letters</li>
- *   <li>{@code org.openelisglobal.nidan.cisretry.retry.url} — full URL to POST retry</li>
- *   <li>{@code org.openelisglobal.middleware.result.sync.secret} — shared webhook secret (reused)</li>
+ * <li>{@code org.openelisglobal.nidan.cisretry.list.url} — full URL to GET dead
+ * letters</li>
+ * <li>{@code org.openelisglobal.nidan.cisretry.retry.url} — full URL to POST
+ * retry</li>
+ * <li>{@code org.openelisglobal.middleware.result.sync.secret} — shared webhook
+ * secret (reused)</li>
  * </ul>
  */
 @Component
@@ -47,8 +51,8 @@ public class NidanCisRetryClient {
     private final ObjectMapper json = new ObjectMapper();
 
     /**
-     * Executes the full retry sequence synchronously.
-     * Intended to be called from {@link NidanCisRetryService#retryAsync()} which is @Async.
+     * Executes the full retry sequence synchronously. Intended to be called from
+     * {@link NidanCisRetryService#retryAsync()} which is @Async.
      */
     public void execute() {
         LOG.info("[NIDAN-CIS-RETRY] ══════════════════════════════════════════");
@@ -73,7 +77,8 @@ public class NidanCisRetryClient {
             List<Map<String, Object>> rows = cisGet(listUrlWithParams);
             LOG.info("[NIDAN-CIS-RETRY] Fetched {} dead letter rows", rows.size());
 
-            // Step 2: filter CIS-PATIENTS-OPENELIS + CIS-ELIS-ORDERS, skip SUCCEEDED + RETRY_REQUESTED
+            // Step 2: filter CIS-PATIENTS-OPENELIS + CIS-ELIS-ORDERS, skip SUCCEEDED +
+            // RETRY_REQUESTED
             List<Long> ids = new ArrayList<>();
             for (Map<String, Object> row : rows) {
                 if (!isEligible(row)) {
@@ -111,8 +116,7 @@ public class NidanCisRetryClient {
             payload.put("ids", ids);
 
             Map<String, Object> result = cisPost(retryUrl, payload);
-            LOG.info("[NIDAN-CIS-RETRY] Done: requested={} failed={}",
-                    result.get("requested"), result.get("failed"));
+            LOG.info("[NIDAN-CIS-RETRY] Done: requested={} failed={}", result.get("requested"), result.get("failed"));
 
         } catch (Exception e) {
             LOG.error("[NIDAN-CIS-RETRY] Retry failed: {}", e.getMessage(), e);

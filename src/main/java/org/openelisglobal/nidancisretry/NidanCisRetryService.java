@@ -7,12 +7,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Owns the @Async boundary for CIS dead-letter retry.
- * Controller calls {@link #retryAsync()} — Spring dispatches it to the task executor
- * and the HTTP call blocks returns immediately to the caller.
+ * Owns the @Async boundary for CIS dead-letter retry. Controller calls
+ * {@link #retryAsync()} — Spring dispatches it to the task executor and the
+ * HTTP call blocks returns immediately to the caller.
  *
- * <p>Follows the same ELIS @Async pattern as TestOrderEventListener, AsyncExternalSender,
- * FhirTransformServiceImpl, etc.
+ * <p>
+ * Follows the same ELIS @Async pattern as TestOrderEventListener,
+ * AsyncExternalSender, FhirTransformServiceImpl, etc.
  */
 @Service
 public class NidanCisRetryService {
