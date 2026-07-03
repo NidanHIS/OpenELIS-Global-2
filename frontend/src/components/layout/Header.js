@@ -3,6 +3,7 @@ import {
   Language,
   Logout,
   Notification,
+  Restart,
   Search,
   UserAvatarFilledAlt,
   LocationFilled,
@@ -42,7 +43,7 @@ import {
   Theme,
 } from "@carbon/react";
 import SlideOverNotifications from "../notifications/SlideOverNotifications";
-import { getFromOpenElisServer, putToOpenElisServer } from "../utils/Utils";
+import { getFromOpenElisServer, putToOpenElisServer, postToOpenElisServer } from "../utils/Utils";
 import SearchBar from "./search/searchBar";
 import { getFullPath, navigateTo } from "../utils/Navigation";
 import { getBranding } from "../utils/BrandingUtils";
@@ -97,6 +98,7 @@ function OEHeader({
   const [readNotifications, setReadNotifications] = useState([]);
   const [searchBar, setSearchBar] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [cisRetryInFlight, setCisRetryInFlight] = useState(false);
   scrollRef.current = window.scrollY;
   useLayoutEffect(() => {
     window.scrollTo(0, scrollRef.current);
@@ -230,6 +232,18 @@ function OEHeader({
     } catch (error) {
       console.error("Failed to mark all notifications as read", error);
     }
+  };
+
+  const triggerCisRetry = () => {
+    if (cisRetryInFlight) return;
+    setCisRetryInFlight(true);
+    postToOpenElisServer(
+      "/rest/nidan/cis/retry",
+      null,
+      () => {
+        setCisRetryInFlight(false);
+      },
+    );
   };
 
   useEffect(() => {
@@ -724,6 +738,16 @@ function OEHeader({
                         </span>
                       )}
                     </div>
+                  </HeaderGlobalAction>
+                  <HeaderGlobalAction
+                    id="cis-retry-Icon"
+                    aria-label="Retry failed sync"
+                    title="Retry failed patient &amp; lab order sync"
+                    onClick={triggerCisRetry}
+                    disabled={cisRetryInFlight}
+                    style={{ opacity: cisRetryInFlight ? 0.5 : 1 }}
+                  >
+                    <Restart size={20} />
                   </HeaderGlobalAction>
                 </>
               )}
