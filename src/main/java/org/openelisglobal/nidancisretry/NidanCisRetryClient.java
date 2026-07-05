@@ -131,7 +131,8 @@ public class NidanCisRetryClient {
             return false;
         }
         String source = sourceObj.toString().trim();
-        if (!"CIS-PATIENTS-OPENELIS".equals(source) && !"CIS-PATIENTS-CDC-OPENELIS".equals(source) && !"CIS-ELIS-ORDERS".equals(source)) {
+        if (!"CIS-PATIENTS-OPENELIS".equals(source) && !"CIS-PATIENTS-CDC-OPENELIS".equals(source)
+                && !"CIS-ELIS-ORDERS".equals(source)) {
             return false;
         }
         Object statusObj = row.get("status");
