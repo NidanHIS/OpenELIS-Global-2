@@ -15,4 +15,5 @@
   <include relativeToChangelogFile="true" file="paywall-admin-role.xml"/>
     <include relativeToChangelogFile="true" file="add-lab-contact-info.xml"/>
     <include relativeToChangelogFile="true" file="add-letterhead-config.xml"/>
+    <include relativeToChangelogFile="true" file="patient-entry-config.xml"/>
 </databaseChangeLog>
