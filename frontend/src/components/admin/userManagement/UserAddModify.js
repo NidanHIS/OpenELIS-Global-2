@@ -313,13 +313,18 @@ function UserAddModify() {
         userDataShow.accountDisabled === "Y" ? "radio-3" : "radio-4",
       );
       setIsActive(userDataShow.accountActive === "Y" ? "radio-5" : "radio-6");
-      if (
-        userDataShow.userPassword &&
-        userDataShow.userPassword === userDataShow.confirmPassword
-      ) {
-        setValidation({ ...validation, validatepassword: true });
-      } else {
-        setValidation({ ...validation, validatepassword: false });
+      // Only revalidate passwords if the user has actually touched them.
+      // In edit mode, passwords arrive pre-filled and valid from the server —
+      // touching them here with a stale closure would clobber the validation
+      // that handleUserData already set correctly.
+      if (passwordTouched.userPassword || passwordTouched.confirmPassword) {
+        const passwordsMatch =
+          userDataShow.userPassword &&
+          userDataShow.userPassword === userDataShow.confirmPassword;
+        setValidation((prev) => ({
+          ...prev,
+          validatepassword: !!passwordsMatch,
+        }));
       }
     }
   }, [userDataShow]);
