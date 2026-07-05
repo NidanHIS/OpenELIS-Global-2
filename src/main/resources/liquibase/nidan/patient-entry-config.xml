@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Nidan patient entry config overrides.
+
+        National ID and Subject Number are NOT required in the Nidan deployment.
+        Middleware syncs patients from OpenMRS via CDC before Odoo assigns a
+        Hospital Number, so nationalId may be absent on first sync.
+        Both fields default to true in the upstream OpenELIS seed (2.3.x.x).
+
+        Each property has an UPDATE changeset (row exists, wrong value) and an
+        INSERT changeset (row missing entirely). onFail="MARK_RAN" makes both
+        idempotent — safe to run on any environment state.
+    -->
+
+    <!-- ── National ID required: UPDATE if row exists with value != false ───── -->
+    <changeSet id="nidan-patient-entry-national-id-required-update" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'National ID required' AND value != 'false'
+            </sqlCheck>
+        </preConditions>
+        <comment>Set National ID required to false — middleware CDC sync sends patients without NID</comment>
+        <update schemaName="clinlims" tableName="site_information">
+            <column name="value" value="false" />
+            <column name="lastupdated" valueComputed="now()" />
+            <where>name = 'National ID required'</where>
+        </update>
+    </changeSet>
+
+    <!-- ── National ID required: INSERT if row is missing entirely ───────────── -->
+    <changeSet id="nidan-patient-entry-national-id-required-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'National ID required'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert National ID required as false if row is missing</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="National ID required" />
+            <column name="lastupdated" valueComputed="now()" />
+            <column name="description" value="should national ID be required on the patient entry screen" />
+            <column name="value" value="false" />
+            <column name="encrypted" value="false" />
+            <column name="value_type" value="boolean" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')" />
+            <column name="group" value="0" />
+            <column name="instruction_key" value="siteInfo.instruction.nationalID.req.i" />
+            <column name="description_key" value="siteInfo.instruction.nationalID.req.d" />
+        </insert>
+    </changeSet>
+
+    <!-- ── Subject number required: UPDATE if row exists with value != false ── -->
+    <changeSet id="nidan-patient-entry-subject-number-required-update" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'Subject number required' AND value != 'false'
+            </sqlCheck>
+        </preConditions>
+        <comment>Set Subject number required to false — subject number is populated from Hospital Number which may not exist at first sync</comment>
+        <update schemaName="clinlims" tableName="site_information">
+            <column name="value" value="false" />
+            <column name="lastupdated" valueComputed="now()" />
+            <where>name = 'Subject number required'</where>
+        </update>
+    </changeSet>
+
+    <!-- ── Subject number required: INSERT if row is missing entirely ────────── -->
+    <changeSet id="nidan-patient-entry-subject-number-required-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'Subject number required'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert Subject number required as false if row is missing</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="Subject number required" />
+            <column name="lastupdated" valueComputed="now()" />
+            <column name="description" value="True if patient subject number is required for new patients" />
+            <column name="value" value="false" />
+            <column name="encrypted" value="false" />
+            <column name="value_type" value="boolean" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')" />
+            <column name="group" value="0" />
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
