@@ -261,13 +261,16 @@ public class IncomingOrdersRestController {
                 }
             }
 
-            // Resolve nationalId — null-safe, empty string treated as absent
-            String resolvedNationalId = patientService.getNationalId(patient);
-            if (resolvedNationalId != null && resolvedNationalId.trim().isEmpty()) {
-                resolvedNationalId = null;
+            // SUBJECT (health ID from OpenMRS) is primary; national ID is the fallback.
+            String resolvedId = patientService.getSubjectNumber(patient);
+            if (resolvedId == null || resolvedId.trim().isEmpty()) {
+                resolvedId = patientService.getNationalId(patient);
+            }
+            if (resolvedId != null && resolvedId.trim().isEmpty()) {
+                resolvedId = null;
             }
 
-            return new PatientDisplayInfo(resolvedName, resolvedNationalId);
+            return new PatientDisplayInfo(resolvedName, resolvedId);
         } catch (Exception e) {
             logger.debug("Could not resolve patient display info for guid: {}", patientGuid, e);
             return new PatientDisplayInfo(null, null);

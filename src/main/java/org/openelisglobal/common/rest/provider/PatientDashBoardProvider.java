@@ -202,8 +202,7 @@ public class PatientDashBoardProvider {
                         Patient patient = sampleHumanService.getPatientForSample(sample);
                         orderBean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                         orderBean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                        orderBean.setPatientId(
-                                patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                        orderBean.setPatientId(getPatientDisplayId(patient));
                         orderBean.setPatientName(getPatientName(patient));
                         orderBean.setPatientGuid(
                                 patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
@@ -256,7 +255,7 @@ public class PatientDashBoardProvider {
                     Patient patient = sampleHumanService.getPatientForSample(sample);
                     bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                     bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                    bean.setPatientId(patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                    bean.setPatientId(patient != null ? getPatientDisplayId(patient) : "");
                     bean.setPatientName(getPatientName(patient));
                     bean.setPatientGuid(
                             patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
@@ -289,6 +288,21 @@ public class PatientDashBoardProvider {
         }
 
         return String.join(", ", patientNameParts);
+    }
+
+    /**
+     * Resolves the display patient identifier: SUBJECT (health ID from OpenMRS) is
+     * primary; national ID is the fallback. Returns empty string when neither exists.
+     */
+    private String getPatientDisplayId(Patient patient) {
+        if (patient == null) {
+            return "";
+        }
+        String id = patientService.getSubjectNumber(patient);
+        if (org.apache.commons.lang3.StringUtils.isBlank(id)) {
+            id = patientService.getNationalId(patient);
+        }
+        return org.apache.commons.lang3.StringUtils.defaultString(id);
     }
 
     private List<OrderDisplayBean> convertAnalysesToUserOrdersBean(List<Analysis> analyses) {
@@ -373,7 +387,7 @@ public class PatientDashBoardProvider {
                 orderBean.setTestName(test.getLocalizedTestName().getLocalizedValue());
             }
 
-            orderBean.setPatientId(eOrder.getPatient().getNationalId());
+            orderBean.setPatientId(getPatientDisplayId(eOrder.getPatient()));
             orderBeanList.add(orderBean);
         });
 
@@ -613,7 +627,7 @@ public class PatientDashBoardProvider {
                             bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                             bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
                             bean.setPatientId(
-                                    patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                                    patient != null ? getPatientDisplayId(patient) : "");
                             bean.setPatientName(getPatientName(patient));
                             bean.setPatientGuid(
                                     patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
@@ -866,7 +880,7 @@ public class PatientDashBoardProvider {
                             bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                             bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
                             bean.setPatientId(
-                                    patient != null ? StringUtils.defaultString(patient.getNationalId()) : "");
+                                    patient != null ? getPatientDisplayId(patient) : "");
                             bean.setPatientName(getPatientName(patient));
                             bean.setPatientGuid(
                                     patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");

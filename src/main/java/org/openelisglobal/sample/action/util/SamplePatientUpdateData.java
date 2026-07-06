@@ -84,6 +84,7 @@ public class SamplePatientUpdateData {
     private SampleAddService sampleAddService;
     private Errors patientErrors;
     private Organization newOrganization;
+    private Organization newOrganizationDepartment;
     private Organization currentOrganization;
     private ElectronicOrder electronicOrder = null;
 
@@ -225,6 +226,14 @@ public class SamplePatientUpdateData {
 
     public void setNewOrganization(Organization newOrganization) {
         this.newOrganization = newOrganization;
+    }
+
+    public Organization getNewOrganizationDepartment() {
+        return newOrganizationDepartment;
+    }
+
+    public void setNewOrganizationDepartment(Organization newOrganizationDepartment) {
+        this.newOrganizationDepartment = newOrganizationDepartment;
     }
 
     public Organization getCurrentOrganization() {
@@ -480,6 +489,18 @@ public class SamplePatientUpdateData {
             if (existing != null && existing.getId() != null) {
                 requester = createSiteRequester(existing.getId(),
                         TableIdService.getInstance().ORGANIZATION_REQUESTER_TYPE_ID);
+            } else {
+                // Org does not exist yet — create it on the fly.
+                // requesterId placeholder "0" is backfilled after the insert in
+                // SamplePatientEntryServiceImpl.persistOrganizationData().
+                Organization dept = new Organization();
+                dept.setOrganizationName(deptName.trim());
+                dept.setIsActive("Y");
+                dept.setMlsSentinelLabFlag("N");
+                dept.setSysUserId(currentUserId);
+                dept.setFhirUuid(java.util.UUID.randomUUID());
+                setNewOrganizationDepartment(dept);
+                requester = createSiteRequester("0", TableIdService.getInstance().ORGANIZATION_REQUESTER_TYPE_ID);
             }
         }
 

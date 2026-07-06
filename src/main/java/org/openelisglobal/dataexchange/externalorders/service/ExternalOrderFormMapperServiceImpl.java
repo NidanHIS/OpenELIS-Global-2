@@ -84,7 +84,10 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         }
         patientInfo.setGender(patient.getGender());
         patientInfo.setBirthDateForDisplay(patient.getBirthDateForDisplay());
-        patientInfo.setNationalId(patient.getNationalId());
+        // Each field maps to its own input in the form — set them independently.
+        // subjectNumber → Health ID field; nationalId → National ID field.
+        patientInfo.setSubjectNumber(patientService.getSubjectNumber(patient));
+        patientInfo.setNationalId(patientService.getNationalId(patient));
         patientInfo.setPatientUpdateStatus(PatientUpdateStatus.NO_ACTION);
         form.setPatientProperties(patientInfo);
         form.setPatientUpdateStatus(PatientUpdateStatus.NO_ACTION);
