@@ -109,7 +109,7 @@ public class PatientSearchPopulateRestController {
 
         PatientInfoBean patientInfo = new PatientInfoBean();
         patientInfo.setPatientPK(patient.getId());
-        patientInfo.setNationalId(patient.getNationalId());
+        patientInfo.setNationalId(patientService.getNationalId(patient));
         patientInfo.setSTnumber(identityMap.getIdentityValue(identityList, "ST"));
         patientInfo.setSubjectNumber(identityMap.getIdentityValue(identityList, "SUBJECT"));
         patientInfo.setLastName(getLastNameForResponse(person));
