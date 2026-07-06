@@ -214,24 +214,18 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
                     "Updating currentOrganization id=" + updateData.getCurrentOrganization().getId());
             organizationService.update(updateData.getCurrentOrganization());
         }
-        // newOrganization = updateData.getNewOrganizationDepartment();
-        // if (newOrganization != null) {
-        // organizationService.insert(newOrganization);
-        // organizationService.linkOrganizationAndType(newOrganization,
-        // TableIdService.getInstance().REFERRING_ORG_TYPE_ID);
-        // if (updateData.getRequesterSite() != null) {
-        // updateData.getRequesterSite().setRequesterId(newOrganization.getId());
-        // }
-        //
-        // for (OrganizationAddress address : updateData.getOrgAddressExtra()) {
-        // address.setOrganizationId(newOrganization.getId());
-        // organizationAddressService.insert(address);
-        // }
-        // }
-        //
-        // if (updateData.getCurrentOrganizationDepartment() != null) {
-        // organizationService.update(updateData.getCurrentOrganizationDepartment());
-        // }
+
+        Organization newDept = updateData.getNewOrganizationDepartment();
+        if (newDept != null) {
+            LogEvent.logWarn(this.getClass().getSimpleName(), "persistOrganizationData",
+                    "Inserting newOrganizationDepartment name=" + newDept.getOrganizationName());
+            organizationService.insert(newDept);
+            organizationService.linkOrganizationAndType(newDept,
+                    TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID);
+            if (updateData.getRequesterSiteDepartment() != null) {
+                updateData.getRequesterSiteDepartment().setRequesterId(newDept.getId());
+            }
+        }
 
     }
 
@@ -543,25 +537,33 @@ public class SamplePatientEntryServiceImpl implements SamplePatientEntryService 
         if (updateData.getRequesterSiteDepartment() != null) {
             Organization siteDepartment = organizationService
                     .get(String.valueOf(updateData.getRequesterSiteDepartment().getRequesterId()));
-            boolean orgHasType = false;
             LogEvent.logWarn(this.getClass().getSimpleName(), "persistRequesterData",
                     "RequesterSiteDepartment mapping. departmentRequesterId="
                             + updateData.getRequesterSiteDepartment().getRequesterId() + ", siteDepartmentPresent="
                             + (siteDepartment != null));
-            for (OrganizationType orgType : siteDepartment.getOrganizationTypes()) {
-                if (orgType.getId().equals(TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID)) {
-                    orgHasType = true;
+            // Only check + link the org type when the org already existed before this
+            // transaction. When newOrganizationDepartment != null the org was just created
+            // by persistOrganizationData() which already called linkOrganizationAndType —
+            // calling it again would violate the org_org_type_pk unique constraint.
+            if (updateData.getNewOrganizationDepartment() == null) {
+                boolean orgHasType = false;
+                for (OrganizationType orgType : (siteDepartment.getOrganizationTypes() != null
+                        ? siteDepartment.getOrganizationTypes()
+                        : java.util.Collections.<OrganizationType>emptySet())) {
+                    if (orgType.getId().equals(TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID)) {
+                        orgHasType = true;
+                    }
+                }
+                if (!orgHasType) {
+                    organizationService.linkOrganizationAndType(siteDepartment,
+                            TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID);
                 }
             }
-            if (!orgHasType) {
-                organizationService.linkOrganizationAndType(siteDepartment,
-                        TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID);
-            }
             updateData.getRequesterSiteDepartment().setSampleId(Long.parseLong(updateData.getSample().getId()));
-            // if (updateData.getNewOrganizationDepartment() != null) {
-            //
-            // updateData.getRequesterSite().setRequesterId(updateData.getNewOrganizationDepartment().getId());
-            // }
+            if (updateData.getNewOrganizationDepartment() != null) {
+                updateData.getRequesterSiteDepartment()
+                        .setRequesterId(updateData.getNewOrganizationDepartment().getId());
+            }
             sampleRequesterService.insert(updateData.getRequesterSiteDepartment());
         }
     }
