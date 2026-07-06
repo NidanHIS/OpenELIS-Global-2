@@ -60,7 +60,11 @@ public class IncomingOrderDAOImpl extends BaseDAOImpl<IncomingOrder, Integer> im
                     + " where pi.identityData = e.patientGuid" + " and pi.identityTypeId = pit.id"
                     + " and pit.identityType = 'GUID'" + " and pi.patientId = p.id"
                     + " and (lower(p.nationalId) like :search" + " or lower(per.lastName) like :search"
-                    + " or lower(per.firstName) like :search)" + "))");
+                    + " or lower(per.firstName) like :search" + " or exists ("
+                    + "select pi2.id from PatientIdentity pi2, PatientIdentityType pit2"
+                    + " where pi2.patientId = p.id" + " and pi2.identityTypeId = pit2.id"
+                    + " and pit2.identityType = 'SUBJECT'" + " and lower(pi2.identityData) like :search)"
+                    + ")))");
         }
         hql.append(" order by e.receivedTimestamp desc");
 
@@ -97,7 +101,11 @@ public class IncomingOrderDAOImpl extends BaseDAOImpl<IncomingOrder, Integer> im
                     + " where pi.identityData = e.patientGuid" + " and pi.identityTypeId = pit.id"
                     + " and pit.identityType = 'GUID'" + " and pi.patientId = p.id"
                     + " and (lower(p.nationalId) like :search" + " or lower(per.lastName) like :search"
-                    + " or lower(per.firstName) like :search)" + "))");
+                    + " or lower(per.firstName) like :search" + " or exists ("
+                    + "select pi2.id from PatientIdentity pi2, PatientIdentityType pit2"
+                    + " where pi2.patientId = p.id" + " and pi2.identityTypeId = pit2.id"
+                    + " and pit2.identityType = 'SUBJECT'" + " and lower(pi2.identityData) like :search)"
+                    + ")))");
         }
 
         var query = entityManager.createQuery(hql.toString(), Long.class);

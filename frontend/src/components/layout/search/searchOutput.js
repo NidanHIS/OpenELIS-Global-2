@@ -57,7 +57,7 @@ const SearchOutput = ({ patientData, className = "patientHead" }) => {
                     <div className="tags">
                       <Tag size="md" type="blue">
                         <FormattedMessage id="patient.natioanalid" /> :{" "}
-                        <strong>{patient.nationalId}</strong>
+                        <strong>{patient.subjectNumber || patient.nationalId}</strong>
                       </Tag>
                       {patient.contactPhone && (
                         <Tag size="md" type="blue">
