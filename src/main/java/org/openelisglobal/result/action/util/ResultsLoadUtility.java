@@ -264,8 +264,8 @@ public class ResultsLoadUtility {
         }
 
         form.setSt(identityMap.getIdentityValue(identityList, "ST"));
-        form.setNationalId(GenericValidator.isBlankOrNull(patient.getNationalId()) ? patient.getExternalId()
-                : patient.getNationalId());
+        form.setNationalId(GenericValidator.isBlankOrNull(patientService.getNationalId(patient)) ? patient.getExternalId()
+                : patientService.getNationalId(patient));
         form.setSubjectNumber(patientService.getSubjectNumber(patient));
     }
 
@@ -304,7 +304,10 @@ public class ResultsLoadUtility {
 
             String patientName = "";
             String patientInfo;
-            String nationalId = patientService.getNationalId(currentPatient);
+            String subjectNumber = patientService.getSubjectNumber(currentPatient);
+            String nationalId = GenericValidator.isBlankOrNull(subjectNumber)
+                    ? patientService.getNationalId(currentPatient)
+                    : subjectNumber;
             if (depersonalize) {
                 patientInfo = GenericValidator.isBlankOrNull(nationalId) ? patientService.getExternalId(currentPatient)
                         : nationalId;

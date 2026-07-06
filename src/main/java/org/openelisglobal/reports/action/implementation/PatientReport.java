@@ -962,7 +962,11 @@ public abstract class PatientReport extends Report {
         data.setDob(getPatientDOB(currentPatient));
         data.setAge(createReadableAge(data.getDob()));
         data.setGender(patientService.getGender(currentPatient));
-        data.setNationalId(patientService.getNationalId(currentPatient));
+        String patientDisplayId = patientService.getSubjectNumber(currentPatient);
+        if (GenericValidator.isBlankOrNull(patientDisplayId)) {
+            patientDisplayId = patientService.getNationalId(currentPatient);
+        }
+        data.setNationalId(patientDisplayId);
         setPatientName(data);
         data.setDept(patientDept);
         data.setCommune(patientCommune);
