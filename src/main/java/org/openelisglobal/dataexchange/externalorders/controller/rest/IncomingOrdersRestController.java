@@ -345,6 +345,24 @@ public class IncomingOrdersRestController {
     }
 
     /**
+     * True when the source department name indicates an admission visit (IPD / ER).
+     * These orders bypass the paywall entirely — admission patients are never blocked.
+     * Matches case-insensitively:
+     *   IPD  — "IPD", "ipd", "Inpatient (IPD)", "IPD Ward", etc.
+     *   ER   — "ER", "er", "ER Ward", "Emergency", "emergency room", etc.
+     */
+    private boolean isAdmissionSource(String source) {
+        if (source == null || source.trim().isEmpty()) {
+            return false;
+        }
+        String upper = source.trim().toUpperCase();
+        return upper.contains("IPD")
+                || upper.contains("INPATIENT")
+                || upper.contains("EMERGENCY")
+                || java.util.regex.Pattern.compile("\\bER\\b").matcher(upper).find();
+    }
+
+    /**
      * Extract source (referringSiteDepartmentName or referringSiteName) from
      * payload. Prioritizes department name for better granularity.
      */
@@ -474,6 +492,22 @@ public class IncomingOrdersRestController {
         }
 
         IncomingOrder order = holdingOpt.get();
+
+        // IPD / ER bypass: admission orders are never blocked at the paywall.
+        // The department name is authoritative (sourced from OpenMRS via middleware).
+        String source = extractSource(order.getPayload());
+        if (isAdmissionSource(source)) {
+            java.util.Map<String, Object> bypass = new java.util.LinkedHashMap<>();
+            bypass.put("decision", "allow");
+            bypass.put("blocked", false);
+            bypass.put("outstandingAmount", 0.0);
+            bypass.put("currency", null);
+            bypass.put("paymentStatus", "admission_bypass");
+            bypass.put("patientGuid", order.getPatientGuid());
+            bypass.put("visitUuid", externalOrderNumber);
+            return ResponseEntity.ok(bypass);
+        }
+
         PaywallResult result = paywallClient.check(order.getPatientGuid(), externalOrderNumber);
 
         java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
