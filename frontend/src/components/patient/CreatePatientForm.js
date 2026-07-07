@@ -813,9 +813,14 @@ function CreatePatientForm(props) {
                         <TextInput
                           value={values.subjectNumber || ""}
                           name={field.name}
-                          labelText={intl.formatMessage({
-                            id: "patient.subject.number",
-                          })}
+                          labelText={
+                            <>
+                              {intl.formatMessage({
+                                id: "patient.subject.number",
+                              })}
+                              <span className="requiredlabel">*</span>
+                            </>
+                          }
                           id={field.name}
                           invalid={
                             errors.subjectNumber && touched.subjectNumber
@@ -843,14 +848,9 @@ function CreatePatientForm(props) {
                       <TextInput
                         value={values.nationalId || ""}
                         name={field.name}
-                        labelText={
-                          <>
-                            {intl.formatMessage({
+                        labelText={intl.formatMessage({
                               id: "patient.natioanalid",
                             })}
-                            <span className="requiredlabel">*</span>
-                          </>
-                        }
                         id={field.name}
                         invalid={
                           props.error
