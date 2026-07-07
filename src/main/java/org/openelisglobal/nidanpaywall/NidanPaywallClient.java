@@ -116,6 +116,7 @@ public class NidanPaywallClient {
         if (!GenericValidator.isBlankOrNull(visitUuid)) {
             q.append("&visit_uuid=").append(java.net.URLEncoder.encode(visitUuid.trim(), "UTF-8"));
         }
+        q.append("&order_type=lab");
         return base + PAYMENT_STATUS_PATH + "?" + q;
     }
 
