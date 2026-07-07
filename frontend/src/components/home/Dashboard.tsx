@@ -910,6 +910,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     patientGuid: string,
     targetUrl: string,
     newTab = false,
+    labNumber?: string,
   ) => {
     if (!patientGuid) {
       // No guid — fail-open, just navigate
@@ -920,8 +921,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       }
       return;
     }
+    const paywallParams = new URLSearchParams({ patientUuid: patientGuid });
+    if (labNumber) paywallParams.set("labNumber", labNumber);
     getFromOpenElisServerV2(
-      `/rest/nidan/paywall/check?patientUuid=${encodeURIComponent(patientGuid)}`,
+      `/rest/nidan/paywall/check?${paywallParams.toString()}`,
     )
       .then((pw: any) => {
         if (
@@ -1284,7 +1287,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                     : getFullPath(
                         "/validation?type=order&accessionNumber=" + cell.value,
                       );
-                  handleAction(patientGuid, targetUrl, false);
+                  handleAction(patientGuid, targetUrl, false, cell.value);
                 }}
               >
                 <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
@@ -1355,7 +1358,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                handleAction(patientGuid, barcodeUrl, true);
+                handleAction(patientGuid, barcodeUrl, true, accessionNumber);
               }}
             >
               <img
@@ -1372,7 +1375,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                handleAction(patientGuid, resultUrl, true);
+                handleAction(patientGuid, resultUrl, true, accessionNumber);
               }}
             >
               <img
@@ -1389,7 +1392,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                handleAction(patientGuid, validationUrl, true);
+                handleAction(patientGuid, validationUrl, true, accessionNumber);
               }}
             >
               <img
@@ -1410,7 +1413,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               }}
               onClick={(e) => {
                 e.preventDefault();
-                handleAction(patientGuid, reportUrl, true);
+                handleAction(patientGuid, reportUrl, true, accessionNumber);
               }}
             >
               <Printer
