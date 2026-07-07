@@ -58,17 +58,17 @@
         </insert>
     </changeSet>
 
-    <!-- ── Subject number required: UPDATE if row exists with value != false ── -->
+    <!-- ── Subject number required: UPDATE if row exists with value != true ── -->
     <changeSet id="nidan-patient-entry-subject-number-required-update" author="nidan">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="1">
                 SELECT COUNT(*) FROM clinlims.site_information
-                WHERE name = 'Subject number required' AND value != 'false'
+                WHERE name = 'Subject number required' AND value != 'true'
             </sqlCheck>
         </preConditions>
-        <comment>Set Subject number required to false — subject number is populated from Hospital Number which may not exist at first sync</comment>
+        <comment>Set Subject number required to true — Health ID is mandatory for patient identification</comment>
         <update schemaName="clinlims" tableName="site_information">
-            <column name="value" value="false" />
+            <column name="value" value="true" />
             <column name="lastupdated" valueComputed="now()" />
             <where>name = 'Subject number required'</where>
         </update>
@@ -82,13 +82,13 @@
                 WHERE name = 'Subject number required'
             </sqlCheck>
         </preConditions>
-        <comment>Insert Subject number required as false if row is missing</comment>
+        <comment>Insert Subject number required as true if row is missing</comment>
         <insert schemaName="clinlims" tableName="site_information">
             <column name="id" valueSequenceNext="site_information_seq" />
             <column name="name" value="Subject number required" />
             <column name="lastupdated" valueComputed="now()" />
             <column name="description" value="True if patient subject number is required for new patients" />
-            <column name="value" value="false" />
+            <column name="value" value="true" />
             <column name="encrypted" value="false" />
             <column name="value_type" value="boolean" />
             <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')" />
