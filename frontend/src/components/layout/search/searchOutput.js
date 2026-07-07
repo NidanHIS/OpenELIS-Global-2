@@ -55,10 +55,18 @@ const SearchOutput = ({ patientData, className = "patientHead" }) => {
                       </span>
                     </div>
                     <div className="tags">
-                      <Tag size="md" type="blue">
-                        <FormattedMessage id="patient.natioanalid" /> :{" "}
-                        <strong>{patient.subjectNumber || patient.nationalId}</strong>
-                      </Tag>
+                      {patient.subjectNumber && (
+                        <Tag size="md" type="blue">
+                          <FormattedMessage id="patient.subject.number" /> :{" "}
+                          <strong>{patient.subjectNumber}</strong>
+                        </Tag>
+                      )}
+                      {patient.nationalId && (
+                        <Tag size="md" type="blue">
+                          <FormattedMessage id="patient.natioanalid" /> :{" "}
+                          <strong>{patient.nationalId}</strong>
+                        </Tag>
+                      )}
                       {patient.contactPhone && (
                         <Tag size="md" type="blue">
                           <FormattedMessage
