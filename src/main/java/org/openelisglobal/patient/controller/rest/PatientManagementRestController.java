@@ -36,7 +36,11 @@ import org.openelisglobal.patientidentity.valueholder.PatientIdentity;
 import org.openelisglobal.person.valueholder.Person;
 import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.openelisglobal.search.service.SearchResultsService;
+import org.openelisglobal.siteinformation.service.SiteInformationService;
+import org.openelisglobal.siteinformation.valueholder.SiteInformation;
+import org.openelisglobal.nidanpatientsync.PatientSavedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -69,12 +73,27 @@ public class PatientManagementRestController extends BaseRestController {
     OrganizationService organizationService;
     @Autowired
     OrganizationTypeService organizationTypeService;
+    @Autowired
+    ApplicationEventPublisher eventPublisher;
+    @Autowired
+    SiteInformationService siteInformationService;
 
     @PostMapping(value = "PatientManagement", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public void savepatient(HttpServletRequest request,
+    public ResponseEntity<?> savepatient(HttpServletRequest request,
             @Validated(SamplePatientEntryForm.SamplePatientEntry.class) @RequestBody PatientManagementInfo patientInfo,
             BindingResult bindingResult) throws Exception {
+
+        // Read readonly flag once — used for both 403 guard and NID generation guard
+        SiteInformation readonlyConfig = siteInformationService.getSiteInformationByName("nidan_patient_ui_readonly");
+        boolean isReadonly = readonlyConfig != null && "true".equalsIgnoreCase(readonlyConfig.getValue());
+
+        // Block patient creation/update if readonly flag is enabled
+        if (isReadonly) {
+            return ResponseEntity.status(403)
+                    .body(Map.of("status", "FORBIDDEN", "message",
+                            "Patient creation/editing is disabled. Use middleware endpoint instead."));
+        }
 
         if (StringUtils.isNotBlank(patientInfo.getPatientPK())) {
             patientInfo.setPatientUpdateStatus(PatientUpdateStatus.UPDATE);
@@ -85,6 +104,16 @@ public class PatientManagementRestController extends BaseRestController {
 
         if (patientInfo.getPatientUpdateStatus() != PatientUpdateStatus.NO_ACTION) {
 
+            // On CREATE: if nationalId is blank AND patient UI is NOT read-only, generate a unique
+            // fallback NID (NID-XXXXXXXX). This only runs when users can create patients from the UI.
+            // When readonly=true (middleware-only mode), this is skipped — middleware already sends NIDs.
+            // On UPDATE: never touch nationalId — preserve whatever is already in DB.
+            if (patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD
+                    && GenericValidator.isBlankOrNull(patientInfo.getNationalId())
+                    && !isReadonly) {
+                patientInfo.setNationalId(generateFallbackNationalId());
+            }
+
             PatientUtil.preparePatientData(bindingResult, request, patientInfo, patient);
             if (bindingResult.hasErrors()) {
                 try {
@@ -93,24 +122,30 @@ public class PatientManagementRestController extends BaseRestController {
                     LogEvent.logError(e);
                 }
             }
+
             try {
                 patientService.persistPatientData(patientInfo, patient, getSysUserId(request));
                 fhirTransformService.transformPersistPatient(patientInfo,
                         (patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
                 photoService.savePhoto(patient.getId(), patientInfo.getPhoto());
+                eventPublisher.publishEvent(new PatientSavedEvent(patientInfo,
+                        patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
             } catch (LIMSRuntimeException e) {
 
                 if (e.getCause() instanceof StaleObjectStateException) {
-
+                    return ResponseEntity.status(409).body(Map.of("status", "ERROR", "message", "Stale object state"));
                 } else {
                     LogEvent.logDebug(e);
+                    return ResponseEntity.status(500).body(Map.of("status", "ERROR", "message", "Unexpected error"));
                 }
-                request.setAttribute(ALLOW_EDITS_KEY, "false");
 
             } catch (FhirTransformationException | FhirPersistanceException e) {
                 LogEvent.logError(e);
+                return ResponseEntity.status(500)
+                        .body(Map.of("status", "ERROR", "message", "FHIR transformation/persistence error"));
             }
         }
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "patientId", patient.getId()));
     }
 
     @PostMapping(value = "CredentialPatientManagement", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -163,6 +198,8 @@ public class PatientManagementRestController extends BaseRestController {
             fhirTransformService.transformPersistPatient(patientInfo,
                     (patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
             photoService.savePhoto(patient.getId(), patientInfo.getPhoto());
+            eventPublisher.publishEvent(new PatientSavedEvent(patientInfo,
+                    patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
             java.util.Map<String, Object> body = new java.util.HashMap<>();
             body.put("status", patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD ? "CREATED" : "UPDATED");
             body.put("patientId", patient.getId());
@@ -389,5 +426,23 @@ public class PatientManagementRestController extends BaseRestController {
                 "Created new Organization '" + incomingValue.trim() + "' (id=" + newId + ") for type: " + orgTypeName);
 
         return newId;
+    }
+
+    /**
+     * Generates a unique fallback National ID for patients who do not provide one.
+     * Format: {@code NID-XXXXXXXX} where X is an uppercase alphanumeric character (8 chars).
+     * Example: {@code NID-A3F7K2P9}
+     *
+     * <p>Only called on patient CREATE when nationalId is blank.
+     * Never called on UPDATE — existing DB value is preserved.
+     */
+    private static String generateFallbackNationalId() {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 to avoid visual confusion
+        java.util.Random rng = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder("NID-");
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(rng.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

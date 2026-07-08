@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { FormattedMessage, injectIntl } from "react-intl";
 import "../Style.css";
 import { Heading, Grid, Column, Section, Button } from "@carbon/react";
 import SearchPatientForm from "./SearchPatientForm";
 import CreatePatientForm from "./CreatePatientForm";
 import PageBreadCrumb from "../common/PageBreadCrumb";
+import { ConfigurationContext } from "../layout/Layout";
+
 let breadcrumbs = [
   { label: "home.label", link: "/" },
   { label: "patient.label.modify", link: "/PatientManagement" },
 ];
 
 function PatientManagement() {
+  const { configurationProperties } = useContext(ConfigurationContext);
   const [selectedPatient, setSelectedPatient] = useState({});
   const [searchPatientTab, setSearchPatientTab] = useState({
     kind: "primary",
@@ -93,6 +96,9 @@ function PatientManagement() {
               <CreatePatientForm
                 showActionsButton={true}
                 selectedPatient={selectedPatient}
+                disabled={
+                  configurationProperties.NIDAN_PATIENT_UI_READONLY === "true"
+                }
               ></CreatePatientForm>
             </Column>
           )}
