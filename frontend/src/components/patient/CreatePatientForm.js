@@ -814,8 +814,8 @@ function CreatePatientForm(props) {
                           value={values.subjectNumber || ""}
                           name={field.name}
                           labelText={intl.formatMessage({
-                                id: "patient.subject.number",
-                              })}
+                            id: "patient.subject.number",
+                          })}
                           id={field.name}
                           invalid={
                             errors.subjectNumber && touched.subjectNumber
@@ -844,8 +844,8 @@ function CreatePatientForm(props) {
                         value={values.nationalId || ""}
                         name={field.name}
                         labelText={intl.formatMessage({
-                              id: "patient.natioanalid",
-                            })}
+                          id: "patient.natioanalid",
+                        })}
                         id={field.name}
                         invalid={
                           props.error

@@ -264,8 +264,9 @@ public class ResultsLoadUtility {
         }
 
         form.setSt(identityMap.getIdentityValue(identityList, "ST"));
-        form.setNationalId(GenericValidator.isBlankOrNull(patientService.getNationalId(patient)) ? patient.getExternalId()
-                : patientService.getNationalId(patient));
+        form.setNationalId(
+                GenericValidator.isBlankOrNull(patientService.getNationalId(patient)) ? patient.getExternalId()
+                        : patientService.getNationalId(patient));
         form.setSubjectNumber(patientService.getSubjectNumber(patient));
     }
 

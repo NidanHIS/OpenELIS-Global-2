@@ -346,19 +346,17 @@ public class IncomingOrdersRestController {
 
     /**
      * True when the source department name indicates an admission visit (IPD / ER).
-     * These orders bypass the paywall entirely — admission patients are never blocked.
-     * Matches case-insensitively:
-     *   IPD  — "IPD", "ipd", "Inpatient (IPD)", "IPD Ward", etc.
-     *   ER   — "ER", "er", "ER Ward", "Emergency", "emergency room", etc.
+     * These orders bypass the paywall entirely — admission patients are never
+     * blocked. Matches case-insensitively: IPD — "IPD", "ipd", "Inpatient (IPD)",
+     * "IPD Ward", etc. ER — "ER", "er", "ER Ward", "Emergency", "emergency room",
+     * etc.
      */
     private boolean isAdmissionSource(String source) {
         if (source == null || source.trim().isEmpty()) {
             return false;
         }
         String upper = source.trim().toUpperCase();
-        return upper.contains("IPD")
-                || upper.contains("INPATIENT")
-                || upper.contains("EMERGENCY")
+        return upper.contains("IPD") || upper.contains("INPATIENT") || upper.contains("EMERGENCY")
                 || java.util.regex.Pattern.compile("\\bER\\b").matcher(upper).find();
     }
 

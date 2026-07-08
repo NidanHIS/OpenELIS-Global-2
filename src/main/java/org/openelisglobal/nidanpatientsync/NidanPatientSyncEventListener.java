@@ -13,10 +13,13 @@ import org.springframework.stereotype.Component;
  * Listens for {@link PatientSavedEvent} and forwards patient data to nidan-cis
  * asynchronously.
  *
- * <p>Pattern mirrors {@code TestOrderEventListener} exactly:
- * {@code @Async @EventListener} on the event class — no extra service layer needed.
+ * <p>
+ * Pattern mirrors {@code TestOrderEventListener} exactly:
+ * {@code @Async @EventListener} on the event class — no extra service layer
+ * needed.
  *
- * <p>Fires on both patient create and update. Never sends subjectNumber.
+ * <p>
+ * Fires on both patient create and update. Never sends subjectNumber.
  */
 @Component
 public class NidanPatientSyncEventListener {
@@ -46,13 +49,11 @@ public class NidanPatientSyncEventListener {
 
             String changeType = event.isCreate() ? "created" : "updated";
 
-            NidanPatientSyncNotification notification = new NidanPatientSyncNotification(
-                    guid,
-                    nullSafe(info.getFirstName()),
-                    nullSafe(info.getLastName()),
-                    nullSafe(info.getGender()),
-                    nullSafe(info.getBirthDateForDisplay()),
-                    nullSafe(info.getNationalId()),  // null/blank is fine — middleware skips NID identifier if blank
+            NidanPatientSyncNotification notification = new NidanPatientSyncNotification(guid,
+                    nullSafe(info.getFirstName()), nullSafe(info.getLastName()), nullSafe(info.getGender()),
+                    nullSafe(info.getBirthDateForDisplay()), nullSafe(info.getNationalId()), // null/blank is fine —
+                                                                                             // middleware skips NID
+                                                                                             // identifier if blank
                     changeType);
 
             patientSyncClient.send(notification);
