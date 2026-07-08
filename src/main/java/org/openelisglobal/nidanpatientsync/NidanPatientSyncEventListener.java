@@ -34,6 +34,12 @@ public class NidanPatientSyncEventListener {
     @EventListener
     public void onPatientSaved(PatientSavedEvent event) {
         try {
+            if (event.isRestCall()) {
+                LOG.info("{} Patient saved via REST endpoint — skipping outbound webhook sync to prevent loop",
+                        LOG_PREFIX);
+                return;
+            }
+
             PatientManagementInfo info = event.getPatientInfo();
 
             if (info == null) {

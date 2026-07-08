@@ -200,7 +200,7 @@ public class PatientManagementRestController extends BaseRestController {
                     (patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
             photoService.savePhoto(patient.getId(), patientInfo.getPhoto());
             eventPublisher.publishEvent(new PatientSavedEvent(patientInfo,
-                    patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD));
+                    patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD, true));
             java.util.Map<String, Object> body = new java.util.HashMap<>();
             body.put("status", patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD ? "CREATED" : "UPDATED");
             body.put("patientId", patient.getId());
