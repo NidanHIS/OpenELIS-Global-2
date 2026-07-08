@@ -813,14 +813,9 @@ function CreatePatientForm(props) {
                         <TextInput
                           value={values.subjectNumber || ""}
                           name={field.name}
-                          labelText={
-                            <>
-                              {intl.formatMessage({
+                          labelText={intl.formatMessage({
                                 id: "patient.subject.number",
                               })}
-                              <span className="requiredlabel">*</span>
-                            </>
-                          }
                           id={field.name}
                           invalid={
                             errors.subjectNumber && touched.subjectNumber

@@ -1,13 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import { Button, Stack, Grid, Column, InlineNotification } from "@carbon/react";
 import SearchPatientForm from "../patient/SearchPatientForm";
 import CreatePatientForm from "../patient/CreatePatientForm";
 import { FormattedMessage, useIntl } from "react-intl";
 import { getFromOpenElisServer } from "../utils/Utils";
+import { ConfigurationContext } from "../layout/Layout";
 
 const PatientInfo = (props) => {
   const { orderFormValues, setOrderFormValues, error, setPhoneValidation } =
     props;
+  const { configurationProperties } = useContext(ConfigurationContext);
   const componentMounted = useRef(false);
   const intl = useIntl();
   const [searchPatientTab, setSearchPatientTab] = useState({
@@ -179,7 +181,11 @@ const PatientInfo = (props) => {
                     setOrderFormValues={setOrderFormValues}
                     error={error}
                     setPhoneValidation={setPhoneValidation}
-                    disabled={isEQASample}
+                    disabled={
+                      isEQASample ||
+                      configurationProperties.NIDAN_PATIENT_UI_READONLY ===
+                        "true"
+                    }
                   />
                 </div>
               )}
