@@ -292,7 +292,8 @@ public class PatientDashBoardProvider {
 
     /**
      * Resolves the display patient identifier: SUBJECT (health ID from OpenMRS) is
-     * primary; national ID is the fallback. Returns empty string when neither exists.
+     * primary; national ID is the fallback. Returns empty string when neither
+     * exists.
      */
     private String getPatientDisplayId(Patient patient) {
         if (patient == null) {
@@ -626,8 +627,7 @@ public class PatientDashBoardProvider {
                                     .getPatientForSample(sample);
                             bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                             bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                            bean.setPatientId(
-                                    patient != null ? getPatientDisplayId(patient) : "");
+                            bean.setPatientId(patient != null ? getPatientDisplayId(patient) : "");
                             bean.setPatientName(getPatientName(patient));
                             bean.setPatientGuid(
                                     patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");
@@ -879,8 +879,7 @@ public class PatientDashBoardProvider {
                             Patient patient = sampleHumanService.getPatientForSample(sample);
                             bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                             bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                            bean.setPatientId(
-                                    patient != null ? getPatientDisplayId(patient) : "");
+                            bean.setPatientId(patient != null ? getPatientDisplayId(patient) : "");
                             bean.setPatientName(getPatientName(patient));
                             bean.setPatientGuid(
                                     patient != null ? StringUtils.defaultString(patientService.getGUID(patient)) : "");

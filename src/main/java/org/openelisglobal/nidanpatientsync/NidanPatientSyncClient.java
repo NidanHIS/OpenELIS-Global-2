@@ -13,14 +13,19 @@ import org.springframework.stereotype.Component;
  * HTTP client — POSTs a {@link NidanPatientSyncNotification} to nidan-cis
  * {@code /openelis/patient} on patient create or update.
  *
- * <p>Config (set via CATALINA_OPTS -D flags from nidan-docker):
+ * <p>
+ * Config (set via CATALINA_OPTS -D flags from nidan-docker):
  * <ul>
- *   <li>{@code org.openelisglobal.nidan.patientsync.enabled} — default {@code false}</li>
- *   <li>{@code org.openelisglobal.nidan.patientsync.url}     — e.g. {@code http://nidan-cis:8081/openelis/patient}</li>
- *   <li>{@code org.openelisglobal.middleware.result.sync.secret} — shared webhook secret (reused across all nidan clients)</li>
+ * <li>{@code org.openelisglobal.nidan.patientsync.enabled} — default
+ * {@code false}</li>
+ * <li>{@code org.openelisglobal.nidan.patientsync.url} — e.g.
+ * {@code http://nidan-cis:8081/openelis/patient}</li>
+ * <li>{@code org.openelisglobal.middleware.result.sync.secret} — shared webhook
+ * secret (reused across all nidan clients)</li>
  * </ul>
  *
- * <p>Pattern mirrors {@code TestOrderClient} exactly.
+ * <p>
+ * Pattern mirrors {@code TestOrderClient} exactly.
  */
 @Component
 public class NidanPatientSyncClient {
@@ -63,7 +68,8 @@ public class NidanPatientSyncClient {
         }
 
         if (GenericValidator.isBlankOrNull(endpointUrl)) {
-            LOG.warn("{} enabled=true but org.openelisglobal.nidan.patientsync.url not set — skipping HTTP", LOG_PREFIX);
+            LOG.warn("{} enabled=true but org.openelisglobal.nidan.patientsync.url not set — skipping HTTP",
+                    LOG_PREFIX);
             LOG.info("{} ══════════════════════════════════════════", LOG_PREFIX);
             return;
         }

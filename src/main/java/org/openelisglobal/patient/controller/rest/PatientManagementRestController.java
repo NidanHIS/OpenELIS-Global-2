@@ -20,6 +20,7 @@ import org.openelisglobal.common.services.DisplayListService.ListType;
 import org.openelisglobal.dataexchange.fhir.exception.FhirPersistanceException;
 import org.openelisglobal.dataexchange.fhir.exception.FhirTransformationException;
 import org.openelisglobal.dataexchange.fhir.service.FhirTransformService;
+import org.openelisglobal.nidanpatientsync.PatientSavedEvent;
 import org.openelisglobal.organization.service.OrganizationService;
 import org.openelisglobal.organization.service.OrganizationTypeService;
 import org.openelisglobal.organization.valueholder.Organization;
@@ -38,7 +39,6 @@ import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.openelisglobal.search.service.SearchResultsService;
 import org.openelisglobal.siteinformation.service.SiteInformationService;
 import org.openelisglobal.siteinformation.valueholder.SiteInformation;
-import org.openelisglobal.nidanpatientsync.PatientSavedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
@@ -90,9 +90,8 @@ public class PatientManagementRestController extends BaseRestController {
 
         // Block patient creation/update if readonly flag is enabled
         if (isReadonly) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("status", "FORBIDDEN", "message",
-                            "Patient creation/editing is disabled. Use middleware endpoint instead."));
+            return ResponseEntity.status(403).body(Map.of("status", "FORBIDDEN", "message",
+                    "Patient creation/editing is disabled. Use middleware endpoint instead."));
         }
 
         if (StringUtils.isNotBlank(patientInfo.getPatientPK())) {
@@ -104,13 +103,15 @@ public class PatientManagementRestController extends BaseRestController {
 
         if (patientInfo.getPatientUpdateStatus() != PatientUpdateStatus.NO_ACTION) {
 
-            // On CREATE: if nationalId is blank AND patient UI is NOT read-only, generate a unique
-            // fallback NID (NID-XXXXXXXX). This only runs when users can create patients from the UI.
-            // When readonly=true (middleware-only mode), this is skipped — middleware already sends NIDs.
+            // On CREATE: if nationalId is blank AND patient UI is NOT read-only, generate a
+            // unique
+            // fallback NID (NID-XXXXXXXX). This only runs when users can create patients
+            // from the UI.
+            // When readonly=true (middleware-only mode), this is skipped — middleware
+            // already sends NIDs.
             // On UPDATE: never touch nationalId — preserve whatever is already in DB.
             if (patientInfo.getPatientUpdateStatus() == PatientUpdateStatus.ADD
-                    && GenericValidator.isBlankOrNull(patientInfo.getNationalId())
-                    && !isReadonly) {
+                    && GenericValidator.isBlankOrNull(patientInfo.getNationalId()) && !isReadonly) {
                 patientInfo.setNationalId(generateFallbackNationalId());
             }
 
@@ -430,11 +431,12 @@ public class PatientManagementRestController extends BaseRestController {
 
     /**
      * Generates a unique fallback National ID for patients who do not provide one.
-     * Format: {@code NID-XXXXXXXX} where X is an uppercase alphanumeric character (8 chars).
-     * Example: {@code NID-A3F7K2P9}
+     * Format: {@code NID-XXXXXXXX} where X is an uppercase alphanumeric character
+     * (8 chars). Example: {@code NID-A3F7K2P9}
      *
-     * <p>Only called on patient CREATE when nationalId is blank.
-     * Never called on UPDATE — existing DB value is preserved.
+     * <p>
+     * Only called on patient CREATE when nationalId is blank. Never called on
+     * UPDATE — existing DB value is preserved.
      */
     private static String generateFallbackNationalId() {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 to avoid visual confusion

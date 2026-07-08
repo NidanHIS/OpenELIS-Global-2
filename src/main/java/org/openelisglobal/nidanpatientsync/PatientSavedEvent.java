@@ -4,9 +4,11 @@ import org.openelisglobal.patient.action.bean.PatientManagementInfo;
 
 /**
  * Spring application event published after a patient is successfully persisted
- * via {@code POST /rest/PatientManagement} or {@code POST /rest/CredentialPatientManagement}.
+ * via {@code POST /rest/PatientManagement} or
+ * {@code POST /rest/CredentialPatientManagement}.
  *
- * <p>Consumed asynchronously by {@link NidanPatientSyncEventListener}.
+ * <p>
+ * Consumed asynchronously by {@link NidanPatientSyncEventListener}.
  */
 public class PatientSavedEvent {
 

@@ -390,9 +390,9 @@ public class DisplayListController extends BaseRestController {
         configs.put("LAST_NAME_REGEX", LAST_NAME_REGEX);
         configs.put(Property.USE_NEW_ADDRESS_HIERARCHY.toString(),
                 ConfigurationProperties.getInstance().getPropertyValue(Property.USE_NEW_ADDRESS_HIERARCHY));
-        SiteInformation patientUiReadonly = siteInformationService.getSiteInformationByName("nidan_patient_ui_readonly");
-        configs.put("NIDAN_PATIENT_UI_READONLY",
-                patientUiReadonly != null ? patientUiReadonly.getValue() : "false");
+        SiteInformation patientUiReadonly = siteInformationService
+                .getSiteInformationByName("nidan_patient_ui_readonly");
+        configs.put("NIDAN_PATIENT_UI_READONLY", patientUiReadonly != null ? patientUiReadonly.getValue() : "false");
         return configs;
     }
 
