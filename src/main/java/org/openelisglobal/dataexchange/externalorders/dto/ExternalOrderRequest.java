@@ -1,5 +1,6 @@
 package org.openelisglobal.dataexchange.externalorders.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,6 +18,7 @@ import org.openelisglobal.common.validator.ValidationHelper;
  * We can expand this later as requirements grow without impacting the internal
  * order creation flow.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ExternalOrderRequest {
 
     @NotBlank
