@@ -668,4 +668,19 @@ public class SampleOrderItem implements Serializable {
     public void setEqaPriority(String eqaPriority) {
         this.eqaPriority = eqaPriority;
     }
+
+    /**
+     * Visit type name from OpenMRS carried through from the external order payload.
+     * Not submitted by the UI — set programmatically by the form mapper.
+     * Nullable. No validation annotation needed.
+     */
+    private String nidanVisitType;
+
+    public String getNidanVisitType() {
+        return nidanVisitType;
+    }
+
+    public void setNidanVisitType(String nidanVisitType) {
+        this.nidanVisitType = nidanVisitType;
+    }
 }

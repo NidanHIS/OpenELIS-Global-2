@@ -349,6 +349,11 @@ public class SamplePatientUpdateData {
         sample.setDomain(ConfigurationProperties.getInstance().getPropertyValue("domain.human"));
         sample.setStatusId(SpringContext.getBean(IStatusService.class).getStatusID(OrderStatus.Entered));
 
+        // Persist visit type from OpenMRS if present — null-safe, no side effects.
+        if (sampleOrder.getNidanVisitType() != null && !sampleOrder.getNidanVisitType().trim().isEmpty()) {
+            sample.setNidanVisitType(sampleOrder.getNidanVisitType().trim());
+        }
+
         setElectronicOrderIfNeeded(sampleOrder);
     }
 

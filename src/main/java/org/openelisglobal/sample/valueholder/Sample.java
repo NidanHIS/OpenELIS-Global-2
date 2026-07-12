@@ -70,6 +70,12 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
     private String gpsCaptureMethod;
     private Timestamp gpsCaptureTimestamp;
 
+    /**
+     * Visit type name from OpenMRS (e.g. "OPD", "IPD"). Denormalized plain string.
+     * No FK. Nullable. Set from the external order payload at collect time.
+     */
+    private String nidanVisitType;
+
     // testing one-to-many
     // this is for HSE I and II - ability to enter up to two projects
     private List sampleProjects;
@@ -474,5 +480,13 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
 
     public boolean hasGpsCoordinates() {
         return gpsLatitude != null && gpsLongitude != null;
+    }
+
+    public String getNidanVisitType() {
+        return nidanVisitType;
+    }
+
+    public void setNidanVisitType(String nidanVisitType) {
+        this.nidanVisitType = nidanVisitType;
     }
 }
