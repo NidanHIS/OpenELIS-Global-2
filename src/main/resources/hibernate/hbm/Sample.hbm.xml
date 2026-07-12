@@ -97,6 +97,8 @@
             type="java.lang.String" length="10" />
         <property name="gpsCaptureTimestamp"
             column="gps_capture_timestamp" type="java.sql.Timestamp" />
+        <property name="nidanVisitType" column="nidan_visit_type"
+            type="java.lang.String" length="100" />
 
         <!-- <set name="sampleOrganizations" inverse="true"> <key> <column name="SAMP_ID"
             precision="10" scale="0" /> </key> <one-to-many class="org.openelisglobal.sampleorganization.valueholder.SampleOrganization"

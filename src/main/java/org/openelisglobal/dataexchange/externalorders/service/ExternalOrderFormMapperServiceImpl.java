@@ -105,6 +105,9 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         form.getSampleOrderItems().setProviderFax(externalOrderRequest.getProviderFax());
         form.getSampleOrderItems().setProviderEmail(externalOrderRequest.getProviderEmail());
 
+        // Carry visitType through to the form item so the UI can round-trip it back.
+        form.getSampleOrderItems().setNidanVisitType(externalOrderRequest.getVisitType());
+
         resolveReferringSite(form.getSampleOrderItems());
         resolveRequester(form.getSampleOrderItems());
 

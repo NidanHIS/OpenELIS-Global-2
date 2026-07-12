@@ -141,6 +141,7 @@ public class ExternalOrderValidationServiceImpl implements ExternalOrderValidati
         filtered.setReceivedTime(original.getReceivedTime());
         filtered.setRequestDate(original.getRequestDate());
         filtered.setProgramId(original.getProgramId());
+        filtered.setVisitType(original.getVisitType());
 
         // Build sets of valid test and panel IDs for quick lookup
         List<String> validTestIds = new ArrayList<>();
