@@ -111,7 +111,8 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
 
         holding.setPayload(mergedJson);
         holding.setSysUserId(receivedSysUserId);
-        // Update visit_type if the incoming event provides a value; keep existing otherwise.
+        // Update visit_type if the incoming event provides a value; keep existing
+        // otherwise.
         if (externalOrderRequest.getVisitType() != null) {
             holding.setVisitType(externalOrderRequest.getVisitType());
         }
