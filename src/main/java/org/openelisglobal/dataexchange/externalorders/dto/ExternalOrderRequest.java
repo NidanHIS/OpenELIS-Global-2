@@ -65,6 +65,13 @@ public class ExternalOrderRequest {
 
     private String programId;
 
+    /**
+     * Visit type name (e.g. "OPD", "IPD", "Emergency") sourced from OpenMRS via
+     * middleware. Stored as-is — no FK, no validation. Nullable; ignored by all
+     * existing pipeline logic so adding it is fully backward-compatible.
+     */
+    private String visitType;
+
     @Valid
     @NotEmpty
     private List<ExternalOrderSample> samples = new ArrayList<>();
@@ -203,6 +210,14 @@ public class ExternalOrderRequest {
 
     public void setProgramId(String programId) {
         this.programId = programId;
+    }
+
+    public String getVisitType() {
+        return visitType;
+    }
+
+    public void setVisitType(String visitType) {
+        this.visitType = visitType;
     }
 
     public List<ExternalOrderSample> getSamples() {

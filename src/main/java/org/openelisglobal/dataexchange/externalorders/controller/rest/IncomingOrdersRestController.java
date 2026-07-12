@@ -86,6 +86,7 @@ public class IncomingOrdersRestController {
             // Payload-derived display-only fields
             item.setTestCount(calculateTotalTestCount(order.getPayload()));
             item.setSource(extractSource(order.getPayload()));
+            item.setVisitType(order.getVisitType());
 
             response.add(item);
         }
@@ -151,6 +152,7 @@ public class IncomingOrdersRestController {
 
             item.setTestCount(calculateTotalTestCount(order.getPayload()));
             item.setSource(extractSource(order.getPayload()));
+            item.setVisitType(order.getVisitType());
 
             items.add(item);
         }
@@ -531,6 +533,7 @@ public class IncomingOrdersRestController {
         detail.setLabNo(holding.getLabNo());
         detail.setSampleId(holding.getSampleId());
         detail.setErrorMessage(holding.getErrorMessage());
+        detail.setVisitType(holding.getVisitType());
         return detail;
     }
 
@@ -545,6 +548,8 @@ public class IncomingOrdersRestController {
         private String labNo;
         private Integer sampleId;
         private String errorMessage;
+        /** Visit type name sourced from the order event (e.g. "OPD", "IPD"). Nullable. */
+        private String visitType;
 
         public String getExternalOrderNumber() {
             return externalOrderNumber;
@@ -625,6 +630,14 @@ public class IncomingOrdersRestController {
         public void setErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
         }
+
+        public String getVisitType() {
+            return visitType;
+        }
+
+        public void setVisitType(String visitType) {
+            this.visitType = visitType;
+        }
     }
 
     public static class IncomingOrderListItem {
@@ -638,6 +651,8 @@ public class IncomingOrdersRestController {
         private String patientId;
         private Integer testCount;
         private String source;
+        /** Visit type name (e.g. "OPD", "IPD"). Display-only, nullable. */
+        private String visitType;
 
         public String getExternalOrderNumber() {
             return externalOrderNumber;
@@ -693,6 +708,14 @@ public class IncomingOrdersRestController {
 
         public void setSource(String source) {
             this.source = source;
+        }
+
+        public String getVisitType() {
+            return visitType;
+        }
+
+        public void setVisitType(String visitType) {
+            this.visitType = visitType;
         }
     }
 }

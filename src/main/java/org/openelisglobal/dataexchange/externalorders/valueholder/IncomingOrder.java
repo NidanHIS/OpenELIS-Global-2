@@ -52,6 +52,10 @@ public class IncomingOrder extends BaseObject<Integer> {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    /** Visit type name sourced from the incoming order payload (e.g. "OPD", "IPD"). Nullable. */
+    @Column(name = "visit_type", length = 100)
+    private String visitType;
+
     @Override
     public Integer getId() {
         return id;
@@ -140,5 +144,13 @@ public class IncomingOrder extends BaseObject<Integer> {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public String getVisitType() {
+        return visitType;
+    }
+
+    public void setVisitType(String visitType) {
+        this.visitType = visitType;
     }
 }

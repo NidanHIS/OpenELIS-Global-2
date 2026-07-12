@@ -50,6 +50,7 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
         holding.setPayload(payloadJson);
         holding.setReceivedTimestamp(new Timestamp(System.currentTimeMillis()));
         holding.setReceivedSysUserId(receivedSysUserId);
+        holding.setVisitType(externalOrderRequest.getVisitType());
 
         holding.setSysUserId(receivedSysUserId);
         return baseObjectDAO.insert(holding);
@@ -110,6 +111,10 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
 
         holding.setPayload(mergedJson);
         holding.setSysUserId(receivedSysUserId);
+        // Update visit_type if the incoming event provides a value; keep existing otherwise.
+        if (externalOrderRequest.getVisitType() != null) {
+            holding.setVisitType(externalOrderRequest.getVisitType());
+        }
         return baseObjectDAO.update(holding);
     }
 
@@ -292,6 +297,7 @@ public class IncomingOrderServiceImpl extends AuditableBaseObjectServiceImpl<Inc
                 incoming.getReceivedTime() != null ? incoming.getReceivedTime() : existing.getReceivedTime());
         out.setRequestDate(incoming.getRequestDate() != null ? incoming.getRequestDate() : existing.getRequestDate());
         out.setProgramId(incoming.getProgramId() != null ? incoming.getProgramId() : existing.getProgramId());
+        out.setVisitType(incoming.getVisitType() != null ? incoming.getVisitType() : existing.getVisitType());
 
         Map<String, ExternalOrderRequest.ExternalOrderSample> existingByKey = indexSamples(existing.getSamples());
         Map<String, ExternalOrderRequest.ExternalOrderSample> incomingByKey = indexSamples(incoming.getSamples());
