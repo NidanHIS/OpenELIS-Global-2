@@ -14,6 +14,7 @@ import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.dataexchange.externalorders.service.IncomingOrderService;
 import org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder;
 import org.openelisglobal.nidanpaywall.NidanPaywallClient;
+import org.openelisglobal.nidanpaywall.NidanPaywallConfigService;
 import org.openelisglobal.nidanpaywall.PaywallResult;
 import org.openelisglobal.panel.service.PanelService;
 import org.openelisglobal.panel.valueholder.Panel;
@@ -63,6 +64,9 @@ public class IncomingOrdersRestController {
 
     @Autowired
     private NidanPaywallClient paywallClient;
+
+    @Autowired
+    private NidanPaywallConfigService paywallConfigService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -347,12 +351,13 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * True when the source department name indicates an admission visit (IPD / ER).
-     * These orders bypass the paywall entirely — admission patients are never
-     * blocked. Matches case-insensitively: IPD — "IPD", "ipd", "Inpatient (IPD)",
-     * "IPD Ward", etc. ER — "ER", "er", "ER Ward", "Emergency", "emergency room",
-     * etc.
+     * @deprecated No longer used for paywall bypass decisions. The bypass is now
+     *             driven by {@code IncomingOrder.visitType} via
+     *             {@link org.openelisglobal.nidanpaywall.NidanPaywallConfigService}.
+     *             Retained to avoid breaking any external callers; will be removed
+     *             in a future cleanup pass.
      */
+    @Deprecated
     private boolean isAdmissionSource(String source) {
         if (source == null || source.trim().isEmpty()) {
             return false;
@@ -493,16 +498,19 @@ public class IncomingOrdersRestController {
 
         IncomingOrder order = holdingOpt.get();
 
-        // IPD / ER bypass: admission orders are never blocked at the paywall.
-        // The department name is authoritative (sourced from OpenMRS via middleware).
-        String source = extractSource(order.getPayload());
-        if (isAdmissionSource(source)) {
+        // Visit-type bypass: if the order's visit type is in the user-configured
+        // allow-list (OPD / IPD / ER), skip the Odoo call entirely.
+        // The visitType column was persisted from the OpenMRS payload at receive time
+        // and is authoritative — no payload parsing required here.
+        String visitType = order.getVisitType();
+        if (paywallConfigService.isVisitTypeAllowed(visitType)) {
             java.util.Map<String, Object> bypass = new java.util.LinkedHashMap<>();
             bypass.put("decision", "allow");
             bypass.put("blocked", false);
             bypass.put("outstandingAmount", 0.0);
             bypass.put("currency", null);
-            bypass.put("paymentStatus", "admission_bypass");
+            bypass.put("paymentStatus", "visit_type_bypass");
+            bypass.put("visitType", visitType);
             bypass.put("patientGuid", order.getPatientGuid());
             bypass.put("visitUuid", externalOrderNumber);
             return ResponseEntity.ok(bypass);
@@ -548,7 +556,9 @@ public class IncomingOrdersRestController {
         private String labNo;
         private Integer sampleId;
         private String errorMessage;
-        /** Visit type name sourced from the order event (e.g. "OPD", "IPD"). Nullable. */
+        /**
+         * Visit type name sourced from the order event (e.g. "OPD", "IPD"). Nullable.
+         */
         private String visitType;
 
         public String getExternalOrderNumber() {

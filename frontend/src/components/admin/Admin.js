@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import config from "../../config.json";
 import { FormattedMessage, useIntl, injectIntl } from "react-intl";
 import { Switch, Route, useRouteMatch, useHistory } from "react-router-dom";
@@ -15,6 +15,8 @@ import {
   StudyMenuManagement,
   DictionaryManagement,
 } from "./menu";
+import UserSessionDetailsContext from "../../UserSessionDetailsContext";
+import { Roles, hasRole } from "../utils/Utils";
 import {
   Microscope,
   CharacterWholeNumber,
@@ -99,12 +101,16 @@ import {
 } from "./localizationManagement";
 import ExternalConnectionMenu from "./externalConnections/ExternalConnectionMenu";
 import ExternalConnectionAddModify from "./externalConnections/ExternalConnectionAddModify";
+import NidanPaywallConfig from "./nidanPaywallConfig/NidanPaywallConfig";
 
 function Admin() {
   const intl = useIntl();
   const { path } = useRouteMatch();
   const history = useHistory();
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  const { userSessionDetails } = useContext(UserSessionDetailsContext);
+  const canManagePaywall = hasRole(userSessionDetails, Roles.PAYWALL_ADMIN);
 
   // Navigation handler to prevent page reload
   const handleNavigation = (targetPath) => (e) => {
@@ -411,6 +417,14 @@ function Admin() {
           >
             <FormattedMessage id="externalconnections.browse.title" />
           </SideNavLink>
+          {canManagePaywall && (
+            <SideNavLink
+              renderIcon={Settings}
+              onClick={handleNavigation(`${path}/nidanPaywallConfig`)}
+            >
+              Paywall Config
+            </SideNavLink>
+          )}
           <SideNavLink
             renderIcon={Catalog}
             target="_blank"
@@ -666,6 +680,10 @@ function Admin() {
         <Route
           path={`${path}/externalConnectionEdit`}
           component={ExternalConnectionAddModify}
+        />
+        <Route
+          path={`${path}/nidanPaywallConfig`}
+          component={NidanPaywallConfig}
         />
       </Switch>
     </>

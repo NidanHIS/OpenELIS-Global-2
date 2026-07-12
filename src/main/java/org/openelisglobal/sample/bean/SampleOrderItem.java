@@ -671,8 +671,8 @@ public class SampleOrderItem implements Serializable {
 
     /**
      * Visit type name from OpenMRS carried through from the external order payload.
-     * Not submitted by the UI — set programmatically by the form mapper.
-     * Nullable. No validation annotation needed.
+     * Not submitted by the UI — set programmatically by the form mapper. Nullable.
+     * No validation annotation needed.
      */
     private String nidanVisitType;
 

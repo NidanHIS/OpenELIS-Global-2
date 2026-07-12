@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Nidan paywall visit-type bypass configuration.
+
+        Three boolean SiteInformation rows control which OpenMRS visit types
+        are exempt from the paywall check at collect-sample time.
+
+        Defaults match the previous hardcoded behaviour:
+            OPD → false (outpatient, enforce paywall by default)
+            IPD → true  (inpatient, bypass by default — was hardcoded)
+            ER  → true  (emergency, bypass by default — was hardcoded)
+
+        Each property uses the idempotent UPDATE-or-INSERT pair pattern
+        consistent with every other nidan liquibase changeset.
+        domain_id references patientEntryConfig which already exists in the
+        upstream seed; no new domain row is required.
+    -->
+
+    <!-- ── nidan_paywall_allow_opd ─────────────────────────────────────────── -->
+    <changeSet id="nidan-paywall-visit-type-config-allow-opd-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'nidan_paywall_allow_opd'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert nidan_paywall_allow_opd = false (OPD patients go through paywall by default)</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id"           valueSequenceNext="site_information_seq"/>
+            <column name="name"         value="nidan_paywall_allow_opd"/>
+            <column name="description"  value="When true, OPD visit-type orders bypass the paywall check and are always allowed to collect."/>
+            <column name="value"        value="false"/>
+            <column name="encrypted"    value="false"/>
+            <column name="value_type"   value="boolean"/>
+            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')"/>
+            <column name="group"        value="0"/>
+            <column name="lastupdated"  valueComputed="now()"/>
+        </insert>
+    </changeSet>
+
+    <!-- ── nidan_paywall_allow_ipd ─────────────────────────────────────────── -->
+    <changeSet id="nidan-paywall-visit-type-config-allow-ipd-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'nidan_paywall_allow_ipd'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert nidan_paywall_allow_ipd = true (IPD inpatient orders bypass paywall by default)</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id"           valueSequenceNext="site_information_seq"/>
+            <column name="name"         value="nidan_paywall_allow_ipd"/>
+            <column name="description"  value="When true, IPD visit-type orders bypass the paywall check and are always allowed to collect."/>
+            <column name="value"        value="true"/>
+            <column name="encrypted"    value="false"/>
+            <column name="value_type"   value="boolean"/>
+            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')"/>
+            <column name="group"        value="0"/>
+            <column name="lastupdated"  valueComputed="now()"/>
+        </insert>
+    </changeSet>
+
+    <!-- ── nidan_paywall_allow_er ──────────────────────────────────────────── -->
+    <changeSet id="nidan-paywall-visit-type-config-allow-er-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'nidan_paywall_allow_er'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert nidan_paywall_allow_er = true (ER emergency orders bypass paywall by default)</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id"           valueSequenceNext="site_information_seq"/>
+            <column name="name"         value="nidan_paywall_allow_er"/>
+            <column name="description"  value="When true, ER visit-type orders bypass the paywall check and are always allowed to collect."/>
+            <column name="value"        value="true"/>
+            <column name="encrypted"    value="false"/>
+            <column name="value_type"   value="boolean"/>
+            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')"/>
+            <column name="group"        value="0"/>
+            <column name="lastupdated"  valueComputed="now()"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

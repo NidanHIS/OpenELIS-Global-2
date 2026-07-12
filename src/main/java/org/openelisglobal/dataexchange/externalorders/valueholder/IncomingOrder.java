@@ -52,7 +52,10 @@ public class IncomingOrder extends BaseObject<Integer> {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
-    /** Visit type name sourced from the incoming order payload (e.g. "OPD", "IPD"). Nullable. */
+    /**
+     * Visit type name sourced from the incoming order payload (e.g. "OPD", "IPD").
+     * Nullable.
+     */
     @Column(name = "visit_type", length = 100)
     private String visitType;
 
