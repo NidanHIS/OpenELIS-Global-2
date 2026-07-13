@@ -477,6 +477,17 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
             throws LIMSRuntimeException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         SampleOrderService sampleOrderService = new SampleOrderService();
         form.setSampleOrderItems(sampleOrderService.getSampleOrderItem());
+
+        // Default to DEF-LOC if no referring site is already set on the item.
+        // Anchored by short_name — stable even if display name is renamed by admin.
+        // Fully additive — skipped silently if DEF-LOC does not exist in DB.
+        if (GenericValidator.isBlankOrNull(form.getSampleOrderItems().getReferringSiteId())) {
+            Organization defLoc = organizationService.getOrganizationByShortName("DEF-LOC", false);
+            if (defLoc != null) {
+                form.getSampleOrderItems().setReferringSiteId(defLoc.getId());
+                form.getSampleOrderItems().setReferringSiteName(defLoc.getOrganizationName());
+            }
+        }
         if (requestFhirUuid != null
                 && requestFhirUuid.toUpperCase().startsWith(ResourceType.PRACTITIONER.toString().toUpperCase())) {
             Reference providerReference = new Reference(requestFhirUuid);
