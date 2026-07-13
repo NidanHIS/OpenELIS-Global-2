@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Seeds a single "Default Location" organization tagged as "referring clinic".
+
+        This is the canonical default referring site for this ELIS installation.
+        Both changesets are fully idempotent — safe to run on any existing DB.
+        No hard-coded IDs anywhere; org type resolved by short_name via subselect.
+    -->
+
+    <!-- Step 1: insert the org row only if "Default Location" does not already exist -->
+    <changeSet id="nidan-default-referring-site-insert-org" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.organization
+                WHERE name = 'Default Location'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert Default Location as the seed referring clinic organization</comment>
+        <insert schemaName="clinlims" tableName="organization">
+            <column name="id"                    valueSequenceNext="organization_seq"/>
+            <column name="name"                  value="Default Location"/>
+            <column name="short_name"            value="DEF-LOC"/>
+            <column name="is_active"             value="Y"/>
+            <column name="mls_sentinel_lab_flag" value="N"/>
+            <column name="lastupdated"           valueComputed="now()"/>
+        </insert>
+    </changeSet>
+
+    <!-- Step 2: link Default Location to the "referring clinic" org type -->
+    <changeSet id="nidan-default-referring-site-link-type" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <!-- Skip if the link already exists -->
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*)
+                FROM   clinlims.organization_organization_type oot
+                JOIN   clinlims.organization      o  ON o.id  = oot.org_id
+                JOIN   clinlims.organization_type ot ON ot.id = oot.org_type_id
+                WHERE  o.name        = 'Default Location'
+                AND    ot.short_name = 'referring clinic'
+            </sqlCheck>
+        </preConditions>
+        <comment>Link Default Location to the referring clinic org type</comment>
+        <sql>
+            INSERT INTO clinlims.organization_organization_type (org_id, org_type_id)
+            SELECT o.id, ot.id
+            FROM   clinlims.organization      o
+            JOIN   clinlims.organization_type ot ON ot.short_name = 'referring clinic'
+            WHERE  o.name = 'Default Location'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM   clinlims.organization_organization_type x
+                WHERE  x.org_id      = o.id
+                AND    x.org_type_id = ot.id
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
