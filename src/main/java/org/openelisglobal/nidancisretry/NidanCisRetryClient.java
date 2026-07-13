@@ -70,8 +70,13 @@ public class NidanCisRetryClient {
         }
 
         try {
-            // Step 1: GET dead letters
-            String listUrlWithParams = listUrl + "?status=NON_SUCCESS&limit=" + LIST_LIMIT;
+            // Step 1: GET dead letters — scoped server-side to the three CIS→ELIS sources.
+            // Uses the middleware ?sources= multi-value param (IN filter at DB level).
+            // isEligible() below still guards status; source filtering is now
+            // additive/redundant.
+            String listUrlWithParams = listUrl + "?status=NON_SUCCESS" + "&limit=" + LIST_LIMIT
+                    + "&sources=CIS-PATIENTS-OPENELIS" + "&sources=CIS-PATIENTS-CDC-OPENELIS"
+                    + "&sources=CIS-ELIS-ORDERS";
             LOG.info("[NIDAN-CIS-RETRY] GET {}", listUrlWithParams);
 
             List<Map<String, Object>> rows = cisGet(listUrlWithParams);
