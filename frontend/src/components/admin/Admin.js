@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import config from "../../config.json";
 import { FormattedMessage, useIntl, injectIntl } from "react-intl";
-import { Switch, Route, useRouteMatch, useHistory } from "react-router-dom";
+import { Switch, Route, Redirect, useRouteMatch, useHistory } from "react-router-dom";
 import "../Style.css";
 import ReflexTestManagement from "./reflexTests/ReflexTestManagement";
 import ProgramManagement from "./program/ProgramManagement";
@@ -683,7 +683,13 @@ function Admin() {
         />
         <Route
           path={`${path}/nidanPaywallConfig`}
-          component={NidanPaywallConfig}
+          render={() =>
+            canManagePaywall ? (
+              <NidanPaywallConfig />
+            ) : (
+              <Redirect to={path} />
+            )
+          }
         />
       </Switch>
     </>

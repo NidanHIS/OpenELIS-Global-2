@@ -2,9 +2,12 @@ package org.openelisglobal.nidanpaywall;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Set;
+import org.openelisglobal.common.constants.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,16 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
  * Admin REST API for the paywall visit-type bypass configuration.
  *
  * <p>
- * GET /rest/nidan/paywall-config — returns current flags PUT
- * /rest/nidan/paywall-config — saves updated flags
+ * GET /rest/nidan/paywall-config — returns current flags (PAYWALL_ADMIN only)
+ * PUT /rest/nidan/paywall-config — saves updated flags (PAYWALL_ADMIN only)
  *
  * <p>
- * Both endpoints are under {@code /rest/} which is already guarded by the
- * application's standard session + CSRF filter chain. The UI component that
- * calls these endpoints lives inside the {@code /MasterListsPage} admin panel
- * which requires the GLOBAL_ADMIN role, so direct non-admin access to this API
- * is blocked by the same Spring Security rules that protect every other admin
- * REST call.
+ * Both endpoints require the {@code Paywall Administration} role enforced via
+ * {@code @PreAuthorize}. Spring Method Security is enabled globally via
+ * {@code @EnableMethodSecurity(prePostEnabled = true)} on {@code SecurityConfig}.
  *
  * <p>
  * Response / request body shape:
@@ -46,6 +46,7 @@ public class NidanPaywallConfigRestController {
 
     // ── GET ───────────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('" + Constants.ROLE_PAYWALL_ADMIN + "')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaywallConfigDto> getConfig() {
         Set<String> allowed = configService.getAllowedVisitTypes();
@@ -56,6 +57,7 @@ public class NidanPaywallConfigRestController {
 
     // ── PUT ───────────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('" + Constants.ROLE_PAYWALL_ADMIN + "')")
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaywallConfigDto> saveConfig(@RequestBody PaywallConfigDto dto) {
         if (dto == null) {
