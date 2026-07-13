@@ -62,6 +62,16 @@ export default function NidanPaywallConfig() {
   useEffect(() => {
     componentMounted.current = true;
 
+    // Only fetch if the user actually has the paywall admin role.
+    // The route guard in Admin.js redirects non-admins away, but this is a
+    // second-line defence in case the component is rendered directly.
+    if (!canEdit) {
+      setLoading(false);
+      return () => {
+        componentMounted.current = false;
+      };
+    }
+
     getFromOpenElisServerV2("/rest/nidan/paywall-config")
       .then((data) => {
         if (!componentMounted.current) return;

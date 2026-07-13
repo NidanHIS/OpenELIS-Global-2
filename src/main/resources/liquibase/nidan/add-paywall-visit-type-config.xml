@@ -18,9 +18,50 @@
 
         Each property uses the idempotent UPDATE-or-INSERT pair pattern
         consistent with every other nidan liquibase changeset.
-        domain_id references patientEntryConfig which already exists in the
-        upstream seed; no new domain row is required.
+
+        domain_id uses the dedicated 'nidanPaywallConfig' domain so these rows
+        are invisible to the generic PatientConfigurationMenu. The domain row is
+        created idempotently in the same file before the three inserts.
+        NidanPaywallConfigService reads by key name, not by domain — no service
+        code changes required.
     -->
+
+    <!-- ── Create dedicated domain (idempotent) ──────────────────────────── -->
+    <changeSet id="nidan-paywall-config-domain-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information_domain
+                WHERE name = 'nidanPaywallConfig'
+            </sqlCheck>
+        </preConditions>
+        <comment>Create dedicated site_information_domain for nidan paywall config rows</comment>
+        <insert schemaName="clinlims" tableName="site_information_domain">
+            <column name="id"           valueSequenceNext="site_information_domain_seq"/>
+            <column name="name"         value="nidanPaywallConfig"/>
+            <column name="description"  value="Nidan paywall visit-type bypass configuration. Managed exclusively via NidanPaywallConfigRestController."/>
+            <column name="lastupdated"  valueComputed="now()"/>
+        </insert>
+    </changeSet>
+
+    <!-- ── Move existing rows to the dedicated domain (idempotent) ────────── -->
+    <changeSet id="nidan-paywall-config-move-to-dedicated-domain" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <!-- Only run if rows still point at patientEntryConfig -->
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM clinlims.site_information si
+                JOIN clinlims.site_information_domain d ON d.id = si.domain_id
+                WHERE si.name IN ('nidan_paywall_allow_opd','nidan_paywall_allow_ipd','nidan_paywall_allow_er')
+                AND d.name = 'patientEntryConfig'
+                LIMIT 1
+            </sqlCheck>
+        </preConditions>
+        <comment>Re-point the three paywall rows from patientEntryConfig to nidanPaywallConfig domain so they are invisible to the generic Patient Configuration Menu</comment>
+        <sql>
+            UPDATE clinlims.site_information
+            SET    domain_id = (SELECT id FROM clinlims.site_information_domain WHERE name = 'nidanPaywallConfig')
+            WHERE  name IN ('nidan_paywall_allow_opd', 'nidan_paywall_allow_ipd', 'nidan_paywall_allow_er');
+        </sql>
+    </changeSet>
 
     <!-- ── nidan_paywall_allow_opd ─────────────────────────────────────────── -->
     <changeSet id="nidan-paywall-visit-type-config-allow-opd-insert" author="nidan">
@@ -38,7 +79,7 @@
             <column name="value"        value="false"/>
             <column name="encrypted"    value="false"/>
             <column name="value_type"   value="boolean"/>
-            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')"/>
+            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'nidanPaywallConfig')"/>
             <column name="group"        value="0"/>
             <column name="lastupdated"  valueComputed="now()"/>
         </insert>
@@ -60,7 +101,7 @@
             <column name="value"        value="true"/>
             <column name="encrypted"    value="false"/>
             <column name="value_type"   value="boolean"/>
-            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')"/>
+            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'nidanPaywallConfig')"/>
             <column name="group"        value="0"/>
             <column name="lastupdated"  valueComputed="now()"/>
         </insert>
@@ -82,7 +123,7 @@
             <column name="value"        value="true"/>
             <column name="encrypted"    value="false"/>
             <column name="value_type"   value="boolean"/>
-            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'patientEntryConfig')"/>
+            <column name="domain_id"    valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'nidanPaywallConfig')"/>
             <column name="group"        value="0"/>
             <column name="lastupdated"  valueComputed="now()"/>
         </insert>
