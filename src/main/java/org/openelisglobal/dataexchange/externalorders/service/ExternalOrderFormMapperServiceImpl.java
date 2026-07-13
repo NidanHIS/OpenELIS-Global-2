@@ -332,6 +332,17 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
                 sampleOrderItems.setReferringSiteId(existing.getId());
             }
         }
+
+        // Failsafe default: if still no referring site resolved, anchor to DEF-LOC.
+        // Anchored by short_name — stable even if the display name is renamed.
+        // Fully additive — if DEF-LOC does not exist in DB, nothing changes.
+        if (sampleOrderItems.getReferringSiteId() == null || sampleOrderItems.getReferringSiteId().trim().isEmpty()) {
+            Organization defLoc = organizationService.getOrganizationByShortName("DEF-LOC", false);
+            if (defLoc != null) {
+                sampleOrderItems.setReferringSiteId(defLoc.getId());
+                sampleOrderItems.setReferringSiteName(defLoc.getOrganizationName());
+            }
+        }
     }
 
     private void resolveRequester(SampleOrderItem sampleOrderItems) {
