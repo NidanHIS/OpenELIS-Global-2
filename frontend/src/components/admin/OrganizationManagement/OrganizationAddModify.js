@@ -70,6 +70,9 @@ function OrganizationAddModify() {
   const [typeOfActivity, setTypeOfActivity] = useState();
   const [typeOfActivityShow, setTypeOfActivityShow] = useState([]);
 
+  // True when editing the protected default referring site — only name is editable.
+  const isDefLoc = typeOfActivity && typeOfActivity.shortName === "DEF-LOC";
+
   const location = useLocation();
   const ID = (() => {
     const search = location.search;
@@ -129,6 +132,8 @@ function OrganizationAddModify() {
             id: item.id,
             name: item.name,
             description: item.description,
+            // Hide "referring clinic" for all orgs except DEF-LOC
+            disabled: item.name === "referring clinic" && !isDefLoc,
           };
         },
       );
@@ -393,6 +398,10 @@ function OrganizationAddModify() {
 
   const renderCell = (cell, row) => {
     if (cell.info.header === "select") {
+      // For "referring clinic" row: disable if not DEF-LOC
+      const isReferringClinic = row.cells.find(c => c.info.header === "name")?.value === "referring clinic";
+      const shouldDisableReferringClinic = isReferringClinic && !isDefLoc;
+      
       return (
         <TableSelectRow
           key={cell.id}
@@ -400,7 +409,9 @@ function OrganizationAddModify() {
           checked={selectedRowIds.includes(row.id)}
           name="selectRowCheckbox"
           ariaLabel="selectRows"
+          disabled={isDefLoc || shouldDisableReferringClinic}
           onSelect={() => {
+            if (isDefLoc || shouldDisableReferringClinic) return;
             setSaveButton(false);
             if (selectedRowIds.includes(row.id)) {
               setSelectedRowIds(selectedRowIds.filter((id) => id !== row.id));
@@ -496,9 +507,8 @@ function OrganizationAddModify() {
                       placeholder={intl.formatMessage({
                         id: "organization.add.placeholder",
                       })}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
                       required={true}
+                      disabled={isDefLoc}
                       value={
                         orgInfo && orgInfo.shortName ? orgInfo.shortName : ""
                       }
@@ -523,8 +533,13 @@ function OrganizationAddModify() {
                         id: "organization.add.placeholder.active",
                       })}
                       required={true}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
+                      // DEF-LOC is the protected default referring site — isActive is locked to Y
+                      disabled={isDefLoc}
+                      title={
+                        isDefLoc
+                          ? "The default referring site cannot be deactivated"
+                          : undefined
+                      }
                       value={
                         orgInfo && orgInfo.isActive ? orgInfo.isActive : ""
                       }
@@ -547,8 +562,7 @@ function OrganizationAddModify() {
                       placeholder={intl.formatMessage({
                         id: "organization.add.placeholder.internetAddress",
                       })}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
+                      disabled={isDefLoc}
                       value={
                         orgInfo && orgInfo.internetAddress
                           ? orgInfo.internetAddress
@@ -574,9 +588,7 @@ function OrganizationAddModify() {
                       placeholder={intl.formatMessage({
                         id: "organization.add.placeholder",
                       })}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
-                      // required={true}
+                      disabled={isDefLoc}
                       value={
                         orgInfo && orgInfo.streetAddress
                           ? orgInfo.streetAddress
@@ -602,9 +614,7 @@ function OrganizationAddModify() {
                       placeholder={intl.formatMessage({
                         id: "organization.add.placeholder",
                       })}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
-                      // required={true}
+                      disabled={isDefLoc}
                       value={orgInfo && orgInfo.city ? orgInfo.city : ""}
                       onChange={(e) => handleCityChange(e)}
                     />
@@ -624,9 +634,7 @@ function OrganizationAddModify() {
                       placeholder={intl.formatMessage({
                         id: "organization.add.placeholder",
                       })}
-                      // invalid={errors.order && touched.order}
-                      // invalidText={errors.order}
-                      // required={true}
+                      disabled={isDefLoc}
                       value={orgInfo && orgInfo.cliaNum ? orgInfo.cliaNum : ""}
                       onChange={(e) => handleCliaNumberChange(e)}
                     />
@@ -648,6 +656,7 @@ function OrganizationAddModify() {
                           "true"
                         )
                       }
+                      disabled={isDefLoc}
                       value={
                         typeOfActivity &&
                         typeOfActivity.organization &&
@@ -655,8 +664,8 @@ function OrganizationAddModify() {
                           ? typeOfActivity.organization.organizationName
                           : ""
                       }
-                      onChange={handleParentOrganizationName}
-                      onSelect={handleAutoCompleteParentOrganizationNames}
+                      onChange={isDefLoc ? undefined : handleParentOrganizationName}
+                      onSelect={isDefLoc ? undefined : handleAutoCompleteParentOrganizationNames}
                       label={
                         <>
                           <FormattedMessage id="organization.search.parent.name" />{" "}
@@ -748,24 +757,21 @@ function OrganizationAddModify() {
                                   .filter((row) => !row.disabled).length
                             }
                             onSelect={() => {
+                              if (isDefLoc) return;
                               setSaveButton(false);
                               const currentPageIds = typeOfActivityShow
                                 .slice((page - 1) * pageSize, page * pageSize)
                                 .filter((row) => !row.disabled)
                                 .map((row) => row.id);
                               if (
-                                selectedRowIds.length === pageSize &&
+                                selectedRowIds.length === currentPageIds.length &&
                                 currentPageIds.every((id) =>
                                   selectedRowIds.includes(id),
                                 )
                               ) {
                                 setSelectedRowIds([]);
                               } else {
-                                setSelectedRowIds(
-                                  currentPageIds.filter(
-                                    (id) => !selectedRowIds.includes(id),
-                                  ),
-                                );
+                                setSelectedRowIds(currentPageIds);
                               }
                             }}
                           />
@@ -784,26 +790,32 @@ function OrganizationAddModify() {
                       </TableHead>
                       <TableBody>
                         <>
-                          {rows.map((row) => (
-                            <TableRow
-                              key={row.id}
-                              onClick={() => {
-                                const id = row.id;
-                                const isSelected = selectedRowIds.includes(id);
-                                if (isSelected) {
-                                  setSelectedRowIds(
-                                    selectedRowIds.filter(
-                                      (selectedId) => selectedId !== id,
-                                    ),
-                                  );
-                                } else {
-                                  setSelectedRowIds([...selectedRowIds, id]);
-                                }
-                              }}
-                            >
-                              {row.cells.map((cell) => renderCell(cell, row))}
-                            </TableRow>
-                          ))}
+                          {rows.map((row) => {
+                            const isReferringClinic = row.cells.find(c => c.info.header === "name")?.value === "referring clinic";
+                            const shouldDisableRow = isReferringClinic && !isDefLoc;
+                            
+                            return (
+                              <TableRow
+                                key={row.id}
+                                onClick={() => {
+                                  if (isDefLoc || shouldDisableRow) return;
+                                  const id = row.id;
+                                  const isSelected = selectedRowIds.includes(id);
+                                  if (isSelected) {
+                                    setSelectedRowIds(
+                                      selectedRowIds.filter(
+                                        (selectedId) => selectedId !== id,
+                                      ),
+                                    );
+                                  } else {
+                                    setSelectedRowIds([...selectedRowIds, id]);
+                                  }
+                                }}
+                              >
+                                {row.cells.map((cell) => renderCell(cell, row))}
+                              </TableRow>
+                            );
+                          })}
                         </>
                       </TableBody>
                     </Table>

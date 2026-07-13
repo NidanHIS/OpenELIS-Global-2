@@ -197,7 +197,13 @@ function OrganizationManagement() {
     if (selectedRowIds.length == 0) {
       setDeactivateButton(true);
     } else {
-      setDeactivateButton(false);
+      // Disable deactivate if the entire selection is only the protected
+      // default referring site (identified by orgPrefix = 'DEF-LOC').
+      const allSelectedAreProtected = selectedRowIds.every((id) => {
+        const row = organizationsManagmentListShow.find((r) => r.id === id);
+        return row && row.orgPrefix === "DEF-LOC";
+      });
+      setDeactivateButton(allSelectedAreProtected);
     }
     if (selectedRowIds.length === 1) {
       setModifyButton(false);

@@ -19,4 +19,5 @@
     <include relativeToChangelogFile="true" file="add-incoming-order-visit-type.xml"/>
     <include relativeToChangelogFile="true" file="add-sample-nidan-visit-type.xml"/>
     <include relativeToChangelogFile="true" file="add-paywall-visit-type-config.xml"/>
+    <include relativeToChangelogFile="true" file="add-default-referring-site.xml"/>
 </databaseChangeLog>

@@ -168,8 +168,6 @@ public class OrganizationMenuRestController extends BaseMenuController<Organizat
             @RequestParam(value = ID, required = false) @Pattern(regexp = "[a-zA-Z0-9, -]*") String id,
             @RequestBody OrganizationMenuForm form, BindingResult result) throws LIMSRuntimeException {
         if (result.hasErrors()) {
-            // redirectAttributes.addFlashAttribute(Constants.REQUEST_ERRORS, result);
-            // findForward(FWD_FAIL_DELETE, form);
             return ResponseEntity.badRequest().body(result.getAllErrors());
         }
 
@@ -178,28 +176,40 @@ public class OrganizationMenuRestController extends BaseMenuController<Organizat
         for (int i = 0; i < IDs.length; i++) {
             selectedIDs.add(IDs[i]);
         }
-        // List<String> selectedIDs = form.getSelectedIDs;
+
         List<Organization> organizations = new ArrayList<>();
         for (int i = 0; i < selectedIDs.size(); i++) {
+            String candidateId = selectedIDs.get(i);
+            // Guard: never deactivate the protected default referring site (DEF-LOC).
+            // Identify it by short_name so it is stable even after a name change.
+            Organization candidate = organizationService.get(candidateId);
+            if (candidate != null && "DEF-LOC".equals(candidate.getShortName())) {
+                LogEvent.logInfo(this.getClass().getSimpleName(), "showDeleteOrganization",
+                        "[NIDAN] Blocked deactivation of protected default referring site id=" + candidateId);
+                if (selectedIDs.size() == 1) {
+                    // The entire selection was just the protected org — reject cleanly.
+                    result.reject("errors.DeleteException");
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("The default referring site cannot be deactivated.");
+                }
+                // Multi-selection: skip this one, deactivate the rest.
+                continue;
+            }
             Organization organization = new Organization();
-            organization.setId(selectedIDs.get(i));
+            organization.setId(candidateId);
             organization.setSysUserId(getSysUserId(request));
             organizations.add(organization);
         }
 
+        if (organizations.isEmpty()) {
+            return ResponseEntity.ok(form);
+        }
+
         try {
-            // LogEvent.logInfo(this.getClass().getSimpleName(), "method unkown", "Going to
-            // delete
-            // Organization");
             organizationService.deactivateOrganizations(organizations);
             return ResponseEntity.ok(form);
-            // LogEvent.logInfo(this.getClass().getSimpleName(), "method unkown", "Just
-            // deleted
-            // Organization");
         } catch (LIMSRuntimeException e) {
-            // bugzilla 2154
             LogEvent.logError(e);
-
             String errorMsg;
             if (e.getCause() instanceof org.hibernate.StaleObjectStateException) {
                 errorMsg = "errors.OptimisticLockException";
@@ -207,12 +217,8 @@ public class OrganizationMenuRestController extends BaseMenuController<Organizat
                 errorMsg = "errors.DeleteException";
             }
             result.reject(errorMsg);
-            // redirectAttributes.addFlashAttribute(Constants.REQUEST_ERRORS, result);
-            // return findForward(FWD_FAIL_DELETE, form);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result.getAllErrors());
         }
-        // redirectAttributes.addAttribute(FWD_SUCCESS, true);
-        // return findForward(FWD_SUCCESS_DELETE, form);
     }
 
     @Override
