@@ -3,8 +3,6 @@ package org.openelisglobal.nidanpaywall;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.validator.GenericValidator;
-import org.openelisglobal.common.services.TableIdService;
-import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.sample.service.SampleService;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +23,9 @@ public class PaywallRestController {
 
     @Autowired
     private SampleService sampleService;
+
+    @Autowired
+    private NidanPaywallConfigService paywallConfigService;
 
     @GetMapping(value = "/check", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> check(@RequestParam(value = "patientUuid", required = false) String patientUuid,
@@ -47,22 +48,22 @@ public class PaywallRestController {
             }
         }
 
-        // IPD/ER bypass: admission orders are never blocked
-        if (sample != null) {
-            String deptName = getDepartmentName(sample);
-            if (isAdmissionSource(deptName)) {
-                Map<String, Object> bypass = new LinkedHashMap<>();
-                bypass.put("decision", "allow");
-                bypass.put("blocked", false);
-                bypass.put("outstandingAmount", 0.0);
-                bypass.put("currency", null);
-                bypass.put("paymentStatus", "admission_bypass");
-                bypass.put("patientGuid", patientUuid);
-                if (resolvedVisitUuid != null) {
-                    bypass.put("visitUuid", resolvedVisitUuid);
-                }
-                return ResponseEntity.ok(bypass);
+        // Visit-type bypass: mirrors Layer 1 (IncomingOrdersRestController).
+        // Reads sample.nidanVisitType persisted at collect time and checks the
+        // admin-configured allow-list via NidanPaywallConfigService.
+        if (sample != null && paywallConfigService.isVisitTypeAllowed(sample.getNidanVisitType())) {
+            Map<String, Object> bypass = new LinkedHashMap<>();
+            bypass.put("decision", "allow");
+            bypass.put("blocked", false);
+            bypass.put("outstandingAmount", 0.0);
+            bypass.put("currency", null);
+            bypass.put("paymentStatus", "visit_type_bypass");
+            bypass.put("visitType", sample.getNidanVisitType());
+            bypass.put("patientGuid", patientUuid);
+            if (resolvedVisitUuid != null) {
+                bypass.put("visitUuid", resolvedVisitUuid);
             }
+            return ResponseEntity.ok(bypass);
         }
 
         PaywallResult result = paywallClient.check(patientUuid, resolvedVisitUuid);
@@ -79,24 +80,5 @@ public class PaywallRestController {
         }
 
         return ResponseEntity.ok(body);
-    }
-
-    private String getDepartmentName(Sample sample) {
-        try {
-            String deptTypeId = TableIdService.getInstance().REFERRING_ORG_DEPARTMENT_TYPE_ID;
-            Organization dept = sampleService.getOrganizationRequester(sample, deptTypeId);
-            return dept != null ? dept.getOrganizationName() : null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static boolean isAdmissionSource(String source) {
-        if (source == null || source.trim().isEmpty()) {
-            return false;
-        }
-        String upper = source.trim().toUpperCase();
-        return upper.contains("IPD") || upper.contains("INPATIENT") || upper.contains("EMERGENCY")
-                || java.util.regex.Pattern.compile("\\bER\\b").matcher(upper).find();
     }
 }
