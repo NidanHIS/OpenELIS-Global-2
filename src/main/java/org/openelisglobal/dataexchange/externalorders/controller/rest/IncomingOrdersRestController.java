@@ -351,23 +351,6 @@ public class IncomingOrdersRestController {
     }
 
     /**
-     * @deprecated No longer used for paywall bypass decisions. The bypass is now
-     *             driven by {@code IncomingOrder.visitType} via
-     *             {@link org.openelisglobal.nidanpaywall.NidanPaywallConfigService}.
-     *             Retained to avoid breaking any external callers; will be removed
-     *             in a future cleanup pass.
-     */
-    @Deprecated
-    private boolean isAdmissionSource(String source) {
-        if (source == null || source.trim().isEmpty()) {
-            return false;
-        }
-        String upper = source.trim().toUpperCase();
-        return upper.contains("IPD") || upper.contains("INPATIENT") || upper.contains("EMERGENCY")
-                || java.util.regex.Pattern.compile("\\bER\\b").matcher(upper).find();
-    }
-
-    /**
      * Extract source (referringSiteDepartmentName or referringSiteName) from
      * payload. Prioritizes department name for better granularity.
      */
