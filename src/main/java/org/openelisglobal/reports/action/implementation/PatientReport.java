@@ -541,50 +541,44 @@ public abstract class PatientReport extends Report {
         }
 
         List<String> addressParts = new ArrayList<>();
+        PatientIdentityTypeService pitService = SpringContext.getBean(PatientIdentityTypeService.class);
         OrganizationService organizationService = SpringContext.getBean(OrganizationService.class);
 
-        // 1. Tole (Street Address)
+        // Helper: resolve an org-ID-based patient identity to its display name.
+        // If the identity value is not a valid org ID, returns the raw value as
+        // fallback so nothing is silently swallowed.
+        java.util.function.BiFunction<String, String, String> resolveOrgIdentity = (identityTypeName, rawId) -> {
+            if (GenericValidator.isBlankOrNull(rawId)) {
+                return null;
+            }
+            try {
+                Organization org = organizationService.getOrganizationById(rawId);
+                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
+                    return org.getOrganizationName();
+                }
+            } catch (Exception ignored) {
+                // fall through to raw value
+            }
+            return rawId;
+        };
+
+        // 1. Ward — stored as free text in person.street_address
         if (patient.getPerson() != null && !GenericValidator.isBlankOrNull(patient.getPerson().getStreetAddress())) {
             addressParts.add(patient.getPerson().getStreetAddress());
         }
 
-        // 2. Village/Municipality (ADDRESS_HIERARCHY_1)
-        PatientIdentityType villageType = SpringContext.getBean(PatientIdentityTypeService.class)
-                .getNamedIdentityType("ADDRESS_HIERARCHY_1");
-        if (villageType != null) {
-            String id = getLazyPatientIdentity(patient, null, villageType.getId());
-            if (!GenericValidator.isBlankOrNull(id)) {
-                Organization org = organizationService.getOrganizationById(id);
-                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
-                    addressParts.add(org.getOrganizationName());
-                } else {
-                    addressParts.add(id);
-                }
-            }
+        // 2. Village/Municipality — stored as free text in person.city
+        if (patient.getPerson() != null && !GenericValidator.isBlankOrNull(patient.getPerson().getCity())) {
+            addressParts.add(patient.getPerson().getCity());
         }
 
-        // 3. District (HEALTH DISTRICT)
-        PatientIdentityType districtType = SpringContext.getBean(PatientIdentityTypeService.class)
-                .getNamedIdentityType("HEALTH DISTRICT");
+        // 3. District — stored as org ID in HEALTH DISTRICT identity
+        PatientIdentityType districtType = pitService.getNamedIdentityType("HEALTH DISTRICT");
         if (districtType != null) {
-            String id = getLazyPatientIdentity(patient, null, districtType.getId());
-            if (!GenericValidator.isBlankOrNull(id)) {
-                Organization org = organizationService.getOrganizationById(id);
-                if (org != null && !GenericValidator.isBlankOrNull(org.getOrganizationName())) {
-                    addressParts.add(org.getOrganizationName());
-                } else {
-                    addressParts.add(id);
-                }
-            }
-        }
-
-        // 4. Nationality (NATIONALITY)
-        PatientIdentityType nationalityType = SpringContext.getBean(PatientIdentityTypeService.class)
-                .getNamedIdentityType("NATIONALITY");
-        if (nationalityType != null) {
-            String nationality = getLazyPatientIdentity(patient, null, nationalityType.getId());
-            if (!GenericValidator.isBlankOrNull(nationality)) {
-                addressParts.add(nationality);
+            String districtId = getLazyPatientIdentity(patient, null, districtType.getId());
+            String districtName = resolveOrgIdentity.apply("HEALTH DISTRICT", districtId);
+            if (districtName != null) {
+                addressParts.add(districtName);
             }
         }
 
