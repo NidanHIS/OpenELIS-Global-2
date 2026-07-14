@@ -366,32 +366,25 @@ public class OrganizationRestController extends BaseController {
 
         // List states = getPossibleStates(form);
 
-        PropertyUtils.copyProperties(organization, form);
-
-        // DEF-LOC guard: for the protected default referring site, only organizationName
-        // may change. Reload all other fields from the persisted DB state and restore
-        // them, discarding whatever was submitted in the form.
-        // This also implicitly covers the isActive=N guard from the previous check.
+        // DEF-LOC guard: for the protected default referring site only organizationName
+        // may change. We detect DEF-LOC BEFORE PropertyUtils.copyProperties so we can
+        // take the fast path — set only organizationName from the form on the
+        // already-loaded entity and skip copyProperties entirely for this record.
+        // This avoids loading the same row twice (which causes StaleObjectStateException
+        // via Hibernate's optimistic lock when two entities for the same ID coexist in
+        // the same session).
         final boolean isDefLoc = !isNew && "DEF-LOC".equals(organization.getShortName());
         if (isDefLoc) {
-            Organization persisted = organizationService.get(organization.getId());
-            if (persisted != null) {
-                organization.setShortName(persisted.getShortName());
-                organization.setIsActive(persisted.getIsActive());
-                organization.setCity(persisted.getCity());
-                organization.setStreetAddress(persisted.getStreetAddress());
-                organization.setInternetAddress(persisted.getInternetAddress());
-                organization.setCliaNum(persisted.getCliaNum());
-                organization.setMlsSentinelLabFlag(persisted.getMlsSentinelLabFlag());
-                organization.setMlsLabFlag(persisted.getMlsLabFlag());
-                organization.setMultipleUnit(persisted.getMultipleUnit());
-                organization.setZipCode(persisted.getZipCode());
-                organization.setState(persisted.getState());
-                organization.setOrganizationLocalAbbreviation(persisted.getOrganizationLocalAbbreviation());
-                organization.setOrganization(persisted.getOrganization());
-                LogEvent.logInfo(this.getClass().getSimpleName(), "showUpdateOrganization",
-                        "[NIDAN] DEF-LOC save: locked all fields except organizationName. id=" + organization.getId());
+            // Only allow organizationName to be updated — everything else stays as-is
+            // from the DB entity we already loaded above.
+            if (form.getOrganizationName() != null) {
+                organization.setOrganizationName(form.getOrganizationName());
             }
+            organization.setSysUserId(getSysUserId(request));
+            LogEvent.logInfo(this.getClass().getSimpleName(), "showUpdateOrganization",
+                    "[NIDAN] DEF-LOC save: locked all fields except organizationName. id=" + organization.getId());
+        } else {
+            PropertyUtils.copyProperties(organization, form);
         }
 
         if (!isDefLoc && FormFields.getInstance().useField(FormFields.Field.OrganizationParent)) {
