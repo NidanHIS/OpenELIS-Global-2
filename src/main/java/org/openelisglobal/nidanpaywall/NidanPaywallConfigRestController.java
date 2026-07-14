@@ -3,7 +3,6 @@ package org.openelisglobal.nidanpaywall;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>
  * Both endpoints require the {@code Paywall Administration} role enforced via
  * {@code @PreAuthorize}. Spring Method Security is enabled globally via
- * {@code @EnableMethodSecurity(prePostEnabled = true)} on {@code SecurityConfig}.
+ * {@code @EnableMethodSecurity(prePostEnabled = true)} on
+ * {@code SecurityConfig}.
  *
  * <p>
  * Response / request body shape:
