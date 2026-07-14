@@ -2,7 +2,6 @@ package org.openelisglobal.nidanpaywall;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Set;
-import org.openelisglobal.common.constants.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,7 +45,7 @@ public class NidanPaywallConfigRestController {
 
     // ── GET ───────────────────────────────────────────────────────────────────
 
-    @PreAuthorize("hasRole('" + Constants.ROLE_PAYWALL_ADMIN + "')")
+    @PreAuthorize("hasAuthority('ROLE_PAYWALL_ADMINISTRATION')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaywallConfigDto> getConfig() {
         Set<String> allowed = configService.getAllowedVisitTypes();
@@ -57,7 +56,7 @@ public class NidanPaywallConfigRestController {
 
     // ── PUT ───────────────────────────────────────────────────────────────────
 
-    @PreAuthorize("hasRole('" + Constants.ROLE_PAYWALL_ADMIN + "')")
+    @PreAuthorize("hasAuthority('ROLE_PAYWALL_ADMINISTRATION')")
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaywallConfigDto> saveConfig(@RequestBody PaywallConfigDto dto) {
         if (dto == null) {

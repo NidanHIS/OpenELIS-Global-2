@@ -39,7 +39,6 @@
             <column name="id"           valueSequenceNext="site_information_domain_seq"/>
             <column name="name"         value="nidanPaywallConfig"/>
             <column name="description"  value="Nidan paywall visit-type bypass configuration. Managed exclusively via NidanPaywallConfigRestController."/>
-            <column name="lastupdated"  valueComputed="now()"/>
         </insert>
     </changeSet>
 
