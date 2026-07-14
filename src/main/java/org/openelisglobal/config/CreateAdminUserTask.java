@@ -29,14 +29,12 @@ public class CreateAdminUserTask {
     @PostConstruct
     private void ensureAdminUserIsCreated() {
         if (!loginService.defaultAdminExists()) {
-            if (!loginService.nonDefaultAdminExists()) {
-                LoginUser login;
-                try {
-                    login = createAdminUser();
-                    loginService.insert(login);
-                } catch (LIMSException e) {
-                    LogEvent.logError(e);
-                }
+            LoginUser login;
+            try {
+                login = createAdminUser();
+                loginService.insert(login);
+            } catch (LIMSException e) {
+                LogEvent.logError(e);
             }
         }
     }

@@ -370,7 +370,8 @@ public class OrganizationRestController extends BaseController {
         // may change. We detect DEF-LOC BEFORE PropertyUtils.copyProperties so we can
         // take the fast path — set only organizationName from the form on the
         // already-loaded entity and skip copyProperties entirely for this record.
-        // This avoids loading the same row twice (which causes StaleObjectStateException
+        // This avoids loading the same row twice (which causes
+        // StaleObjectStateException
         // via Hibernate's optimistic lock when two entities for the same ID coexist in
         // the same session).
         final boolean isDefLoc = !isNew && "DEF-LOC".equals(organization.getShortName());

@@ -399,9 +399,11 @@ function OrganizationAddModify() {
   const renderCell = (cell, row) => {
     if (cell.info.header === "select") {
       // For "referring clinic" row: disable if not DEF-LOC
-      const isReferringClinic = row.cells.find(c => c.info.header === "name")?.value === "referring clinic";
+      const isReferringClinic =
+        row.cells.find((c) => c.info.header === "name")?.value ===
+        "referring clinic";
       const shouldDisableReferringClinic = isReferringClinic && !isDefLoc;
-      
+
       return (
         <TableSelectRow
           key={cell.id}
@@ -664,8 +666,14 @@ function OrganizationAddModify() {
                           ? typeOfActivity.organization.organizationName
                           : ""
                       }
-                      onChange={isDefLoc ? undefined : handleParentOrganizationName}
-                      onSelect={isDefLoc ? undefined : handleAutoCompleteParentOrganizationNames}
+                      onChange={
+                        isDefLoc ? undefined : handleParentOrganizationName
+                      }
+                      onSelect={
+                        isDefLoc
+                          ? undefined
+                          : handleAutoCompleteParentOrganizationNames
+                      }
                       label={
                         <>
                           <FormattedMessage id="organization.search.parent.name" />{" "}
@@ -764,7 +772,8 @@ function OrganizationAddModify() {
                                 .filter((row) => !row.disabled)
                                 .map((row) => row.id);
                               if (
-                                selectedRowIds.length === currentPageIds.length &&
+                                selectedRowIds.length ===
+                                  currentPageIds.length &&
                                 currentPageIds.every((id) =>
                                   selectedRowIds.includes(id),
                                 )
@@ -791,16 +800,20 @@ function OrganizationAddModify() {
                       <TableBody>
                         <>
                           {rows.map((row) => {
-                            const isReferringClinic = row.cells.find(c => c.info.header === "name")?.value === "referring clinic";
-                            const shouldDisableRow = isReferringClinic && !isDefLoc;
-                            
+                            const isReferringClinic =
+                              row.cells.find((c) => c.info.header === "name")
+                                ?.value === "referring clinic";
+                            const shouldDisableRow =
+                              isReferringClinic && !isDefLoc;
+
                             return (
                               <TableRow
                                 key={row.id}
                                 onClick={() => {
                                   if (isDefLoc || shouldDisableRow) return;
                                   const id = row.id;
-                                  const isSelected = selectedRowIds.includes(id);
+                                  const isSelected =
+                                    selectedRowIds.includes(id);
                                   if (isSelected) {
                                     setSelectedRowIds(
                                       selectedRowIds.filter(
