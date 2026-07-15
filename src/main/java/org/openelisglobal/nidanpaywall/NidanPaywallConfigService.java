@@ -93,11 +93,11 @@ public class NidanPaywallConfigService {
         }
         String normalised = visitType.trim().toLowerCase();
 
-        if (CANONICAL_OPD.equals(normalised))
+        if (CANONICAL_OPD.equals(normalised) || "opd visit".equals(normalised))
             return isEnabled(KEY_OPD);
-        if (CANONICAL_IPD.equals(normalised))
+        if (CANONICAL_IPD.equals(normalised) || "ipd visit".equals(normalised))
             return isEnabled(KEY_IPD);
-        if (CANONICAL_ER.equals(normalised))
+        if (CANONICAL_ER.equals(normalised) || "er visit".equals(normalised))
             return isEnabled(KEY_ER);
 
         // Anything else (Lab Visit, Group Session, …) — never bypass.
