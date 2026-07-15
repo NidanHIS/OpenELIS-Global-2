@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   Button,
-  Checkbox,
   Grid,
   Column,
   Heading,
   Loading,
   Section,
   InlineNotification,
+  Toggle,
 } from "@carbon/react";
 import {
   getFromOpenElisServerV2,
@@ -54,9 +54,7 @@ export default function NidanPaywallConfig() {
   const [fetchError, setFetchError] = useState(null);
 
   // Config state
-  const [allowOpd, setAllowOpd] = useState(false);
-  const [allowIpd, setAllowIpd] = useState(true);
-  const [allowEr, setAllowEr] = useState(true);
+  const [configMap, setConfigMap] = useState({});
 
   // ── Load ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -76,9 +74,7 @@ export default function NidanPaywallConfig() {
       .then((data) => {
         if (!componentMounted.current) return;
         if (data) {
-          setAllowOpd(!!data.allowOpd);
-          setAllowIpd(!!data.allowIpd);
-          setAllowEr(!!data.allowEr);
+          setConfigMap(data || {});
         }
         setLoading(false);
       })
@@ -101,11 +97,9 @@ export default function NidanPaywallConfig() {
     if (!canEdit) return;
     setSaving(true);
 
-    const body = JSON.stringify({ allowOpd, allowIpd, allowEr });
-
     putToOpenElisServerFullResponse(
       "/rest/nidan/paywall-config",
-      body,
+      JSON.stringify(configMap),
       (res) => {
         if (!componentMounted.current) return;
         if (res.status === 200) {
@@ -170,27 +164,24 @@ export default function NidanPaywallConfig() {
             <form onSubmit={handleSubmit}>
               <Grid fullWidth>
                 <Column lg={8} md={8} sm={4}>
-                  <Checkbox
-                    id="paywall-allow-opd"
-                    labelText="OPD — Outpatient Department"
-                    checked={allowOpd}
-                    disabled={!canEdit}
-                    onChange={(_, { checked }) => setAllowOpd(checked)}
-                  />
-                  <Checkbox
-                    id="paywall-allow-ipd"
-                    labelText="IPD — Inpatient Department"
-                    checked={allowIpd}
-                    disabled={!canEdit}
-                    onChange={(_, { checked }) => setAllowIpd(checked)}
-                  />
-                  <Checkbox
-                    id="paywall-allow-er"
-                    labelText="ER — Emergency Room"
-                    checked={allowEr}
-                    disabled={!canEdit}
-                    onChange={(_, { checked }) => setAllowEr(checked)}
-                  />
+                  {Object.entries(configMap).map(([visitType, allowed]) => (
+                    <div key={visitType} style={{ marginBottom: "1rem" }}>
+                      <Toggle
+                        id={`paywall-allow-${visitType.replace(/\s+/g, "-").toLowerCase()}`}
+                        labelText={visitType}
+                        labelA="Enforce"
+                        labelB="Bypass"
+                        toggled={allowed}
+                        disabled={!canEdit}
+                        onToggle={(checked) => {
+                          setConfigMap((prev) => ({
+                            ...prev,
+                            [visitType]: checked,
+                          }));
+                        }}
+                      />
+                    </div>
+                  ))}
                 </Column>
               </Grid>
 

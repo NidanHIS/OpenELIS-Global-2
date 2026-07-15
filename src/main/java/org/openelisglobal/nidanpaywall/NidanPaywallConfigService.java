@@ -1,8 +1,9 @@
 package org.openelisglobal.nidanpaywall;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.openelisglobal.siteinformation.service.SiteInformationDomainService;
 import org.openelisglobal.siteinformation.service.SiteInformationService;
 import org.openelisglobal.siteinformation.valueholder.SiteInformation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,112 +35,96 @@ import org.springframework.stereotype.Service;
 @Service
 public class NidanPaywallConfigService {
 
-    private static final String KEY_OPD = "nidan_paywall_allow_opd";
-    private static final String KEY_IPD = "nidan_paywall_allow_ipd";
-    private static final String KEY_ER = "nidan_paywall_allow_er";
-
-    /**
-     * Canonical OpenMRS visit-type names, lower-cased for comparison. Source of
-     * truth: the visit_type table in the OpenMRS instance.
-     *
-     * OPD → "OPD Visit" IPD → "Inpatient Visit" ER → "Emergency Visit"
-     */
-    private static final String CANONICAL_OPD = "opd visit";
-    private static final String CANONICAL_IPD = "inpatient visit";
-    private static final String CANONICAL_ER = "emergency visit";
-
     @Autowired
     private SiteInformationService siteInformationService;
 
-    /**
-     * Returns an immutable set of upper-cased visit-type tokens that are currently
-     * configured to bypass the paywall. The set is built fresh on every call.
-     *
-     * @return never null; may be empty if all flags are false
-     */
-    public Set<String> getAllowedVisitTypes() {
-        Set<String> allowed = new HashSet<>();
-        if (isEnabled(KEY_OPD))
-            allowed.add("OPD");
-        if (isEnabled(KEY_IPD))
-            allowed.add("IPD");
-        if (isEnabled(KEY_ER))
-            allowed.add("ER");
-        return Collections.unmodifiableSet(allowed);
+    @Autowired
+    private SiteInformationDomainService siteInformationDomainService;
+
+    private static final Object lock = new Object();
+
+    public String getConfigKeyForVisitType(String visitType) {
+        if (visitType == null) {
+            return "";
+        }
+        return "nidan_paywall_allow_visit_type_" + visitType.trim().toLowerCase();
     }
 
-    /**
-     * Convenience method: true when the given visit type (case-insensitive,
-     * trimmed) maps to an allowed canonical OpenMRS visit-type name.
-     *
-     * <p>
-     * Canonical name → config token mapping:
-     * <ul>
-     * <li>"OPD Visit" → OPD → {@code nidan_paywall_allow_opd}</li>
-     * <li>"Inpatient Visit" → IPD → {@code nidan_paywall_allow_ipd}</li>
-     * <li>"Emergency Visit" → ER → {@code nidan_paywall_allow_er}</li>
-     * </ul>
-     *
-     * <p>
-     * Any other value (e.g. "Lab Visit", "Group Session", null) returns
-     * {@code false} — paywall is enforced.
-     *
-     * @param visitType raw value from {@code IncomingOrder.visitType}; may be null
-     * @return true → bypass paywall; false → proceed to Odoo check
-     */
+    private String capitalize(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return str;
+        }
+        String[] words = str.trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                sb.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(" ");
+            }
+        }
+        return sb.toString().trim();
+    }
+
+    public Map<String, Boolean> getConfig() {
+        List<SiteInformation> list = siteInformationService.getSiteInformationByDomainName("nidanPaywallConfig");
+        Map<String, Boolean> map = new TreeMap<>();
+        if (list != null) {
+            for (SiteInformation si : list) {
+                if (si.getName() != null && si.getName().startsWith("nidan_paywall_allow_visit_type_")) {
+                    map.put(si.getDescription(), "true".equalsIgnoreCase(si.getValue()));
+                }
+            }
+        }
+        return map;
+    }
+
+    public void updateConfig(Map<String, Boolean> config) {
+        if (config == null)
+            return;
+        for (Map.Entry<String, Boolean> entry : config.entrySet()) {
+            String visitType = entry.getKey();
+            Boolean value = entry.getValue();
+            if (visitType == null)
+                continue;
+
+            String key = getConfigKeyForVisitType(visitType);
+            SiteInformation si = siteInformationService.getSiteInformationByName(key);
+            if (si != null) {
+                si.setValue(value != null && value ? "true" : "false");
+                siteInformationService.persistData(si, false);
+            } else {
+                si = new SiteInformation();
+                si.setName(key);
+                si.setDescription(visitType);
+                si.setValue(value != null && value ? "true" : "false");
+                si.setValueType("boolean");
+                si.setEncrypted(false);
+                si.setDomain(siteInformationDomainService.getByName("nidanPaywallConfig"));
+                siteInformationService.persistData(si, true);
+            }
+        }
+    }
+
     public boolean isVisitTypeAllowed(String visitType) {
         if (visitType == null || visitType.trim().isEmpty()) {
             return false;
         }
-        String normalised = visitType.trim().toLowerCase();
-
-        if (CANONICAL_OPD.equals(normalised) || "opd visit".equals(normalised))
-            return isEnabled(KEY_OPD);
-        if (CANONICAL_IPD.equals(normalised) || "ipd visit".equals(normalised))
-            return isEnabled(KEY_IPD);
-        if (CANONICAL_ER.equals(normalised) || "er visit".equals(normalised))
-            return isEnabled(KEY_ER);
-
-        // Anything else (Lab Visit, Group Session, …) — never bypass.
-        return false;
-    }
-
-    // ── Read helpers ─────────────────────────────────────────────────────────
-
-    /**
-     * Returns the current boolean value for a site_information row. Null row or
-     * non-"true" value → false.
-     */
-    private boolean isEnabled(String key) {
-        SiteInformation si = siteInformationService.getSiteInformationByName(key);
-        return si != null && "true".equalsIgnoreCase(si.getValue());
-    }
-
-    // ── Setter used by NidanPaywallConfigRestController ───────────────────────
-
-    /**
-     * Persists the three boolean flags in a single logical operation. Each flag is
-     * written only if the row already exists (Liquibase guarantees the rows are
-     * present after first boot).
-     *
-     * @param allowOpd whether OPD orders bypass the paywall
-     * @param allowIpd whether IPD orders bypass the paywall
-     * @param allowEr  whether ER orders bypass the paywall
-     */
-    public void saveConfig(boolean allowOpd, boolean allowIpd, boolean allowEr) {
-        persist(KEY_OPD, allowOpd);
-        persist(KEY_IPD, allowIpd);
-        persist(KEY_ER, allowEr);
-    }
-
-    private void persist(String key, boolean value) {
+        String key = getConfigKeyForVisitType(visitType);
         SiteInformation si = siteInformationService.getSiteInformationByName(key);
         if (si == null) {
-            // Row not yet seeded — silently skip; Liquibase will create it on
-            // next boot and the default value is safe.
-            return;
+            synchronized (lock) {
+                si = siteInformationService.getSiteInformationByName(key);
+                if (si == null) {
+                    si = new SiteInformation();
+                    si.setName(key);
+                    si.setDescription(capitalize(visitType));
+                    si.setValue("false");
+                    si.setValueType("boolean");
+                    si.setEncrypted(false);
+                    si.setDomain(siteInformationDomainService.getByName("nidanPaywallConfig"));
+                    siteInformationService.persistData(si, true);
+                }
+            }
         }
-        si.setValue(value ? "true" : "false");
-        siteInformationService.update(si);
+        return si != null && "true".equalsIgnoreCase(si.getValue());
     }
 }

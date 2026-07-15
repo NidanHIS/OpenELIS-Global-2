@@ -27,6 +27,26 @@
     -->
 
     <!-- ── Create dedicated domain (idempotent) ──────────────────────────── -->
+    <!-- ── Widen name column size on site_information (idempotent) ──────── -->
+    <changeSet id="widen-site-information-name-to-100" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="character varying(32)">
+                SELECT data_type || '(' || character_maximum_length || ')'
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims'
+                  AND table_name   = 'site_information'
+                  AND column_name  = 'name'
+            </sqlCheck>
+        </preConditions>
+        <comment>Increase site_information.name to 100 characters to support longer visit-type config keys</comment>
+        <modifyDataType
+            schemaName="clinlims"
+            tableName="site_information"
+            columnName="name"
+            newDataType="VARCHAR(100)" />
+    </changeSet>
+
+    <!-- ── Create dedicated domain (idempotent) ──────────────────────────── -->
     <changeSet id="nidan-paywall-config-domain-insert" author="nidan">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
@@ -42,39 +62,19 @@
         </insert>
     </changeSet>
 
-    <!-- ── Move existing rows to the dedicated domain (idempotent) ────────── -->
-    <changeSet id="nidan-paywall-config-move-to-dedicated-domain" author="nidan">
-        <preConditions onFail="MARK_RAN">
-            <!-- Only run if rows still point at patientEntryConfig -->
-            <sqlCheck expectedResult="1">
-                SELECT COUNT(*) FROM clinlims.site_information si
-                JOIN clinlims.site_information_domain d ON d.id = si.domain_id
-                WHERE si.name IN ('nidan_paywall_allow_opd','nidan_paywall_allow_ipd','nidan_paywall_allow_er')
-                AND d.name = 'patientEntryConfig'
-                LIMIT 1
-            </sqlCheck>
-        </preConditions>
-        <comment>Re-point the three paywall rows from patientEntryConfig to nidanPaywallConfig domain so they are invisible to the generic Patient Configuration Menu</comment>
-        <sql>
-            UPDATE clinlims.site_information
-            SET    domain_id = (SELECT id FROM clinlims.site_information_domain WHERE name = 'nidanPaywallConfig')
-            WHERE  name IN ('nidan_paywall_allow_opd', 'nidan_paywall_allow_ipd', 'nidan_paywall_allow_er');
-        </sql>
-    </changeSet>
-
-    <!-- ── nidan_paywall_allow_opd ─────────────────────────────────────────── -->
+    <!-- ── nidan_paywall_allow_visit_type_opd_visit ─────────────────────────── -->
     <changeSet id="nidan-paywall-visit-type-config-allow-opd-insert" author="nidan">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT COUNT(*) FROM clinlims.site_information
-                WHERE name = 'nidan_paywall_allow_opd'
+                WHERE name = 'nidan_paywall_allow_visit_type_opd visit'
             </sqlCheck>
         </preConditions>
-        <comment>Insert nidan_paywall_allow_opd = false (OPD patients go through paywall by default)</comment>
+        <comment>Insert nidan_paywall_allow_visit_type_opd visit = false (OPD patients go through paywall by default)</comment>
         <insert schemaName="clinlims" tableName="site_information">
             <column name="id"           valueSequenceNext="site_information_seq"/>
-            <column name="name"         value="nidan_paywall_allow_opd"/>
-            <column name="description"  value="When true, OPD visit-type orders bypass the paywall check and are always allowed to collect."/>
+            <column name="name"         value="nidan_paywall_allow_visit_type_opd visit"/>
+            <column name="description"  value="OPD Visit"/>
             <column name="value"        value="false"/>
             <column name="encrypted"    value="false"/>
             <column name="value_type"   value="boolean"/>
@@ -84,19 +84,19 @@
         </insert>
     </changeSet>
 
-    <!-- ── nidan_paywall_allow_ipd ─────────────────────────────────────────── -->
+    <!-- ── nidan_paywall_allow_visit_type_ipd_visit ─────────────────────────── -->
     <changeSet id="nidan-paywall-visit-type-config-allow-ipd-insert" author="nidan">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT COUNT(*) FROM clinlims.site_information
-                WHERE name = 'nidan_paywall_allow_ipd'
+                WHERE name = 'nidan_paywall_allow_visit_type_ipd visit'
             </sqlCheck>
         </preConditions>
-        <comment>Insert nidan_paywall_allow_ipd = true (IPD inpatient orders bypass paywall by default)</comment>
+        <comment>Insert nidan_paywall_allow_visit_type_ipd visit = true (IPD patients bypass paywall by default)</comment>
         <insert schemaName="clinlims" tableName="site_information">
             <column name="id"           valueSequenceNext="site_information_seq"/>
-            <column name="name"         value="nidan_paywall_allow_ipd"/>
-            <column name="description"  value="When true, IPD visit-type orders bypass the paywall check and are always allowed to collect."/>
+            <column name="name"         value="nidan_paywall_allow_visit_type_ipd visit"/>
+            <column name="description"  value="IPD Visit"/>
             <column name="value"        value="true"/>
             <column name="encrypted"    value="false"/>
             <column name="value_type"   value="boolean"/>
@@ -106,19 +106,19 @@
         </insert>
     </changeSet>
 
-    <!-- ── nidan_paywall_allow_er ──────────────────────────────────────────── -->
+    <!-- ── nidan_paywall_allow_visit_type_er_visit ──────────────────────────── -->
     <changeSet id="nidan-paywall-visit-type-config-allow-er-insert" author="nidan">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT COUNT(*) FROM clinlims.site_information
-                WHERE name = 'nidan_paywall_allow_er'
+                WHERE name = 'nidan_paywall_allow_visit_type_er visit'
             </sqlCheck>
         </preConditions>
-        <comment>Insert nidan_paywall_allow_er = true (ER emergency orders bypass paywall by default)</comment>
+        <comment>Insert nidan_paywall_allow_visit_type_er visit = true (ER emergency patients bypass paywall by default)</comment>
         <insert schemaName="clinlims" tableName="site_information">
             <column name="id"           valueSequenceNext="site_information_seq"/>
-            <column name="name"         value="nidan_paywall_allow_er"/>
-            <column name="description"  value="When true, ER visit-type orders bypass the paywall check and are always allowed to collect."/>
+            <column name="name"         value="nidan_paywall_allow_visit_type_er visit"/>
+            <column name="description"  value="ER Visit"/>
             <column name="value"        value="true"/>
             <column name="encrypted"    value="false"/>
             <column name="value_type"   value="boolean"/>
