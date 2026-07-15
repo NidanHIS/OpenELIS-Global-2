@@ -1,7 +1,6 @@
 package org.openelisglobal.nidanpaywall;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Set;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,9 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
  * 
  * <pre>
  * {
- *   "allowOpd": false,
- *   "allowIpd": true,
- *   "allowEr":  true
+ *   "OPD Visit": false,
+ *   "IPD Visit": true,
+ *   "ER Visit":  true
  * }
  * </pre>
  */
@@ -47,71 +46,20 @@ public class NidanPaywallConfigRestController {
 
     @PreAuthorize("hasAuthority('ROLE_PAYWALL_ADMINISTRATION')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PaywallConfigDto> getConfig() {
-        Set<String> allowed = configService.getAllowedVisitTypes();
-        PaywallConfigDto dto = new PaywallConfigDto(allowed.contains("OPD"), allowed.contains("IPD"),
-                allowed.contains("ER"));
-        return ResponseEntity.ok(dto);
+    public ResponseEntity<Map<String, Boolean>> getConfig() {
+        return ResponseEntity.ok(configService.getConfig());
     }
 
     // ── PUT ───────────────────────────────────────────────────────────────────
 
     @PreAuthorize("hasAuthority('ROLE_PAYWALL_ADMINISTRATION')")
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PaywallConfigDto> saveConfig(@RequestBody PaywallConfigDto dto) {
-        if (dto == null) {
+    public ResponseEntity<Map<String, Boolean>> saveConfig(@RequestBody Map<String, Boolean> config) {
+        if (config == null) {
             return ResponseEntity.badRequest().build();
         }
-        configService.saveConfig(dto.isAllowOpd(), dto.isAllowIpd(), dto.isAllowEr());
+        configService.updateConfig(config);
         // Return the persisted state so the UI can confirm what was saved.
         return getConfig();
-    }
-
-    // ── DTO ───────────────────────────────────────────────────────────────────
-
-    public static class PaywallConfigDto {
-
-        @JsonProperty("allowOpd")
-        private boolean allowOpd;
-
-        @JsonProperty("allowIpd")
-        private boolean allowIpd;
-
-        @JsonProperty("allowEr")
-        private boolean allowEr;
-
-        /** Jackson deserialization constructor. */
-        public PaywallConfigDto() {
-        }
-
-        public PaywallConfigDto(boolean allowOpd, boolean allowIpd, boolean allowEr) {
-            this.allowOpd = allowOpd;
-            this.allowIpd = allowIpd;
-            this.allowEr = allowEr;
-        }
-
-        public boolean isAllowOpd() {
-            return allowOpd;
-        }
-
-        public void setAllowOpd(boolean allowOpd) {
-            this.allowOpd = allowOpd;
-        }
-
-        public boolean isAllowIpd() {
-            return allowIpd;
-        }
-
-        public void setAllowIpd(boolean allowIpd) {
-            this.allowIpd = allowIpd;
-        }
-
-        public boolean isAllowEr() {
-            return allowEr;
-        }
-
-        public void setAllowEr(boolean allowEr) {
-            this.allowEr = allowEr;
-        }
     }
 }
