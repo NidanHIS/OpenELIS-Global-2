@@ -1,12 +1,12 @@
-# Builds and publishes Docker images tagged `qa` when feat/merge is pushed.
+# Builds and publishes Docker images tagged `qa` when feat/paywall-visit is pushed.
 # Completely isolated from publish-and-test.yml — does not touch nidan-dev or latest tags.
-# Safe to delete this file after feat/merge is merged into nidan-dev.
+# Safe to delete this file after feat/paywall-visit is merged into nidan-dev.
 
 name: Publish QA Docker Images
 
 on:
   push:
-    branches: [feat/merge]
+    branches: [feat/paywall-visit]
   workflow_dispatch:
 
 env:
