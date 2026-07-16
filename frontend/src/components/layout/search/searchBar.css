@@ -38,16 +38,9 @@
    width:100% ensures it fills the slot on narrow screens.                     */
 .search-bar-main {
   width: 100%;
-  max-width: 480px;
   min-width: 0;
 }
 
-/* Tablet: slightly narrower */
-@media (max-width: 1200px) {
-  .search-bar-main {
-    max-width: 320px;
-  }
-}
 
 /* ── Search bar row (input + button) ────────────────────────────────────────
    position:relative is the CSS anchor for the absolute-positioned .patients dropdown. */
@@ -174,4 +167,29 @@
   .header-name-safe {
     max-width: none;
   }
+}
+
+/* ── Carbon Search width fix ─────────────────────────────────────────────────
+   THE root bug: Carbon's <Theme> renders a .cds--layer-one div with no flex or
+   width set. Inside a flex container (.search-bar-container) it collapses to its
+   intrinsic content width (~213px) no matter how wide the outer containers are.
+   These 3 rules propagate the available width all the way down to the raw input. */
+
+.search-bar-container .cds--layer-one {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+}
+
+.search-bar-container .cds--search {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+}
+
+.search-bar-container .cds--search-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
 }
