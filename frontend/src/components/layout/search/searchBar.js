@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Button,
-  Search,
-  Loading,
-  Tag,
-  Theme,
-} from "@carbon/react";
+import { Button, Search, Loading, Tag, Theme } from "@carbon/react";
 import { FormattedMessage, useIntl } from "react-intl";
 import SearchOutput from "./searchOutput";
 import { fetchPatientData, useAutocomplete } from "./searchService";
