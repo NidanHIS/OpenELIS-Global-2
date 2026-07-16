@@ -674,7 +674,7 @@ function OEHeader({
             >
               <span id="header-logo">{logo()}</span>
               <div className="banner">
-                <h5>NidanEHR</h5>
+                <h5></h5>
               </div>
             </HeaderName>
             {/* Persistent search bar — sits in the flex middle between logo and icons.
@@ -760,7 +760,9 @@ function OEHeader({
                   <HeaderGlobalAction
                     id="user-Icon"
                     aria-label={panelSwitchLabel()}
-                    onClick={() => handlePanelToggle(switchCollapsed ? "user" : "")}
+                    onClick={() =>
+                      handlePanelToggle(switchCollapsed ? "user" : "")
+                    }
                     ref={userSwitchRef}
                   >
                     {panelSwitchIcon()}
