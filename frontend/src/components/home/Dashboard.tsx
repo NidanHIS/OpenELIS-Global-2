@@ -1632,7 +1632,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
           <div className="tabbed-dashboard-body">
             <div className="split-dashboard-tabs-row">
               <div className="split-dashboard-tabs-group">
-                <h3 className="split-dashboard-tabs-heading">Samples To Collect</h3>
+                <h3 className="split-dashboard-tabs-heading">
+                  Samples To Collect
+                </h3>
                 <div className="dashboard-table-toggle" role="group">
                   <button
                     type="button"
