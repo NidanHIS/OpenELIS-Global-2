@@ -104,9 +104,14 @@ function Login(props) {
             <img
               src={logoSrc}
               alt="fullsize logo"
-              width="300"
-              height="56"
-              style={{ objectFit: "contain" }}
+              style={{
+                objectFit: "contain",
+                width: "100%",
+                maxWidth: "600px",
+                height: "auto",
+                display: "block",
+                margin: "0 auto"
+              }}
               onError={(e) => {
                 // Guard against infinite loop: only fall back if not already
                 // showing the default.
@@ -116,11 +121,6 @@ function Login(props) {
               }}
             />
           </picture>
-        </Column>
-        <Column lg={6} md={0} sm={0} />
-        <Column lg={6} md={0} sm={0} />
-        <Column lg={4} md={8} sm={4}>
-          <FormattedMessage id="login.notice.message" />
         </Column>
         <Column lg={6} md={0} sm={0} />
       </>
@@ -213,7 +213,7 @@ function Login(props) {
       >
         {notificationVisible === true ? <AlertDialog /> : ""}
         <div className="oe-loginPageCenter">
-          <Grid fullWidth={true}>{loginMessage()}</Grid>
+          <Grid fullWidth={false}>{loginMessage()}</Grid>
           <Grid fullWidth={false}>
             <Column lg={16}>
               <br />
