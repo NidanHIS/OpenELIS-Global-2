@@ -1,26 +1,81 @@
+/* ── Search input fills its container ─────────────────────────────────────── */
 .search-input {
   width: 100%;
 }
 
+/* ── Header slot ───────────────────────────────────────────────────────────────
+   Direct flex child of Carbon's <Header> (display:flex; align-items:center).
+
+   Carbon's <HeaderGlobalBar> has flex:1 in its own CSS. To stop it from
+   competing with this slot we set style={{flex:"0 0 auto"}} directly on it in
+   Header.js, leaving all remaining middle space to THIS slot.
+
+   flex:1         → slot owns the entire middle zone between logo and icons
+   min-width:0    → CRITICAL: prevents a long BANNER_TEXT from overflowing the
+                    slot. Without this, an unbounded HeaderName can crush the slot.
+   display:flex + justify-content:center
+                  → centers the search bar (max-width:480px) within the slot
+────────────────────────────────────────────────────────────────────────────── */
+.search-bar-header-slot {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+/* Small screens: hide the persistent slot.
+   The search-icon toggle in HeaderGlobalBar serves mobile users. */
+@media (max-width: 768px) {
+  .search-bar-header-slot {
+    display: none;
+  }
+}
+
+/* ── Plain wrapper — replaces Carbon Grid/Column ─────────────────────────────
+   max-width caps the search bar width on wide screens while centering it.
+   width:100% ensures it fills the slot on narrow screens.                     */
+.search-bar-main {
+  width: 100%;
+  max-width: 480px;
+  min-width: 0;
+}
+
+/* Tablet: slightly narrower */
+@media (max-width: 1200px) {
+  .search-bar-main {
+    max-width: 320px;
+  }
+}
+
+/* ── Search bar row (input + button) ────────────────────────────────────────
+   position:relative is the CSS anchor for the absolute-positioned .patients dropdown. */
 .search-bar-container {
   display: flex;
-  top: 10%;
-  width: 65%;
-  margin-top: 5px;
-  margin-left: 37%;
+  flex-wrap: nowrap;
+  position: relative;
+  width: 100%;
+  margin: 0;
 }
 
+/* ── Results dropdown ────────────────────────────────────────────────────────
+   position:absolute + top:100% anchors it directly below .search-bar-container
+   at ALL screen sizes — no magic pixel values.
+   z-index:9999 keeps it above every other header element.                     */
 .patients {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
   overflow-y: auto;
-  width: 65%;
   max-height: 250px;
   background-color: #f0e7e7;
-  top: 89px;
-  right: -1px;
   box-shadow: 0em 0.1em 0.5em #ccc;
-  margin-left: 37%;
+  z-index: 9999;
 }
 
+/* ── Patient result row ──────────────────────────────────────────────────────  */
 .patientHead {
   position: relative;
   border-bottom: 2px solid #eee3e3;
@@ -42,23 +97,81 @@
   margin-bottom: 20px;
 }
 
-@media (max-width: 1400px) {
-  .main {
+/* ── Header search icon: mobile-only ──────────────────────────────────────────
+   Desktop uses the persistent middle search bar (.search-bar-header-slot).
+   Mobile hides the middle slot (see @media above) and shows this icon instead. */
+.header-search-icon-mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .header-search-icon-mobile-only {
+    display: inline-flex !important;
+  }
+}
+
+/* ── Mobile overlay: full-width strip UNDER the header ────────────────────────
+   Sits outside HeaderGlobalBar so it never crowds the icon row.
+   Anchored to Carbon's 3rem header height. z-index below .patients (9999)
+   so the results dropdown still layers correctly above it. */
+.search-bar-mobile-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .search-bar-mobile-overlay {
+    display: block;
     position: absolute;
+    top: 3rem;
+    left: 0;
+    right: 0;
+    padding: 0.5rem 1rem;
+    background: #161616;
+    border-bottom: 1px solid #393939;
+    z-index: 8000;
   }
 
-  .search-bar-container {
-    margin-top: 48px;
-    width: 100%;
-    margin-left: 0%;
+  .search-bar-mobile-overlay .search-bar-main {
+    max-width: 100%;
+  }
+}
+
+/* ── HeaderName safety: long BANNER_TEXT must never push icons off-screen ──── */
+.header-name-safe {
+  min-width: 0;
+  max-width: 40%;
+  overflow: hidden;
+}
+
+.header-name-safe .banner {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.header-name-safe .banner h5 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tablet: drop the version line, give the banner more room */
+@media (max-width: 1200px) {
+  .header-name-safe .banner p {
+    display: none;
   }
 
-  .patients {
-    position: absolute;
-    top: 80px;
-    width: 100%;
+  .header-name-safe {
+    max-width: 55%;
   }
-  .tags {
-    margin-left: -5%;
+}
+
+/* Very narrow: hide banner text entirely, keep the logo */
+@media (max-width: 640px) {
+  .header-name-safe .banner {
+    display: none;
+  }
+
+  .header-name-safe {
+    max-width: none;
   }
 }
