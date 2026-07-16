@@ -27,7 +27,7 @@ public class SiteBrandingDAOImpl extends BaseDAOImpl<SiteBranding, Integer> impl
     @Transactional(readOnly = true)
     public SiteBranding getBranding() {
         try {
-            String hql = "FROM SiteBranding";
+            String hql = "FROM SiteBranding ORDER BY id ASC";
             Query<SiteBranding> query = entityManager.unwrap(Session.class).createQuery(hql, SiteBranding.class);
             query.setMaxResults(1); // Only one record should exist
             List<SiteBranding> results = query.list();

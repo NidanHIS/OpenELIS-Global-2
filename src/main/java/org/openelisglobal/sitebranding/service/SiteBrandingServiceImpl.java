@@ -56,21 +56,35 @@ public class SiteBrandingServiceImpl extends BaseObjectServiceImpl<SiteBranding,
         return siteBrandingDAO;
     }
 
+    private static final Object lock = new Object();
+
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public SiteBranding getBranding() {
         try {
             SiteBranding branding = siteBrandingDAO.getBranding();
             if (branding == null) {
-                logger.info("No branding found in database, creating default branding");
-                // Create default branding if none exists
-                branding = createDefaultBranding();
-                logger.info("Default branding created: id={}", branding.getId());
+                synchronized (lock) {
+                    branding = siteBrandingDAO.getBranding();
+                    if (branding == null) {
+                        logger.info("No branding found in database, creating default branding");
+                        // Create default branding if none exists
+                        branding = createDefaultBranding();
+                        logger.info("Default branding created: id={}", branding.getId());
+                    }
+                }
             }
             return branding;
         } catch (Exception e) {
-            logger.error("Error getting SiteBranding", e);
-            LogEvent.logError(e);
+            logger.warn("Potential concurrent branding configuration access/creation. Reloading: " + e.getMessage());
+            try {
+                SiteBranding branding = siteBrandingDAO.getBranding();
+                if (branding != null) {
+                    return branding;
+                }
+            } catch (Exception ex) {
+                logger.error("Failed to recover/reload branding config", ex);
+            }
             throw new LIMSRuntimeException("Error getting SiteBranding", e);
         }
     }

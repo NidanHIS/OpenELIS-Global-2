@@ -674,11 +674,7 @@ function OEHeader({
             >
               <span id="header-logo">{logo()}</span>
               <div className="banner">
-                <h5>{configurationProperties?.BANNER_TEXT}</h5>
-                <p>
-                  <FormattedMessage id="header.label.version" /> &nbsp;{" "}
-                  {configurationProperties?.releaseNumber}
-                </p>
+                <h5>NidanEHR</h5>
               </div>
             </HeaderName>
             {/* Persistent search bar — sits in the flex middle between logo and icons.
@@ -759,18 +755,22 @@ function OEHeader({
                   </HeaderGlobalAction>
                 </>
               )}
-              <HeaderGlobalAction
-                id="user-Icon"
-                aria-label={panelSwitchLabel()}
-                onClick={() => handlePanelToggle(switchCollapsed ? "user" : "")}
-                ref={userSwitchRef}
-              >
-                {panelSwitchIcon()}
-              </HeaderGlobalAction>
-              <HelpMenu
-                helpOpen={helpOpen}
-                handlePanelToggle={handlePanelToggle}
-              />
+              {userSessionDetails.authenticated && (
+                <>
+                  <HeaderGlobalAction
+                    id="user-Icon"
+                    aria-label={panelSwitchLabel()}
+                    onClick={() => handlePanelToggle(switchCollapsed ? "user" : "")}
+                    ref={userSwitchRef}
+                  >
+                    {panelSwitchIcon()}
+                  </HeaderGlobalAction>
+                  <HelpMenu
+                    helpOpen={helpOpen}
+                    handlePanelToggle={handlePanelToggle}
+                  />
+                </>
+              )}
             </HeaderGlobalBar>
             {userSessionDetails.authenticated && searchBar && (
               <div className="search-bar-mobile-overlay">
