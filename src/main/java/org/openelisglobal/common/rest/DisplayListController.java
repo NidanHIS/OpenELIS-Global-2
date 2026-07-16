@@ -454,6 +454,14 @@ public class DisplayListController extends BaseRestController {
                 ConfigurationProperties.getInstance().getPropertyValue(Property.GPS_TIMEOUT_SECONDS));
         configs.put(Property.EQA_ENABLED.toString(),
                 ConfigurationProperties.getInstance().getPropertyValue(Property.EQA_ENABLED));
+        configs.put(Property.SiteName.toString(),
+                ConfigurationProperties.getInstance().getPropertyValue(Property.SiteName));
+        configs.put(Property.ADDITIONAL_SITE_INFO.toString(),
+                ConfigurationProperties.getInstance().getPropertyValue(Property.ADDITIONAL_SITE_INFO));
+        configs.put(Property.LAB_CONTACT_NUMBER.toString(),
+                ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_CONTACT_NUMBER));
+        configs.put(Property.LAB_EMAIL.toString(),
+                ConfigurationProperties.getInstance().getPropertyValue(Property.LAB_EMAIL));
         return configs;
     }
 
