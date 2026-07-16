@@ -669,6 +669,7 @@ function OEHeader({
             <HeaderName
               href={getFullPath("/")}
               prefix=""
+              className="header-name-safe"
               style={{ padding: "0px" }}
             >
               <span id="header-logo">{logo()}</span>
@@ -680,13 +681,20 @@ function OEHeader({
                 </p>
               </div>
             </HeaderName>
-            <HeaderGlobalBar>
+            {/* Persistent search bar — sits in the flex middle between logo and icons.
+                Hidden on mobile via CSS; mobile uses the search icon toggle below. */}
+            {userSessionDetails.authenticated && (
+              <div className="search-bar-header-slot">
+                <SearchBar />
+              </div>
+            )}
+            <HeaderGlobalBar style={{ flex: "0 0 auto" }}>
               {userSessionDetails.authenticated && (
                 <>
-                  {searchBar && <SearchBar />}
                   <HeaderGlobalAction
                     id="search-Icon"
                     aria-label="Search"
+                    className="header-search-icon-mobile-only"
                     onClick={() => handlePanelToggle(searchBar ? "" : "search")}
                   >
                     {!searchBar ? <Search size={20} /> : <Close size={20} />}
@@ -764,6 +772,11 @@ function OEHeader({
                 handlePanelToggle={handlePanelToggle}
               />
             </HeaderGlobalBar>
+            {userSessionDetails.authenticated && searchBar && (
+              <div className="search-bar-mobile-overlay">
+                <SearchBar />
+              </div>
+            )}
             <HeaderPanel
               aria-label="Header Panel"
               expanded={!switchCollapsed}

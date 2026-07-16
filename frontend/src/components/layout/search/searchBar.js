@@ -1,11 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Search,
-  Tile,
-  Layer,
-  Grid,
-  Column,
   Loading,
   Tag,
   Theme,
@@ -35,6 +31,13 @@ const SearchBar = (props) => {
       );
     },
   });
+
+  // Auto-focus the search input as soon as this component mounts.
+  // Carbon's <Search id="searchItem"> passes id directly to the underlying <input>,
+  // so getElementById is precise and requires no ref forwarding (avoids react/display-name ESLint error).
+  useEffect(() => {
+    document.getElementById("searchItem")?.focus();
+  }, []);
 
   const handleClearSearch = () => {
     setSearchInput("");
@@ -84,40 +87,36 @@ const SearchBar = (props) => {
   };
 
   return (
-    <Grid className="main">
-      <Column sm={4} md={8} lg={16}>
-        <div className="search-bar-container">
-          {/* Theme wrapper ONLY around Search input to make it light */}
-          <Theme theme="white">
-            <Search
-              size="sm"
-              placeholder={intl.formatMessage({ id: "label.button.search" })}
-              labelText={intl.formatMessage({ id: "label.button.search" })}
-              closeButtonLabelText={intl.formatMessage({
-                id: "label.button.clear",
-              })}
-              id="searchItem"
-              value={textValue}
-              onChange={handleChange}
-              onKeyDown={handleAutocompleteKeyDown}
-              onClear={handleClearSearch}
-              className="search-input"
-              autoComplete="on"
-            />
-          </Theme>
-          <Button
-            id="patientSearch"
+    <div className="search-bar-main">
+      <div className="search-bar-container">
+        {/* Theme wrapper ONLY around Search input to make it light */}
+        <Theme theme="white">
+          <Search
             size="sm"
-            style={{ width: 50 }}
-            onClick={handleSearch}
-            aria-label={intl.formatMessage({ id: "label.button.search" })}
-          >
-            <FormattedMessage id="label.button.search" />
-          </Button>
-        </div>
-      </Column>
-
-      <Column sm={4} md={8} lg={16}>
+            placeholder={intl.formatMessage({ id: "label.button.search" })}
+            labelText={intl.formatMessage({ id: "label.button.search" })}
+            closeButtonLabelText={intl.formatMessage({
+              id: "label.button.clear",
+            })}
+            id="searchItem"
+            value={textValue}
+            onChange={handleChange}
+            onKeyDown={handleAutocompleteKeyDown}
+            onClear={handleClearSearch}
+            className="search-input"
+            autoComplete="on"
+          />
+        </Theme>
+        <Button
+          id="patientSearch"
+          size="sm"
+          style={{ width: 50 }}
+          onClick={handleSearch}
+          aria-label={intl.formatMessage({ id: "label.button.search" })}
+        >
+          <FormattedMessage id="label.button.search" />
+        </Button>
+        {/* Dropdown results — inside .search-bar-container so position:absolute top:100% anchors correctly */}
         {(loading || patientData.length > 0) && (
           <div className="patients">
             {loading ? (
@@ -146,8 +145,8 @@ const SearchBar = (props) => {
             )}
           </div>
         )}
-      </Column>
-    </Grid>
+      </div>
+    </div>
   );
 };
 
