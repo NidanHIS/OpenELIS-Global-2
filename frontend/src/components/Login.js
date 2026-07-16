@@ -189,7 +189,14 @@ function Login(props) {
           }}
         >
           {/* Logo */}
-          <div style={{ width: "100%", maxWidth: "320px", marginBottom: "1rem", textAlign: "center" }}>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "320px",
+              marginBottom: "1rem",
+              textAlign: "center",
+            }}
+          >
             <picture>
               <img
                 src={logoSrc}
@@ -204,7 +211,10 @@ function Login(props) {
                 onError={(e) => {
                   // Guard against infinite loop: only fall back if not already
                   // showing the default.
-                  if (e.target.src !== window.location.origin + defaultLogoSrc) {
+                  if (
+                    e.target.src !==
+                    window.location.origin + defaultLogoSrc
+                  ) {
                     e.target.src = defaultLogoSrc;
                   }
                 }}
@@ -217,10 +227,19 @@ function Login(props) {
             configurationProperties?.ADDITIONAL_SITE_INFO ||
             configurationProperties?.LAB_CONTACT_NUMBER ||
             configurationProperties?.LAB_EMAIL) && (
-            <div style={{ width: "100%", maxWidth: "320px", textAlign: "center", marginBottom: "1.5rem" }}>
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "320px",
+                textAlign: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
               {configurationProperties?.SiteName && (
                 <div style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ fontSize: "1.25rem" }}>{configurationProperties.SiteName}</strong>
+                  <strong style={{ fontSize: "1.25rem" }}>
+                    {configurationProperties.SiteName}
+                  </strong>
                 </div>
               )}
               {configurationProperties?.ADDITIONAL_SITE_INFO && (
@@ -235,7 +254,10 @@ function Login(props) {
               )}
               {configurationProperties?.LAB_EMAIL && (
                 <div style={{ fontSize: "0.875rem" }}>
-                  <a href={`mailto:${configurationProperties.LAB_EMAIL}`} style={{ color: "inherit" }}>
+                  <a
+                    href={`mailto:${configurationProperties.LAB_EMAIL}`}
+                    style={{ color: "inherit" }}
+                  >
                     {configurationProperties.LAB_EMAIL}
                   </a>
                 </div>
