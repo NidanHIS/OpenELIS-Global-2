@@ -2167,31 +2167,43 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {rows.map((row) => (
-                                      <TableRow
-                                        key={row.id}
-                                        onClick={() => {
-                                          if (
-                                            selectedTile.type ===
-                                            "ORDERS_ENTERED_BY_USER_TODAY"
-                                          )
-                                            viewUserOrders(row);
-                                        }}
-                                      >
-                                        {headers.map((h) => {
-                                          const cell = row.cells.find(
-                                            (c) => c.info.header === h.key,
-                                          );
-                                          return cell ? (
-                                            renderCell(cell, row)
-                                          ) : (
-                                            <TableCell
-                                              key={`${row.id}-${h.key}`}
-                                            />
-                                          );
-                                        })}
+                                    {rows.length === 0 ? (
+                                      <TableRow>
+                                        <TableCell
+                                          colSpan={groupedOrderHeaders.length}
+                                        >
+                                          <p className="split-empty-msg">
+                                            No samples collected today.
+                                          </p>
+                                        </TableCell>
                                       </TableRow>
-                                    ))}
+                                    ) : (
+                                      rows.map((row) => (
+                                        <TableRow
+                                          key={row.id}
+                                          onClick={() => {
+                                            if (
+                                              selectedTile.type ===
+                                              "ORDERS_ENTERED_BY_USER_TODAY"
+                                            )
+                                              viewUserOrders(row);
+                                          }}
+                                        >
+                                          {headers.map((h) => {
+                                            const cell = row.cells.find(
+                                              (c) => c.info.header === h.key,
+                                            );
+                                            return cell ? (
+                                              renderCell(cell, row)
+                                            ) : (
+                                              <TableCell
+                                                key={`${row.id}-${h.key}`}
+                                              />
+                                            );
+                                          })}
+                                        </TableRow>
+                                      ))
+                                    )}
                                   </TableBody>
                                 </Table>
                               </TableContainer>
