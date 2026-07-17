@@ -174,8 +174,9 @@ function Login(props) {
     ? `${config.serverBaseUrl}${loginLogoUrl}?v=${logoVersion}`
     : defaultLogoSrc;
 
-  const { siteNameStyle, additionalSiteInfoStyle, labContactNumberStyle, labEmailStyle } =
-    getLoginSiteInfoStyles(brandingConfig);
+  const { siteNameStyle, additionalSiteInfoStyle } = getLoginSiteInfoStyles(
+    brandingConfig,
+  );
 
   return (
     <>
@@ -230,9 +231,7 @@ function Login(props) {
 
           {/* Site info */}
           {(configurationProperties?.SiteName ||
-            configurationProperties?.ADDITIONAL_SITE_INFO ||
-            configurationProperties?.LAB_CONTACT_NUMBER ||
-            configurationProperties?.LAB_EMAIL) && (
+            configurationProperties?.ADDITIONAL_SITE_INFO) && (
             <div
               style={{
                 width: "100%",
@@ -249,21 +248,6 @@ function Login(props) {
               {configurationProperties?.ADDITIONAL_SITE_INFO && (
                 <div style={additionalSiteInfoStyle}>
                   {configurationProperties.ADDITIONAL_SITE_INFO}
-                </div>
-              )}
-              {configurationProperties?.LAB_CONTACT_NUMBER && (
-                <div style={labContactNumberStyle}>
-                  {configurationProperties.LAB_CONTACT_NUMBER}
-                </div>
-              )}
-              {configurationProperties?.LAB_EMAIL && (
-                <div style={labEmailStyle}>
-                  <a
-                    href={`mailto:${configurationProperties.LAB_EMAIL}`}
-                    style={{ color: "inherit" }}
-                  >
-                    {configurationProperties.LAB_EMAIL}
-                  </a>
                 </div>
               )}
             </div>

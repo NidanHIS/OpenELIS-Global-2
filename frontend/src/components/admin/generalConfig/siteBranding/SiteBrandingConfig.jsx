@@ -158,14 +158,6 @@ function SiteBrandingConfig() {
         loginAdditionalSiteInfoColor: (
           obj.loginAdditionalSiteInfoColor || ""
         ).trim(),
-        loginLabContactNumberFontSize: (
-          obj.loginLabContactNumberFontSize || ""
-        ).trim(),
-        loginLabContactNumberColor: (
-          obj.loginLabContactNumberColor || ""
-        ).trim(),
-        loginLabEmailFontSize: (obj.loginLabEmailFontSize || "").trim(),
-        loginLabEmailColor: (obj.loginLabEmailColor || "").trim(),
       };
     };
 
@@ -316,12 +308,6 @@ function SiteBrandingConfig() {
         currentBranding.loginAdditionalSiteInfoFontSize?.trim() || "",
       loginAdditionalSiteInfoColor:
         currentBranding.loginAdditionalSiteInfoColor?.trim() || "",
-      loginLabContactNumberFontSize:
-        currentBranding.loginLabContactNumberFontSize?.trim() || "",
-      loginLabContactNumberColor:
-        currentBranding.loginLabContactNumberColor?.trim() || "",
-      loginLabEmailFontSize: currentBranding.loginLabEmailFontSize?.trim() || "",
-      loginLabEmailColor: currentBranding.loginLabEmailColor?.trim() || "",
       // Do not include headerLogoUrl, loginLogoUrl, or faviconUrl
       // These are managed via separate logo upload endpoints
     };
@@ -703,48 +689,6 @@ function SiteBrandingConfig() {
                   );
                 }}
                 placeholder="e.g. #393939"
-              />
-              <TextInput
-                id="login-lab-contact-number-font-size"
-                labelText="Lab contact number font size"
-                value={branding?.loginLabContactNumberFontSize || ""}
-                onChange={(e) => {
-                  updateBrandingValue(
-                    "loginLabContactNumberFontSize",
-                    e.target.value,
-                  );
-                }}
-                placeholder="e.g. 0.95rem"
-              />
-              <TextInput
-                id="login-lab-contact-number-color"
-                labelText="Lab contact number color"
-                value={branding?.loginLabContactNumberColor || ""}
-                onChange={(e) => {
-                  updateBrandingValue(
-                    "loginLabContactNumberColor",
-                    e.target.value,
-                  );
-                }}
-                placeholder="e.g. #525252"
-              />
-              <TextInput
-                id="login-lab-email-font-size"
-                labelText="Lab email font size"
-                value={branding?.loginLabEmailFontSize || ""}
-                onChange={(e) => {
-                  updateBrandingValue("loginLabEmailFontSize", e.target.value);
-                }}
-                placeholder="e.g. 0.95rem"
-              />
-              <TextInput
-                id="login-lab-email-color"
-                labelText="Lab email color"
-                value={branding?.loginLabEmailColor || ""}
-                onChange={(e) => {
-                  updateBrandingValue("loginLabEmailColor", e.target.value);
-                }}
-                placeholder="e.g. #0f62fe"
               />
             </div>
             <Button

@@ -10,13 +10,4 @@ export const getLoginSiteInfoStyles = (branding = {}) => ({
     color: branding.loginAdditionalSiteInfoColor || "inherit",
     marginBottom: "0.5rem",
   },
-  labContactNumberStyle: {
-    fontSize: branding.loginLabContactNumberFontSize || "0.875rem",
-    color: branding.loginLabContactNumberColor || "inherit",
-    marginBottom: "0.25rem",
-  },
-  labEmailStyle: {
-    fontSize: branding.loginLabEmailFontSize || "0.875rem",
-    color: branding.loginLabEmailColor || "inherit",
-  },
 });
