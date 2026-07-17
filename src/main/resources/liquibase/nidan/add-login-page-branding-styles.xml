@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="nidan-add-login-page-branding-style-columns" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="site_branding"/>
+        </preConditions>
+        <comment>Add login page branding style columns to site_branding</comment>
+        <addColumn tableName="site_branding">
+            <column name="login_site_name_font_size" type="VARCHAR(20)"/>
+            <column name="login_site_name_color" type="VARCHAR(50)"/>
+            <column name="login_additional_site_info_font_size" type="VARCHAR(20)"/>
+            <column name="login_additional_site_info_color" type="VARCHAR(50)"/>
+            <column name="login_lab_contact_number_font_size" type="VARCHAR(20)"/>
+            <column name="login_lab_contact_number_color" type="VARCHAR(50)"/>
+            <column name="login_lab_email_font_size" type="VARCHAR(20)"/>
+            <column name="login_lab_email_color" type="VARCHAR(50)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="site_branding" columnName="login_site_name_font_size"/>
+            <dropColumn tableName="site_branding" columnName="login_site_name_color"/>
+            <dropColumn tableName="site_branding" columnName="login_additional_site_info_font_size"/>
+            <dropColumn tableName="site_branding" columnName="login_additional_site_info_color"/>
+            <dropColumn tableName="site_branding" columnName="login_lab_contact_number_font_size"/>
+            <dropColumn tableName="site_branding" columnName="login_lab_contact_number_color"/>
+            <dropColumn tableName="site_branding" columnName="login_lab_email_font_size"/>
+            <dropColumn tableName="site_branding" columnName="login_lab_email_color"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -57,6 +57,30 @@ public class SiteBranding extends BaseObject<Integer> {
     @Column(name = "color_mode", length = 10, nullable = false)
     private String colorMode = "light";
 
+    @Column(name = "login_site_name_font_size", length = 20)
+    private String loginSiteNameFontSize;
+
+    @Column(name = "login_site_name_color", length = 50)
+    private String loginSiteNameColor;
+
+    @Column(name = "login_additional_site_info_font_size", length = 20)
+    private String loginAdditionalSiteInfoFontSize;
+
+    @Column(name = "login_additional_site_info_color", length = 50)
+    private String loginAdditionalSiteInfoColor;
+
+    @Column(name = "login_lab_contact_number_font_size", length = 20)
+    private String loginLabContactNumberFontSize;
+
+    @Column(name = "login_lab_contact_number_color", length = 50)
+    private String loginLabContactNumberColor;
+
+    @Column(name = "login_lab_email_font_size", length = 20)
+    private String loginLabEmailFontSize;
+
+    @Column(name = "login_lab_email_color", length = 50)
+    private String loginLabEmailColor;
+
     // Override BaseObject's @Transient sysUserId to map to actual database column
     @Column(name = "sys_user_id", length = 255, nullable = false)
     private String sysUserId;
@@ -133,6 +157,70 @@ public class SiteBranding extends BaseObject<Integer> {
 
     public void setColorMode(String colorMode) {
         this.colorMode = colorMode;
+    }
+
+    public String getLoginSiteNameFontSize() {
+        return loginSiteNameFontSize;
+    }
+
+    public void setLoginSiteNameFontSize(String loginSiteNameFontSize) {
+        this.loginSiteNameFontSize = loginSiteNameFontSize;
+    }
+
+    public String getLoginSiteNameColor() {
+        return loginSiteNameColor;
+    }
+
+    public void setLoginSiteNameColor(String loginSiteNameColor) {
+        this.loginSiteNameColor = loginSiteNameColor;
+    }
+
+    public String getLoginAdditionalSiteInfoFontSize() {
+        return loginAdditionalSiteInfoFontSize;
+    }
+
+    public void setLoginAdditionalSiteInfoFontSize(String loginAdditionalSiteInfoFontSize) {
+        this.loginAdditionalSiteInfoFontSize = loginAdditionalSiteInfoFontSize;
+    }
+
+    public String getLoginAdditionalSiteInfoColor() {
+        return loginAdditionalSiteInfoColor;
+    }
+
+    public void setLoginAdditionalSiteInfoColor(String loginAdditionalSiteInfoColor) {
+        this.loginAdditionalSiteInfoColor = loginAdditionalSiteInfoColor;
+    }
+
+    public String getLoginLabContactNumberFontSize() {
+        return loginLabContactNumberFontSize;
+    }
+
+    public void setLoginLabContactNumberFontSize(String loginLabContactNumberFontSize) {
+        this.loginLabContactNumberFontSize = loginLabContactNumberFontSize;
+    }
+
+    public String getLoginLabContactNumberColor() {
+        return loginLabContactNumberColor;
+    }
+
+    public void setLoginLabContactNumberColor(String loginLabContactNumberColor) {
+        this.loginLabContactNumberColor = loginLabContactNumberColor;
+    }
+
+    public String getLoginLabEmailFontSize() {
+        return loginLabEmailFontSize;
+    }
+
+    public void setLoginLabEmailFontSize(String loginLabEmailFontSize) {
+        this.loginLabEmailFontSize = loginLabEmailFontSize;
+    }
+
+    public String getLoginLabEmailColor() {
+        return loginLabEmailColor;
+    }
+
+    public void setLoginLabEmailColor(String loginLabEmailColor) {
+        this.loginLabEmailColor = loginLabEmailColor;
     }
 
     // Override BaseObject's sysUserId methods to use the mapped field

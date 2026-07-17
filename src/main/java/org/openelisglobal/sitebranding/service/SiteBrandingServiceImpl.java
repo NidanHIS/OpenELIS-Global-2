@@ -164,6 +164,30 @@ public class SiteBrandingServiceImpl extends BaseObjectServiceImpl<SiteBranding,
             if (branding.getFaviconPath() != null) {
                 existingBranding.setFaviconPath(branding.getFaviconPath());
             }
+            if (branding.getLoginSiteNameFontSize() != null) {
+                existingBranding.setLoginSiteNameFontSize(branding.getLoginSiteNameFontSize());
+            }
+            if (branding.getLoginSiteNameColor() != null) {
+                existingBranding.setLoginSiteNameColor(branding.getLoginSiteNameColor());
+            }
+            if (branding.getLoginAdditionalSiteInfoFontSize() != null) {
+                existingBranding.setLoginAdditionalSiteInfoFontSize(branding.getLoginAdditionalSiteInfoFontSize());
+            }
+            if (branding.getLoginAdditionalSiteInfoColor() != null) {
+                existingBranding.setLoginAdditionalSiteInfoColor(branding.getLoginAdditionalSiteInfoColor());
+            }
+            if (branding.getLoginLabContactNumberFontSize() != null) {
+                existingBranding.setLoginLabContactNumberFontSize(branding.getLoginLabContactNumberFontSize());
+            }
+            if (branding.getLoginLabContactNumberColor() != null) {
+                existingBranding.setLoginLabContactNumberColor(branding.getLoginLabContactNumberColor());
+            }
+            if (branding.getLoginLabEmailFontSize() != null) {
+                existingBranding.setLoginLabEmailFontSize(branding.getLoginLabEmailFontSize());
+            }
+            if (branding.getLoginLabEmailColor() != null) {
+                existingBranding.setLoginLabEmailColor(branding.getLoginLabEmailColor());
+            }
             if (branding.getSysUserId() != null) {
                 existingBranding.setSysUserId(branding.getSysUserId());
             }
