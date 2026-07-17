@@ -17,6 +17,8 @@ import {
   Modal,
   InlineLoading,
   TextInput,
+  Select,
+  SelectItem,
 } from "@carbon/react";
 import {
   getBranding,
@@ -77,6 +79,22 @@ function SiteBrandingConfig() {
   const updateBrandingValue = (field, value) => {
     setBranding((prev) => {
       const next = prev ? { ...prev, [field]: value } : { [field]: value };
+      brandingRef.current = next;
+      return next;
+    });
+  };
+
+  const handleSiteNameFontSizeChange = (e) => {
+    const newSize = e.target.value;
+    setBranding((prev) => {
+      let next = prev
+        ? { ...prev, loginSiteNameFontSize: newSize }
+        : { loginSiteNameFontSize: newSize };
+      const numericVal = parseFloat(newSize);
+      if (!isNaN(numericVal)) {
+        const halfVal = numericVal / 2;
+        next = { ...next, loginAdditionalSiteInfoFontSize: `${halfVal}rem` };
+      }
       brandingRef.current = next;
       return next;
     });
@@ -466,6 +484,40 @@ function SiteBrandingConfig() {
     setShowResetConfirm(false);
   };
 
+  const siteNameFontSizeOptions = [
+    "1rem",
+    "1.25rem",
+    "1.5rem",
+    "1.75rem",
+    "2rem",
+  ];
+  const currentSiteNameSize = branding?.loginSiteNameFontSize;
+  const finalSiteNameOptions = [...siteNameFontSizeOptions];
+  if (
+    currentSiteNameSize &&
+    !siteNameFontSizeOptions.includes(currentSiteNameSize)
+  ) {
+    finalSiteNameOptions.push(currentSiteNameSize);
+  }
+
+  const additionalFontSizeOptions = [
+    "0rem",
+    "0.25rem",
+    "0.5rem",
+    "0.625rem",
+    "0.75rem",
+    "0.875rem",
+    "1rem",
+  ];
+  const currentAdditionalSize = branding?.loginAdditionalSiteInfoFontSize;
+  const finalAdditionalOptions = [...additionalFontSizeOptions];
+  if (
+    currentAdditionalSize &&
+    !additionalFontSizeOptions.includes(currentAdditionalSize)
+  ) {
+    finalAdditionalOptions.push(currentAdditionalSize);
+  }
+
   if (isLoading) {
     return (
       <div className="adminPageContent">
@@ -648,26 +700,33 @@ function SiteBrandingConfig() {
               Configure the size and color of the site information shown on the
               login page.
             </p>
-            <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
-              <TextInput
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.5rem",
+                marginTop: "1rem",
+              }}
+            >
+              <Select
                 id="login-site-name-font-size"
                 labelText="Site name font size"
                 value={branding?.loginSiteNameFontSize || ""}
-                onChange={(e) => {
-                  updateBrandingValue("loginSiteNameFontSize", e.target.value);
-                }}
-                placeholder="e.g. 1.5rem"
-              />
-              <TextInput
-                id="login-site-name-color"
-                labelText="Site name color"
+                onChange={handleSiteNameFontSizeChange}
+              >
+                {finalSiteNameOptions.map((opt) => (
+                  <SelectItem key={opt} value={opt} text={opt} />
+                ))}
+              </Select>
+              <ColorPickerSection
+                label="Site name color"
+                description="Color of the site name displayed on the login page."
                 value={branding?.loginSiteNameColor || ""}
-                onChange={(e) => {
-                  updateBrandingValue("loginSiteNameColor", e.target.value);
+                onChange={(color) => {
+                  updateBrandingValue("loginSiteNameColor", color);
                 }}
-                placeholder="e.g. #0f62fe"
               />
-              <TextInput
+              <Select
                 id="login-additional-site-info-font-size"
                 labelText="Additional site info font size"
                 value={branding?.loginAdditionalSiteInfoFontSize || ""}
@@ -677,19 +736,18 @@ function SiteBrandingConfig() {
                     e.target.value,
                   );
                 }}
-                placeholder="e.g. 1rem"
-              />
-              <TextInput
-                id="login-additional-site-info-color"
-                labelText="Additional site info color"
+              >
+                {finalAdditionalOptions.map((opt) => (
+                  <SelectItem key={opt} value={opt} text={opt} />
+                ))}
+              </Select>
+              <ColorPickerSection
+                label="Additional site info color"
+                description="Color of the additional site info displayed on the login page."
                 value={branding?.loginAdditionalSiteInfoColor || ""}
-                onChange={(e) => {
-                  updateBrandingValue(
-                    "loginAdditionalSiteInfoColor",
-                    e.target.value,
-                  );
+                onChange={(color) => {
+                  updateBrandingValue("loginAdditionalSiteInfoColor", color);
                 }}
-                placeholder="e.g. #393939"
               />
             </div>
             <Button

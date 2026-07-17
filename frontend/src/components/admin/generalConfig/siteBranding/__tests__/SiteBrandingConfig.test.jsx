@@ -247,6 +247,47 @@ describe("SiteBrandingConfig", () => {
   });
 
   /**
+   * Test: Site name font size change auto-scales additional site info font size to 1:1/2 proportion
+   */
+  test("auto-scales additional site info font size when site name font size changes", async () => {
+    const mockBranding = {
+      id: "test-id",
+      loginSiteNameFontSize: "1.5rem",
+      loginAdditionalSiteInfoFontSize: "0.75rem",
+    };
+
+    getBranding.mockImplementation((callback) => {
+      callback(mockBranding);
+    });
+
+    renderWithIntl(<SiteBrandingConfig />);
+
+    const siteNameSizeSelect =
+      await screen.findByLabelText(/site name font size/i);
+    const additionalSizeSelect = screen.getByLabelText(
+      /additional site info font size/i,
+    );
+
+    // Initial values
+    expect(siteNameSizeSelect.value).toBe("1.5rem");
+    expect(additionalSizeSelect.value).toBe("0.75rem");
+
+    // Change site name font size to 2rem
+    fireEvent.change(siteNameSizeSelect, { target: { value: "2rem" } });
+
+    // Assert: additional font size should auto-scale to 1rem (1/2 of 2rem)
+    expect(siteNameSizeSelect.value).toBe("2rem");
+    expect(additionalSizeSelect.value).toBe("1rem");
+
+    // Change site name font size to 1.25rem
+    fireEvent.change(siteNameSizeSelect, { target: { value: "1.25rem" } });
+
+    // Assert: additional font size should auto-scale to 0.625rem (1/2 of 1.25rem)
+    expect(siteNameSizeSelect.value).toBe("1.25rem");
+    expect(additionalSizeSelect.value).toBe("0.625rem");
+  });
+
+  /**
    * Test: Save button functionality
    * Task Reference: T070
    */
