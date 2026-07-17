@@ -384,6 +384,39 @@ function Login(props) {
               )}
             </Section>
           </div>
+
+          {/* Powered By Section */}
+          <div
+            style={{
+              marginTop: "4rem",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.75rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                color: "#525252",
+                fontWeight: 500,
+                opacity: 0.7,
+              }}
+            >
+              powered by
+            </span>
+            <img
+              src={`${process.env.PUBLIC_URL}/images/nidan-logo.png`}
+              alt="Nidan Logo"
+              style={{
+                height: "36px",
+                width: "auto",
+                objectFit: "contain",
+              }}
+            />
+          </div>
         </div>
       </div>
     </>
