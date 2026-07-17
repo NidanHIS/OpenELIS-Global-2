@@ -695,7 +695,7 @@ function SiteBrandingConfig() {
       <Grid fullWidth={true}>
         <Column lg={16} md={8} sm={4}>
           <Section>
-            <Heading as="h4">Login page field styling</Heading>
+            <h3>Login Page Components</h3>
             <p>
               Configure the size and color of the site information shown on the
               login page.
@@ -750,36 +750,43 @@ function SiteBrandingConfig() {
                 }}
               />
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={(!hasUnsavedChanges && !hasPendingFiles) || isSaving}
-              style={{ marginRight: "1rem", marginTop: "1rem" }}
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                marginTop: "1.5rem",
+                alignItems: "center",
+              }}
             >
-              {isSaving ? (
-                <InlineLoading
-                  description={intl.formatMessage({
-                    id: "loading.description",
-                  })}
-                />
-              ) : (
-                <FormattedMessage id="site.branding.save" />
-              )}
-            </Button>
-            <Button
-              data-testid="branding-cancel-button"
-              onClick={handleCancel}
-              kind="secondary"
-              style={{ marginRight: "1rem" }}
-            >
-              <FormattedMessage id="site.branding.cancel" />
-            </Button>
-            <Button
-              data-testid="branding-reset-button"
-              kind="danger"
-              onClick={handleReset}
-            >
-              <FormattedMessage id="site.branding.reset.to.defaults" />
-            </Button>
+              <Button
+                onClick={handleSave}
+                disabled={(!hasUnsavedChanges && !hasPendingFiles) || isSaving}
+              >
+                {isSaving ? (
+                  <InlineLoading
+                    description={intl.formatMessage({
+                      id: "loading.description",
+                    })}
+                  />
+                ) : (
+                  <FormattedMessage id="site.branding.save" />
+                )}
+              </Button>
+              <Button
+                data-testid="branding-cancel-button"
+                onClick={handleCancel}
+                kind="secondary"
+              >
+                <FormattedMessage id="site.branding.cancel" />
+              </Button>
+              <Button
+                data-testid="branding-reset-button"
+                kind="danger"
+                onClick={handleReset}
+              >
+                <FormattedMessage id="site.branding.reset.to.defaults" />
+              </Button>
+            </div>
             {(hasUnsavedChanges || hasPendingFiles) && (
               <p
                 style={{
