@@ -10,4 +10,10 @@ export const getLoginSiteInfoStyles = (branding = {}) => ({
     color: branding.loginAdditionalSiteInfoColor || "inherit",
     marginBottom: "0.5rem",
   },
+  hardcodedLabelStyle: {
+    fontSize: "1.5rem",
+    fontWeight: "700",
+    color: branding.headerColor || "#295785",
+    marginTop: "0.25rem",
+  },
 });
