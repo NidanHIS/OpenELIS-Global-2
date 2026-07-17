@@ -132,6 +132,62 @@ public class SiteBrandingRestController extends BaseRestController {
                     changed = true;
                 }
             }
+            if (form.getLoginSiteNameFontSize() != null) {
+                String newValue = form.getLoginSiteNameFontSize().trim();
+                if (!newValue.equals(branding.getLoginSiteNameFontSize())) {
+                    branding.setLoginSiteNameFontSize(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginSiteNameColor() != null) {
+                String newValue = form.getLoginSiteNameColor().trim();
+                if (!newValue.equals(branding.getLoginSiteNameColor())) {
+                    branding.setLoginSiteNameColor(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginAdditionalSiteInfoFontSize() != null) {
+                String newValue = form.getLoginAdditionalSiteInfoFontSize().trim();
+                if (!newValue.equals(branding.getLoginAdditionalSiteInfoFontSize())) {
+                    branding.setLoginAdditionalSiteInfoFontSize(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginAdditionalSiteInfoColor() != null) {
+                String newValue = form.getLoginAdditionalSiteInfoColor().trim();
+                if (!newValue.equals(branding.getLoginAdditionalSiteInfoColor())) {
+                    branding.setLoginAdditionalSiteInfoColor(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginLabContactNumberFontSize() != null) {
+                String newValue = form.getLoginLabContactNumberFontSize().trim();
+                if (!newValue.equals(branding.getLoginLabContactNumberFontSize())) {
+                    branding.setLoginLabContactNumberFontSize(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginLabContactNumberColor() != null) {
+                String newValue = form.getLoginLabContactNumberColor().trim();
+                if (!newValue.equals(branding.getLoginLabContactNumberColor())) {
+                    branding.setLoginLabContactNumberColor(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginLabEmailFontSize() != null) {
+                String newValue = form.getLoginLabEmailFontSize().trim();
+                if (!newValue.equals(branding.getLoginLabEmailFontSize())) {
+                    branding.setLoginLabEmailFontSize(newValue);
+                    changed = true;
+                }
+            }
+            if (form.getLoginLabEmailColor() != null) {
+                String newValue = form.getLoginLabEmailColor().trim();
+                if (!newValue.equals(branding.getLoginLabEmailColor())) {
+                    branding.setLoginLabEmailColor(newValue);
+                    changed = true;
+                }
+            }
             if (form.getUseHeaderLogoForLogin() != null) {
                 Boolean newValue = form.getUseHeaderLogoForLogin();
                 if (!newValue.equals(branding.getUseHeaderLogoForLogin())) {
@@ -194,6 +250,14 @@ public class SiteBrandingRestController extends BaseRestController {
         form.setSecondaryColor(branding.getSecondaryColor());
         form.setHeaderColor(branding.getHeaderColor());
         form.setColorMode(branding.getColorMode());
+        form.setLoginSiteNameFontSize(branding.getLoginSiteNameFontSize());
+        form.setLoginSiteNameColor(branding.getLoginSiteNameColor());
+        form.setLoginAdditionalSiteInfoFontSize(branding.getLoginAdditionalSiteInfoFontSize());
+        form.setLoginAdditionalSiteInfoColor(branding.getLoginAdditionalSiteInfoColor());
+        form.setLoginLabContactNumberFontSize(branding.getLoginLabContactNumberFontSize());
+        form.setLoginLabContactNumberColor(branding.getLoginLabContactNumberColor());
+        form.setLoginLabEmailFontSize(branding.getLoginLabEmailFontSize());
+        form.setLoginLabEmailColor(branding.getLoginLabEmailColor());
 
         if (branding.getLastupdated() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");

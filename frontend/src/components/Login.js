@@ -20,6 +20,7 @@ import UserSessionDetailsContext from "../UserSessionDetailsContext";
 import { ConfigurationContext, NotificationContext } from "./layout/Layout";
 import { navigateTo } from "./utils/Navigation";
 import { getBranding } from "./utils/BrandingUtils";
+import { getLoginSiteInfoStyles } from "./loginBrandingStyles";
 
 function Login(props) {
   const { notificationVisible, addNotification, setNotificationVisible } =
@@ -31,6 +32,7 @@ function Login(props) {
   const [samlRedirectInitiated, setSamlRedirectInitiated] = useState(false);
   const [loginLogoUrl, setLoginLogoUrl] = useState(null);
   const [logoVersion, setLogoVersion] = useState(0); // Version counter for cache-busting
+  const [brandingConfig, setBrandingConfig] = useState({});
   const firstInput = createRef();
 
   // Auto-redirect to SAML if configured to bypass login page
@@ -64,6 +66,7 @@ function Login(props) {
   useEffect(() => {
     getBranding((response) => {
       if (response) {
+        setBrandingConfig(response);
         // Check useHeaderLogoForLogin flag
         if (response.useHeaderLogoForLogin && response.headerLogoUrl) {
           setLoginLogoUrl(response.headerLogoUrl);
@@ -171,6 +174,9 @@ function Login(props) {
     ? `${config.serverBaseUrl}${loginLogoUrl}?v=${logoVersion}`
     : defaultLogoSrc;
 
+  const { siteNameStyle, additionalSiteInfoStyle, labContactNumberStyle, labEmailStyle } =
+    getLoginSiteInfoStyles(brandingConfig);
+
   return (
     <>
       <div
@@ -236,24 +242,22 @@ function Login(props) {
               }}
             >
               {configurationProperties?.SiteName && (
-                <div style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ fontSize: "1.25rem" }}>
-                    {configurationProperties.SiteName}
-                  </strong>
+                <div style={siteNameStyle}>
+                  <strong>{configurationProperties.SiteName}</strong>
                 </div>
               )}
               {configurationProperties?.ADDITIONAL_SITE_INFO && (
-                <div style={{ marginBottom: "0.5rem" }}>
+                <div style={additionalSiteInfoStyle}>
                   {configurationProperties.ADDITIONAL_SITE_INFO}
                 </div>
               )}
               {configurationProperties?.LAB_CONTACT_NUMBER && (
-                <div style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+                <div style={labContactNumberStyle}>
                   {configurationProperties.LAB_CONTACT_NUMBER}
                 </div>
               )}
               {configurationProperties?.LAB_EMAIL && (
-                <div style={{ fontSize: "0.875rem" }}>
+                <div style={labEmailStyle}>
                   <a
                     href={`mailto:${configurationProperties.LAB_EMAIL}`}
                     style={{ color: "inherit" }}

@@ -203,6 +203,49 @@ describe("SiteBrandingConfig", () => {
   });
 
   /**
+   * Test: Login page styling overrides can be saved
+   */
+  test("saves login page styling overrides", async () => {
+    const mockBranding = {
+      id: "test-id",
+      primaryColor: "#1d4ed8",
+      secondaryColor: "#64748b",
+      headerColor: "#295785",
+      colorMode: "light",
+      useHeaderLogoForLogin: false,
+    };
+
+    getBranding.mockImplementation((callback) => {
+      callback(mockBranding);
+    });
+
+    updateBranding.mockImplementation((formData, callback) => {
+      callback(200, null, formData);
+    });
+
+    renderWithIntl(<SiteBrandingConfig />);
+
+    const siteNameSizeInput = await screen.findByLabelText(/site name font size/i);
+    fireEvent.change(siteNameSizeInput, { target: { value: "2rem" } });
+
+    const siteNameColorInput = screen.getByLabelText(/site name color/i);
+    fireEvent.change(siteNameColorInput, { target: { value: "#ff0000" } });
+
+    const saveButton = screen.getByText(/save changes/i);
+    fireEvent.click(saveButton);
+
+    await wait(() => {
+      expect(updateBranding).toHaveBeenCalledWith(
+        expect.objectContaining({
+          loginSiteNameFontSize: "2rem",
+          loginSiteNameColor: "#ff0000",
+        }),
+        expect.any(Function),
+      );
+    });
+  });
+
+  /**
    * Test: Save button functionality
    * Task Reference: T070
    */

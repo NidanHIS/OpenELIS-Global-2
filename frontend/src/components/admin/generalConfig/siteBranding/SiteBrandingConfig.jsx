@@ -16,6 +16,7 @@ import {
   Loading,
   Modal,
   InlineLoading,
+  TextInput,
 } from "@carbon/react";
 import {
   getBranding,
@@ -45,6 +46,7 @@ function SiteBrandingConfig() {
   const [branding, setBranding] = useState(null);
   const [savedBranding, setSavedBranding] = useState(null); // Track saved state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const brandingRef = useRef(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [hasPendingFiles, setHasPendingFiles] = useState(false);
   const initialBrandingRef = useRef(null);
@@ -67,6 +69,18 @@ function SiteBrandingConfig() {
   useEffect(() => {
     loadBranding();
   }, []);
+
+  useEffect(() => {
+    brandingRef.current = branding;
+  }, [branding]);
+
+  const updateBrandingValue = (field, value) => {
+    setBranding((prev) => {
+      const next = prev ? { ...prev, [field]: value } : { [field]: value };
+      brandingRef.current = next;
+      return next;
+    });
+  };
 
   const loadBranding = () => {
     setIsLoading(true);
@@ -136,6 +150,22 @@ function SiteBrandingConfig() {
         secondaryColor: (obj.secondaryColor || "").trim().toLowerCase(),
         colorMode: (obj.colorMode || "").trim().toLowerCase(),
         useHeaderLogoForLogin: Boolean(obj.useHeaderLogoForLogin),
+        loginSiteNameFontSize: (obj.loginSiteNameFontSize || "").trim(),
+        loginSiteNameColor: (obj.loginSiteNameColor || "").trim(),
+        loginAdditionalSiteInfoFontSize: (
+          obj.loginAdditionalSiteInfoFontSize || ""
+        ).trim(),
+        loginAdditionalSiteInfoColor: (
+          obj.loginAdditionalSiteInfoColor || ""
+        ).trim(),
+        loginLabContactNumberFontSize: (
+          obj.loginLabContactNumberFontSize || ""
+        ).trim(),
+        loginLabContactNumberColor: (
+          obj.loginLabContactNumberColor || ""
+        ).trim(),
+        loginLabEmailFontSize: (obj.loginLabEmailFontSize || "").trim(),
+        loginLabEmailColor: (obj.loginLabEmailColor || "").trim(),
       };
     };
 
@@ -272,13 +302,26 @@ function SiteBrandingConfig() {
     // Prepare data for sending - ensure colors are always valid
     // Exclude logo URLs as they are managed separately via upload endpoints
     // Colors must be provided as database requires NOT NULL
+    const currentBranding = brandingRef.current || branding;
     const dataToSend = {
-      id: branding.id,
-      headerColor: branding.headerColor?.trim() || "#295785",
-      primaryColor: branding.primaryColor?.trim() || "#0f62fe",
-      secondaryColor: branding.secondaryColor?.trim() || "#393939",
-      colorMode: branding.colorMode?.trim() || "light",
-      useHeaderLogoForLogin: branding.useHeaderLogoForLogin || false,
+      id: currentBranding.id,
+      headerColor: currentBranding.headerColor?.trim() || "#295785",
+      primaryColor: currentBranding.primaryColor?.trim() || "#0f62fe",
+      secondaryColor: currentBranding.secondaryColor?.trim() || "#393939",
+      colorMode: currentBranding.colorMode?.trim() || "light",
+      useHeaderLogoForLogin: currentBranding.useHeaderLogoForLogin || false,
+      loginSiteNameFontSize: currentBranding.loginSiteNameFontSize?.trim() || "",
+      loginSiteNameColor: currentBranding.loginSiteNameColor?.trim() || "",
+      loginAdditionalSiteInfoFontSize:
+        currentBranding.loginAdditionalSiteInfoFontSize?.trim() || "",
+      loginAdditionalSiteInfoColor:
+        currentBranding.loginAdditionalSiteInfoColor?.trim() || "",
+      loginLabContactNumberFontSize:
+        currentBranding.loginLabContactNumberFontSize?.trim() || "",
+      loginLabContactNumberColor:
+        currentBranding.loginLabContactNumberColor?.trim() || "",
+      loginLabEmailFontSize: currentBranding.loginLabEmailFontSize?.trim() || "",
+      loginLabEmailColor: currentBranding.loginLabEmailColor?.trim() || "",
       // Do not include headerLogoUrl, loginLogoUrl, or faviconUrl
       // These are managed via separate logo upload endpoints
     };
@@ -613,10 +656,101 @@ function SiteBrandingConfig() {
       <Grid fullWidth={true}>
         <Column lg={16} md={8} sm={4}>
           <Section>
+            <Heading as="h4">Login page field styling</Heading>
+            <p>
+              Configure the size and color of the site information shown on the
+              login page.
+            </p>
+            <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
+              <TextInput
+                id="login-site-name-font-size"
+                labelText="Site name font size"
+                value={branding?.loginSiteNameFontSize || ""}
+                onChange={(e) => {
+                  updateBrandingValue("loginSiteNameFontSize", e.target.value);
+                }}
+                placeholder="e.g. 1.5rem"
+              />
+              <TextInput
+                id="login-site-name-color"
+                labelText="Site name color"
+                value={branding?.loginSiteNameColor || ""}
+                onChange={(e) => {
+                  updateBrandingValue("loginSiteNameColor", e.target.value);
+                }}
+                placeholder="e.g. #0f62fe"
+              />
+              <TextInput
+                id="login-additional-site-info-font-size"
+                labelText="Additional site info font size"
+                value={branding?.loginAdditionalSiteInfoFontSize || ""}
+                onChange={(e) => {
+                  updateBrandingValue(
+                    "loginAdditionalSiteInfoFontSize",
+                    e.target.value,
+                  );
+                }}
+                placeholder="e.g. 1rem"
+              />
+              <TextInput
+                id="login-additional-site-info-color"
+                labelText="Additional site info color"
+                value={branding?.loginAdditionalSiteInfoColor || ""}
+                onChange={(e) => {
+                  updateBrandingValue(
+                    "loginAdditionalSiteInfoColor",
+                    e.target.value,
+                  );
+                }}
+                placeholder="e.g. #393939"
+              />
+              <TextInput
+                id="login-lab-contact-number-font-size"
+                labelText="Lab contact number font size"
+                value={branding?.loginLabContactNumberFontSize || ""}
+                onChange={(e) => {
+                  updateBrandingValue(
+                    "loginLabContactNumberFontSize",
+                    e.target.value,
+                  );
+                }}
+                placeholder="e.g. 0.95rem"
+              />
+              <TextInput
+                id="login-lab-contact-number-color"
+                labelText="Lab contact number color"
+                value={branding?.loginLabContactNumberColor || ""}
+                onChange={(e) => {
+                  updateBrandingValue(
+                    "loginLabContactNumberColor",
+                    e.target.value,
+                  );
+                }}
+                placeholder="e.g. #525252"
+              />
+              <TextInput
+                id="login-lab-email-font-size"
+                labelText="Lab email font size"
+                value={branding?.loginLabEmailFontSize || ""}
+                onChange={(e) => {
+                  updateBrandingValue("loginLabEmailFontSize", e.target.value);
+                }}
+                placeholder="e.g. 0.95rem"
+              />
+              <TextInput
+                id="login-lab-email-color"
+                labelText="Lab email color"
+                value={branding?.loginLabEmailColor || ""}
+                onChange={(e) => {
+                  updateBrandingValue("loginLabEmailColor", e.target.value);
+                }}
+                placeholder="e.g. #0f62fe"
+              />
+            </div>
             <Button
               onClick={handleSave}
               disabled={(!hasUnsavedChanges && !hasPendingFiles) || isSaving}
-              style={{ marginRight: "1rem" }}
+              style={{ marginRight: "1rem", marginTop: "1rem" }}
             >
               {isSaving ? (
                 <InlineLoading
