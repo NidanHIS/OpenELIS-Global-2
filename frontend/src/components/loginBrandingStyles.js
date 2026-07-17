@@ -15,5 +15,9 @@ export const getLoginSiteInfoStyles = (branding = {}) => ({
     fontWeight: "700",
     color: branding.headerColor || "#295785",
     marginTop: "0.25rem",
+    lineHeight: 1.2,
+    display: "block",
+    textAlign: "center",
+    width: "100%",
   },
 });

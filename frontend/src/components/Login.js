@@ -198,7 +198,7 @@ function Login(props) {
           <div
             style={{
               width: "100%",
-              maxWidth: "320px",
+              maxWidth: "400px",
               marginBottom: "1rem",
               textAlign: "center",
             }}
@@ -232,9 +232,14 @@ function Login(props) {
           <div
             style={{
               width: "100%",
-              maxWidth: "320px",
+              maxWidth: "400px",
               textAlign: "center",
               marginBottom: "1.5rem",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              boxSizing: "border-box",
             }}
           >
             {configurationProperties?.SiteName && (
@@ -251,7 +256,7 @@ function Login(props) {
           </div>
 
           {/* Login form */}
-          <div style={{ width: "100%", maxWidth: "320px" }}>
+          <div style={{ width: "100%", maxWidth: "400px" }}>
             <Section>
               {samlRedirectInitiated ? (
                 <Stack gap={5}>
@@ -348,7 +353,7 @@ function Login(props) {
                         )}
                         {configurationProperties?.useSaml == "true" &&
                           configurationProperties?.useSamlLoginPage !==
-                            "false" && (
+                          "false" && (
                             <Button
                               type="button"
                               renderIcon={HardwareSecurityModule}
