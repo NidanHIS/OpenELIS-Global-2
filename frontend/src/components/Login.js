@@ -361,7 +361,7 @@ function Login(props) {
                         )}
                         {configurationProperties?.useSaml == "true" &&
                           configurationProperties?.useSamlLoginPage !==
-                          "false" && (
+                            "false" && (
                             <Button
                               type="button"
                               renderIcon={HardwareSecurityModule}

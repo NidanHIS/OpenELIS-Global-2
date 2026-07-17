@@ -225,7 +225,8 @@ describe("SiteBrandingConfig", () => {
 
     renderWithIntl(<SiteBrandingConfig />);
 
-    const siteNameSizeInput = await screen.findByLabelText(/site name font size/i);
+    const siteNameSizeInput =
+      await screen.findByLabelText(/site name font size/i);
     fireEvent.change(siteNameSizeInput, { target: { value: "2rem" } });
 
     const siteNameColorInput = screen.getByLabelText(/site name color/i);

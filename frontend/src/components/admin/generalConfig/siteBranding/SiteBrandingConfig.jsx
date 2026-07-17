@@ -302,7 +302,8 @@ function SiteBrandingConfig() {
       secondaryColor: currentBranding.secondaryColor?.trim() || "#393939",
       colorMode: currentBranding.colorMode?.trim() || "light",
       useHeaderLogoForLogin: currentBranding.useHeaderLogoForLogin || false,
-      loginSiteNameFontSize: currentBranding.loginSiteNameFontSize?.trim() || "",
+      loginSiteNameFontSize:
+        currentBranding.loginSiteNameFontSize?.trim() || "",
       loginSiteNameColor: currentBranding.loginSiteNameColor?.trim() || "",
       loginAdditionalSiteInfoFontSize:
         currentBranding.loginAdditionalSiteInfoFontSize?.trim() || "",
