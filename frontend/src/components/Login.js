@@ -325,11 +325,18 @@ function Login(props) {
                                 id: "login.msg.password",
                               })}
                             />
-                            <Stack orientation="horizontal">
+                            <div
+                              style={{
+                                display: "flex",
+                                width: "100%",
+                                gap: "1rem",
+                              }}
+                            >
                               <Button
                                 type="submit"
                                 disabled={!isValid}
                                 data-cy="loginButton"
+                                style={{ flex: 1 }}
                               >
                                 <FormattedMessage id="label.button.login" />
                                 <Loading
@@ -345,10 +352,11 @@ function Login(props) {
                                 onClick={() => {
                                   navigateTo("/ChangePasswordLogin");
                                 }}
+                                style={{ flex: 1 }}
                               >
                                 <FormattedMessage id="label.button.changepassword" />
                               </Button>
-                            </Stack>
+                            </div>
                           </>
                         )}
                         {configurationProperties?.useSaml == "true" &&
