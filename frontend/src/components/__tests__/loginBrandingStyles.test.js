@@ -17,5 +17,7 @@ describe("getLoginSiteInfoStyles", () => {
     expect(styles.siteNameStyle.color).toBe("#ff0000");
     expect(styles.additionalSiteInfoStyle.fontSize).toBe("1rem");
     expect(styles.additionalSiteInfoStyle.color).toBe("#00ff00");
+    expect(styles.hardcodedLabelStyle.fontSize).toBe("1.5rem");
+    expect(styles.hardcodedLabelStyle.color).toBe("#295785");
   });
 });

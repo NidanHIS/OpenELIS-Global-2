@@ -174,9 +174,8 @@ function Login(props) {
     ? `${config.serverBaseUrl}${loginLogoUrl}?v=${logoVersion}`
     : defaultLogoSrc;
 
-  const { siteNameStyle, additionalSiteInfoStyle } = getLoginSiteInfoStyles(
-    brandingConfig,
-  );
+  const { siteNameStyle, additionalSiteInfoStyle, hardcodedLabelStyle } =
+    getLoginSiteInfoStyles(brandingConfig);
 
   return (
     <>
@@ -230,28 +229,26 @@ function Login(props) {
           </div>
 
           {/* Site info */}
-          {(configurationProperties?.SiteName ||
-            configurationProperties?.ADDITIONAL_SITE_INFO) && (
-            <div
-              style={{
-                width: "100%",
-                maxWidth: "320px",
-                textAlign: "center",
-                marginBottom: "1.5rem",
-              }}
-            >
-              {configurationProperties?.SiteName && (
-                <div style={siteNameStyle}>
-                  <strong>{configurationProperties.SiteName}</strong>
-                </div>
-              )}
-              {configurationProperties?.ADDITIONAL_SITE_INFO && (
-                <div style={additionalSiteInfoStyle}>
-                  {configurationProperties.ADDITIONAL_SITE_INFO}
-                </div>
-              )}
-            </div>
-          )}
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "320px",
+              textAlign: "center",
+              marginBottom: "1.5rem",
+            }}
+          >
+            {configurationProperties?.SiteName && (
+              <div style={siteNameStyle}>
+                <strong>{configurationProperties.SiteName}</strong>
+              </div>
+            )}
+            {configurationProperties?.ADDITIONAL_SITE_INFO && (
+              <div style={additionalSiteInfoStyle}>
+                {configurationProperties.ADDITIONAL_SITE_INFO}
+              </div>
+            )}
+            <div style={hardcodedLabelStyle}>Laboratory Information System</div>
+          </div>
 
           {/* Login form */}
           <div style={{ width: "100%", maxWidth: "320px" }}>
