@@ -1965,8 +1965,8 @@ export function SearchResults(props) {
     setAcceptAsIs(newAcceptAsIs);
   };
 
-  const handleSave = (values) => {
-    console.debug("handleSave:" + values);
+  const handleSave = (redirectToVal = false) => {
+    console.debug("handleSave");
     if (isSubmitting) {
       return;
     }
@@ -2000,7 +2000,6 @@ export function SearchResults(props) {
       return;
     }
     setIsSubmitting(true);
-    values.status = saveStatus;
     var searchEndPoint = "/rest/LogbookResults";
     props.results.testResult.forEach((result) => {
       result.reportable = result.reportable === "N" ? false : true;
@@ -2009,11 +2008,11 @@ export function SearchResults(props) {
     postToOpenElisServerJsonResponse(
       searchEndPoint,
       JSON.stringify(props.results),
-      setResponse,
+      (resp) => setResponse(resp, redirectToVal),
     );
   };
 
-  const setResponse = (resp) => {
+  const setResponse = (resp, redirectToVal) => {
     console.debug("setStatus" + JSON.stringify(resp));
     setIsSubmitting(false);
     if (resp) {
@@ -2028,18 +2027,21 @@ export function SearchResults(props) {
         if (window.opener && !window.opener.closed) {
           window.opener.location.reload();
         }
-        const targetAccessionNumber =
-          new URLSearchParams(window.location.search).get("accessionNumber") ||
-          props.results?.testResult?.[0]?.accessionNumber;
+        if (redirectToVal) {
+          const targetAccessionNumber =
+            new URLSearchParams(window.location.search).get(
+              "accessionNumber",
+            ) || props.results?.testResult?.[0]?.accessionNumber;
 
-        if (targetAccessionNumber) {
-          window.location.href = getFullPath(
-            "/validation?type=order&accessionNumber=" +
-              encodeURIComponent(targetAccessionNumber),
-          );
-        } else {
-          window.location.reload();
+          if (targetAccessionNumber) {
+            window.location.href = getFullPath(
+              "/validation?type=order&accessionNumber=" +
+                encodeURIComponent(targetAccessionNumber),
+            );
+            return;
+          }
         }
+        window.location.reload();
       }
     } else {
       addNotification({
@@ -2196,10 +2198,21 @@ export function SearchResults(props) {
                     <Button
                       type="button"
                       id="saveResults"
-                      onClick={handleSave}
+                      onClick={() => handleSave(false)}
                       disabled={isSubmitting}
                     >
                       <FormattedMessage id="label.button.save" />
+                    </Button>
+                    <Button
+                      type="button"
+                      id="saveAndValidateResults"
+                      onClick={() => handleSave(true)}
+                      disabled={isSubmitting}
+                    >
+                      <FormattedMessage
+                        id="label.button.saveAndValidate"
+                        defaultMessage="Save & Validate"
+                      />
                     </Button>
                     <Button
                       type="button"

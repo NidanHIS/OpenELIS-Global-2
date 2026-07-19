@@ -133,12 +133,13 @@ const Validation = (props) => {
     if (status == 200) {
       message = intl.formatMessage({ id: "validation.save.success" });
       kind = NotificationKinds.success;
-      // Refresh the parent dashboard tab (if opened via window.open) so it
-      // stays current, then reload this page to show fresh data.
+      // Save successfully, then go back to the base page or close window
       if (window.opener && !window.opener.closed) {
         window.opener.location.reload();
+        window.close();
+      } else {
+        navigateTo("/");
       }
-      window.location.reload();
     }
     addNotification({
       kind: kind,
