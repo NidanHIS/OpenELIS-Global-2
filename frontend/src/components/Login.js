@@ -192,6 +192,8 @@ function Login(props) {
             alignItems: "center",
             paddingTop: "3rem",
             paddingBottom: "3rem",
+            paddingLeft: "1.5rem",
+            paddingRight: "1.5rem",
           }}
         >
           {/* Logo */}
@@ -199,6 +201,7 @@ function Login(props) {
             style={{
               width: "100%",
               maxWidth: "400px",
+              minWidth: "280px",
               marginBottom: "1rem",
               textAlign: "center",
             }}
@@ -232,7 +235,8 @@ function Login(props) {
           <div
             style={{
               width: "100%",
-              maxWidth: "400px",
+              maxWidth: "800px",
+              minWidth: "280px",
               textAlign: "center",
               marginBottom: "1.5rem",
               display: "flex",
@@ -256,7 +260,7 @@ function Login(props) {
           </div>
 
           {/* Login form */}
-          <div style={{ width: "100%", maxWidth: "400px" }}>
+          <div style={{ width: "100%", maxWidth: "400px", minWidth: "280px" }}>
             <Section>
               {samlRedirectInitiated ? (
                 <Stack gap={5}>
