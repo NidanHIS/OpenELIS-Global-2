@@ -2028,7 +2028,18 @@ export function SearchResults(props) {
         if (window.opener && !window.opener.closed) {
           window.opener.location.reload();
         }
-        window.location.reload();
+        const targetAccessionNumber =
+          new URLSearchParams(window.location.search).get("accessionNumber") ||
+          props.results?.testResult?.[0]?.accessionNumber;
+
+        if (targetAccessionNumber) {
+          window.location.href = getFullPath(
+            "/validation?type=order&accessionNumber=" +
+              encodeURIComponent(targetAccessionNumber),
+          );
+        } else {
+          window.location.reload();
+        }
       }
     } else {
       addNotification({
