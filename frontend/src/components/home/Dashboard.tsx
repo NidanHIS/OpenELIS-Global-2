@@ -1370,12 +1370,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             <a
               href={resultUrl}
               title="Results"
-              target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                handleAction(patientGuid, resultUrl, true, accessionNumber);
+                handleAction(patientGuid, resultUrl, false, accessionNumber);
               }}
             >
               <img
@@ -1387,12 +1386,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
             <a
               href={validationUrl}
               title="Validate"
-              target="_blank"
               rel="noreferrer"
               style={{ display: "inline-flex", alignItems: "center" }}
               onClick={(e) => {
                 e.preventDefault();
-                handleAction(patientGuid, validationUrl, true, accessionNumber);
+                handleAction(
+                  patientGuid,
+                  validationUrl,
+                  false,
+                  accessionNumber,
+                );
               }}
             >
               <img
