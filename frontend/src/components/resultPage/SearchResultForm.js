@@ -871,6 +871,7 @@ export function SearchResults(props) {
   const saveStatus = "";
   const [referTest, setReferTest] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [sampleLocations, setSampleLocations] = useState({}); // Track location by analysisId
 
   const componentMounted = useRef(false);
@@ -902,6 +903,20 @@ export function SearchResults(props) {
       componentMounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty, isSubmitting]);
 
   useEffect(() => {
     if (props.results.testResult) {
@@ -1904,6 +1919,7 @@ export function SearchResults(props) {
     var isModified = "testResult[" + rowId + "].isModified";
     jp.value(form, isModified, "true");
     props.setResultForm(form);
+    setIsDirty(true);
   };
 
   const handleRejectCheckBoxChange = (e, rowId) => {
@@ -1928,6 +1944,7 @@ export function SearchResults(props) {
     if (checked) {
       setNotificationVisible(true);
     }
+    setIsDirty(true);
   };
 
   const handleDatePickerChange = (date, rowId) => {
@@ -1944,6 +1961,7 @@ export function SearchResults(props) {
         var isModified = "testResult[" + rowId + "].isModified";
         jp.value(form, isModified, "true");
         props.setResultForm(form);
+        setIsDirty(true);
       }
     }
   };
@@ -1963,6 +1981,7 @@ export function SearchResults(props) {
     var newAcceptAsIs = acceptAsIs;
     newAcceptAsIs[rowId] = !acceptAsIs[rowId];
     setAcceptAsIs(newAcceptAsIs);
+    setIsDirty(true);
   };
 
   const handleSave = (redirectToVal = false) => {
@@ -2016,6 +2035,7 @@ export function SearchResults(props) {
     console.debug("setStatus" + JSON.stringify(resp));
     setIsSubmitting(false);
     if (resp) {
+      setIsDirty(false);
       addNotification({
         title: intl.formatMessage({ id: "notification.title" }),
         message: createMesssage(resp),
@@ -2199,7 +2219,7 @@ export function SearchResults(props) {
                       type="button"
                       id="saveResults"
                       onClick={() => handleSave(false)}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !isDirty}
                     >
                       <FormattedMessage id="label.button.save" />
                     </Button>
@@ -2207,7 +2227,7 @@ export function SearchResults(props) {
                       type="button"
                       id="saveAndValidateResults"
                       onClick={() => handleSave(true)}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !isDirty}
                     >
                       <FormattedMessage
                         id="label.button.saveAndValidate"

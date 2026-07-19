@@ -37,6 +37,7 @@ const Validation = (props) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     componentMounted.current = true;
@@ -44,6 +45,20 @@ const Validation = (props) => {
       componentMounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty, isSubmitting]);
 
   const columns = [
     {
@@ -131,6 +146,7 @@ const Validation = (props) => {
     let kind = NotificationKinds.error;
     setIsSubmitting(false);
     if (status == 200) {
+      setIsDirty(false);
       message = intl.formatMessage({ id: "validation.save.success" });
       kind = NotificationKinds.success;
       // Save successfully, then go back to the base page or close window
@@ -163,6 +179,7 @@ const Validation = (props) => {
     let form = props.results;
     var jp = require("jsonpath");
     jp.value(form, name, value);
+    setIsDirty(true);
   };
 
   const handleDatePickerChange = (date, rowId) => {
@@ -171,18 +188,21 @@ const Validation = (props) => {
     var form = props.results;
     var jp = require("jsonpath");
     jp.value(form, "resultList[" + rowId + "].sentDate_", d);
+    setIsDirty(true);
   };
   const handleCheckBox = (e, rowId) => {
     const { name, id, checked } = e.target;
     let form = props.results;
     var jp = require("jsonpath");
     jp.value(form, name, checked);
+    setIsDirty(true);
   };
 
   const handleAutomatedCheck = (checked, name) => {
     let form = props.results;
     var jp = require("jsonpath");
     jp.value(form, name, checked);
+    setIsDirty(true);
   };
   const validateResults = (e, rowId) => {
     handleChange(e, rowId);
@@ -482,7 +502,7 @@ const Validation = (props) => {
                 onClick={() => handleSave(values)}
                 id="submit"
                 data-testid="Save-btn"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isDirty}
               >
                 <FormattedMessage id="label.button.save" />
               </Button>
