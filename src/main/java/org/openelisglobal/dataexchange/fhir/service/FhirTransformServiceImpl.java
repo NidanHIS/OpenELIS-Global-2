@@ -1488,9 +1488,15 @@ public class FhirTransformServiceImpl implements FhirTransformService {
             this.addToOperations(fhirOperations, tempIdGenerator, observation);
         }
 
+        Set<String> handledResultIds = new HashSet<>();
+        for (Result result : deletableList) {
+            handledResultIds.add(result.getId());
+        }
+
         for (Result result : resultUpdateList) {
             Observation observation = this.transformResultToObservation(result.getId());
             this.addToOperations(fhirOperations, tempIdGenerator, observation);
+            handledResultIds.add(result.getId());
         }
 
         for (Analysis analysis : analysisUpdateList) {
@@ -1499,6 +1505,16 @@ public class FhirTransformServiceImpl implements FhirTransformService {
             if (statusService.matches(analysis.getStatusId(), AnalysisStatus.Finalized)) {
                 DiagnosticReport diagnosticReport = this.transformResultToDiagnosticReport(analysis.getId());
                 this.addToOperations(fhirOperations, tempIdGenerator, diagnosticReport);
+                // The bundle must contain every Observation the DiagnosticReport references.
+                // resultUpdateList only holds results the validation save CHANGED — for a
+                // multiselect result nothing changes on acceptance, so its rows would be
+                // missing and the middleware would receive dangling references.
+                for (Result result : resultService.getResultsByAnalysis(analysis)) {
+                    if (handledResultIds.add(result.getId())) {
+                        Observation observation = this.transformResultToObservation(result.getId());
+                        this.addToOperations(fhirOperations, tempIdGenerator, observation);
+                    }
+                }
             }
         }
 

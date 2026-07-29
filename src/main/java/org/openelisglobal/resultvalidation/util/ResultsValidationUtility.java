@@ -577,33 +577,30 @@ public class ResultsValidationUtility {
         /*
          * The issue with multiselect results is that each selection is one
          * ResultValidationItem but they all need to be condensed into one AnalysisItem.
-         * There is a many to one mapping. The first multiselect result we have gets
-         * rolled into one AnalysisItem and the rest are skipped but we want to capture
-         * any qualified results
+         * There is a many to one mapping. Condensing is per analysis: the first item of
+         * each analysis produces its AnalysisItem, the remaining items of that SAME
+         * analysis (the extra multiselect selections) are skipped — items belonging to
+         * other analyses on the same accession must not be swallowed. Qualified results
+         * are still captured onto the multiselect's own item.
          */
-        boolean multiResultEntered = false;
-        String currentAccession = null;
-        AnalysisItem currentMultiSelectAnalysisItem = null;
+        Set<String> addedAnalysisIds = new HashSet<>();
+        Map<String, AnalysisItem> multiSelectItemByAnalysisId = new HashMap<>();
         for (ResultValidationItem testResultItem : testResultList) {
-            if (!testResultItem.getAccessionNumber().equals(currentAccession)) {
-                currentAccession = testResultItem.getAccessionNumber();
-                currentMultiSelectAnalysisItem = null;
-                multiResultEntered = false;
-            }
-            if (!multiResultEntered) {
+            String analysisId = testResultItem.getAnalysis().getId();
+            if (addedAnalysisIds.add(analysisId)) {
                 AnalysisItem convertedItem = testResultItemToAnalysisItem(testResultItem);
                 analysisResultList.add(convertedItem);
                 if (TypeOfTestResultServiceImpl.ResultType.isMultiSelectVariant(testResultItem.getResultType())) {
-                    multiResultEntered = true;
-                    currentMultiSelectAnalysisItem = convertedItem;
+                    multiSelectItemByAnalysisId.put(analysisId, convertedItem);
                 }
             }
-            if (currentMultiSelectAnalysisItem != null && testResultItem.isHasQualifiedResult()) {
-                currentMultiSelectAnalysisItem.setQualifiedResultValue(testResultItem.getQualifiedResultValue());
-                currentMultiSelectAnalysisItem.setQualifiedDictionaryId(testResultItem.getQualifiedDictionaryId());
-                currentMultiSelectAnalysisItem.setHasQualifiedResult(true);
-                currentMultiSelectAnalysisItem.setNormalRange(testResultItem.getNormalRange());
-                currentMultiSelectAnalysisItem.setPatientName(testResultItem.getPatientName());
+            AnalysisItem multiSelectItem = multiSelectItemByAnalysisId.get(analysisId);
+            if (multiSelectItem != null && testResultItem.isHasQualifiedResult()) {
+                multiSelectItem.setQualifiedResultValue(testResultItem.getQualifiedResultValue());
+                multiSelectItem.setQualifiedDictionaryId(testResultItem.getQualifiedDictionaryId());
+                multiSelectItem.setHasQualifiedResult(true);
+                multiSelectItem.setNormalRange(testResultItem.getNormalRange());
+                multiSelectItem.setPatientName(testResultItem.getPatientName());
             }
         }
 
