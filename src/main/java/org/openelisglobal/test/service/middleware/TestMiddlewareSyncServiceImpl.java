@@ -194,7 +194,10 @@ public class TestMiddlewareSyncServiceImpl implements TestMiddlewareSyncService 
             List<TestResult> testResults = testResultService.getActiveTestResultsByTest(test.getId());
 
             for (TestResult tr : testResults) {
-                if ("D".equals(tr.getTestResultType()) && !GenericValidator.isBlankOrNull(tr.getValue())) {
+                // Dictionary answers are stored with the test's own result type: 'D' for plain
+                // dictionary, 'M' for multiselect, 'C' for cascading multiselect.
+                if (ResultType.isDictionaryVariant(tr.getTestResultType())
+                        && !GenericValidator.isBlankOrNull(tr.getValue())) {
                     Dictionary dict = dictionaryService.get(tr.getValue());
                     if (dict != null && "Y".equals(dict.getIsActive())) {
                         CodedAnswerPayload answer = new CodedAnswerPayload();
