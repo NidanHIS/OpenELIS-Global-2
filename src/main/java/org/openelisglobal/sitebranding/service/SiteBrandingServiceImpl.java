@@ -38,7 +38,8 @@ public class SiteBrandingServiceImpl extends BaseObjectServiceImpl<SiteBranding,
         implements SiteBrandingService {
 
     private static final Logger logger = LoggerFactory.getLogger(SiteBrandingServiceImpl.class);
-    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
     private static final String[] ALLOWED_FORMATS = { "png", "svg", "jpg", "jpeg" };
 
     @Value("${org.openelisglobal.branding.dir:/var/lib/openelis-global/branding/}")
@@ -161,9 +162,13 @@ public class SiteBrandingServiceImpl extends BaseObjectServiceImpl<SiteBranding,
             if (branding.getLoginLogoPath() != null) {
                 existingBranding.setLoginLogoPath(branding.getLoginLogoPath());
             }
+            if (branding.getLoginBackgroundPath() != null) {
+                existingBranding.setLoginBackgroundPath(branding.getLoginBackgroundPath());
+            }
             if (branding.getFaviconPath() != null) {
                 existingBranding.setFaviconPath(branding.getFaviconPath());
             }
+
             if (branding.getLoginSiteNameFontSize() != null) {
                 existingBranding.setLoginSiteNameFontSize(branding.getLoginSiteNameFontSize());
             }
@@ -458,6 +463,8 @@ public class SiteBrandingServiceImpl extends BaseObjectServiceImpl<SiteBranding,
             return branding.getHeaderLogoPath();
         case LOGIN:
             return branding.getLoginLogoPath();
+        case BACKGROUND:
+            return branding.getLoginBackgroundPath();
         case FAVICON:
             return branding.getFaviconPath();
         default:
@@ -475,6 +482,9 @@ public class SiteBrandingServiceImpl extends BaseObjectServiceImpl<SiteBranding,
             break;
         case LOGIN:
             branding.setLoginLogoPath(path);
+            break;
+        case BACKGROUND:
+            branding.setLoginBackgroundPath(path);
             break;
         case FAVICON:
             branding.setFaviconPath(path);

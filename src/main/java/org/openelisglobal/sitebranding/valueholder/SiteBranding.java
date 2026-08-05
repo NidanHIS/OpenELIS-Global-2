@@ -33,6 +33,9 @@ public class SiteBranding extends BaseObject<Integer> {
     @Column(name = "login_logo_path", length = 500)
     private String loginLogoPath;
 
+    @Column(name = "login_background_path", length = 500)
+    private String loginBackgroundPath;
+
     @Column(name = "use_header_logo_for_login", nullable = false)
     private Boolean useHeaderLogoForLogin = false;
 
@@ -109,6 +112,14 @@ public class SiteBranding extends BaseObject<Integer> {
 
     public void setLoginLogoPath(String loginLogoPath) {
         this.loginLogoPath = loginLogoPath;
+    }
+
+    public String getLoginBackgroundPath() {
+        return loginBackgroundPath;
+    }
+
+    public void setLoginBackgroundPath(String loginBackgroundPath) {
+        this.loginBackgroundPath = loginBackgroundPath;
     }
 
     public Boolean getUseHeaderLogoForLogin() {

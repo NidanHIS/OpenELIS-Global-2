@@ -56,6 +56,7 @@ function SiteBrandingConfig() {
   // Refs for LogoUploadSection components to trigger uploads
   const headerLogoRef = useRef(null);
   const loginLogoRef = useRef(null);
+  const backgroundLogoRef = useRef(null);
   const faviconRef = useRef(null);
 
   const breadcrumbs = [
@@ -362,6 +363,11 @@ function SiteBrandingConfig() {
           await loginLogoRef.current.uploadFile();
           console.debug("Login logo uploaded successfully");
         }
+        if (backgroundLogoRef.current?.hasPendingFile()) {
+          console.debug("Uploading background logo...");
+          await backgroundLogoRef.current.uploadFile();
+          console.debug("Background logo uploaded successfully");
+        }
         if (faviconRef.current?.hasPendingFile()) {
           console.debug("Uploading favicon...");
           await faviconRef.current.uploadFile();
@@ -600,23 +606,35 @@ function SiteBrandingConfig() {
       <Grid fullWidth={true}>
         <Column lg={16} md={8} sm={4}>
           <LogoUploadSection
+            ref={backgroundLogoRef}
+            type="background"
+            currentLogoUrl={branding?.loginBackgroundUrl}
+            onFileSelected={handleFileSelected}
+            onLogoUploaded={(url) => {
+              window.dispatchEvent(new CustomEvent("branding-updated"));
+            }}
+            onLogoRemoved={() => {
+              loadBranding();
+              window.dispatchEvent(new CustomEvent("branding-updated"));
+            }}
+          />
+        </Column>
+      </Grid>
+
+      <Grid fullWidth={true}>
+        <Column lg={16} md={8} sm={4}>
+          <LogoUploadSection
             ref={faviconRef}
             type="favicon"
             currentLogoUrl={branding?.faviconUrl}
             onFileSelected={handleFileSelected}
             onLogoUploaded={(url) => {
-              // Update favicon in document head
               updateFavicon(url);
-              // Don't call loadBranding() here - handleSave calls it once after all uploads complete
-              // Just dispatch event to notify Header to reload branding
               window.dispatchEvent(new CustomEvent("branding-updated"));
             }}
             onLogoRemoved={() => {
-              // Logo removal is saved immediately, so reload from server to sync state
-              // Reset to default favicon
               resetFavicon();
               loadBranding();
-              // Dispatch event to notify Header to reload branding
               window.dispatchEvent(new CustomEvent("branding-updated"));
             }}
           />

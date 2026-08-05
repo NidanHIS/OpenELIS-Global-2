@@ -49,14 +49,20 @@ li.clickableUserDetails:hover {
 }
 
 /* -----------------------------------------------------------------------------
- * Login page layout
+ * Login page layout (Split 60:40 and Centered Fallback modes)
  * -----------------------------------------------------------------------------
- * The global layout can retain a persisted LOCK sidenav mode even when the user
- * is unauthenticated (no sidenav visible). These wrappers ensure the login form
- * stays horizontally centered regardless of surrounding layout state.
+ * Supports split hero background mode (60:40) with responsive fallback
+ * to a full-width centered layout when no hero background image is set
+ * or when viewed on smaller viewports (< 960px).
  */
 .oe-loginPageContent {
   width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .oe-loginPageCenter {
@@ -64,6 +70,103 @@ li.clickableUserDetails:hover {
   max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Split Layout Container */
+.oe-loginSplitLayout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Left Hero Background Pane (60%) */
+.oe-loginHeroPane {
+  flex: 0 0 60%;
+  width: 60%;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 3.5rem;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Ambient Gradient Overlay over Hero Image */
+.oe-loginHeroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.oe-loginHeroContent {
+  position: relative;
+  z-index: 2;
+  color: #ffffff;
+  max-width: 640px;
+}
+
+.oe-loginHeroTitle {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.oe-loginHeroSubtitle {
+  font-size: 1.125rem;
+  font-weight: 400;
+  opacity: 0.9;
+  line-height: 1.5;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Right Login Form Pane (40%) */
+.oe-loginFormPane {
+  flex: 0 0 40%;
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--cds-background, #ffffff);
+  box-sizing: border-box;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+}
+
+/* Mobile & Tablet responsive collapse to single centered column */
+@media screen and (max-width: 960px) {
+  .oe-loginSplitLayout {
+    flex-direction: column;
+  }
+
+  .oe-loginHeroPane {
+    display: none;
+  }
+
+  .oe-loginFormPane {
+    flex: 1 0 100%;
+    width: 100%;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
 }
 
 /* REMOVED: Forcing black text caused dark mode input issues 

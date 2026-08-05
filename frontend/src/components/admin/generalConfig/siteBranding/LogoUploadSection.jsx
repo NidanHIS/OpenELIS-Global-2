@@ -104,7 +104,68 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
     hasPendingFile: () => !!file,
   }));
 
-  const handleFileChange = (event) => {
+  const compressImageFile = (fileToCompress, maxDim = 1920, quality = 0.88) => {
+    return new Promise((resolve) => {
+      // SVG or files smaller than 300KB don't need canvas compression
+      if (
+        fileToCompress.type === "image/svg+xml" ||
+        fileToCompress.size < 300 * 1024
+      ) {
+        resolve(fileToCompress);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const mimeType =
+            fileToCompress.type === "image/png"
+              ? "image/jpeg"
+              : fileToCompress.type;
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size < fileToCompress.size) {
+                const compressedFile = new File([blob], fileToCompress.name, {
+                  type: mimeType,
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(fileToCompress);
+              }
+            },
+            mimeType,
+            quality,
+          );
+        };
+        img.onerror = () => resolve(fileToCompress);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(fileToCompress);
+      reader.readAsDataURL(fileToCompress);
+    });
+  };
+
+  const handleFileChange = async (event) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
@@ -120,27 +181,44 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
       return;
     }
 
-    // Validate file size (2MB)
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    if (selectedFile.size > maxSize) {
-      setError(intl.formatMessage({ id: "site.branding.file.size.error" }));
+    // Validate max selection size (10MB) - show error notification bar if exceeded
+    const maxSelectionSize = 10 * 1024 * 1024; // 10MB
+    if (selectedFile.size > maxSelectionSize) {
+      setError(
+        intl.formatMessage(
+          { id: "site.branding.file.size.error" },
+          {
+            defaultMessage:
+              "Selected file exceeds maximum limit of 10MB. Please choose a smaller image file.",
+          },
+        ),
+      );
       return;
     }
 
     setError(null);
-    setFile(selectedFile);
+    setIsUploading(true);
 
-    // Notify parent that a file was selected
-    if (onFileSelected) {
-      onFileSelected(selectedFile, type);
+    try {
+      // Compress background/logo image client-side to preserve ultra-high quality while reducing byte payload
+      const fileToUse = await compressImageFile(selectedFile, 1920, 0.88);
+      setFile(fileToUse);
+
+      if (onFileSelected) {
+        onFileSelected(fileToUse, type);
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(fileToUse);
+    } catch (err) {
+      console.error("Image processing error:", err);
+      setFile(selectedFile);
+    } finally {
+      setIsUploading(false);
     }
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result);
-    };
-    reader.readAsDataURL(selectedFile);
   };
 
   const handleRemove = () => {
@@ -191,6 +269,8 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
         return "site.branding.header.logo";
       case "login":
         return "site.branding.login.logo";
+      case "background":
+        return "site.branding.background.logo";
       case "favicon":
         return "site.branding.favicon";
       default:
@@ -204,6 +284,8 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
         return "site.branding.header.logo.description";
       case "login":
         return "site.branding.login.logo.description";
+      case "background":
+        return "site.branding.background.logo.description";
       case "favicon":
         return "site.branding.favicon.description";
       default:
@@ -217,6 +299,8 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
         return "site.branding.upload.header.logo";
       case "login":
         return "site.branding.upload.login.logo";
+      case "background":
+        return "site.branding.upload.background.logo";
       case "favicon":
         return "site.branding.upload.favicon";
       default:
@@ -230,6 +314,8 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
         return "site.branding.remove.header.logo";
       case "login":
         return "site.branding.remove.login.logo";
+      case "background":
+        return "site.branding.remove.background.logo";
       case "favicon":
         return "site.branding.remove.favicon";
       default:
@@ -242,11 +328,25 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
       <Grid fullWidth={true}>
         <Column lg={16} md={8} sm={4}>
           <h3>
-            <FormattedMessage id={getTitleKey()} />
+            <FormattedMessage
+              id={getTitleKey()}
+              defaultMessage={
+                type === "background"
+                  ? "Login Hero Background Image"
+                  : undefined
+              }
+            />
           </h3>
           {getDescriptionKey() && (
             <p>
-              <FormattedMessage id={getDescriptionKey()} />
+              <FormattedMessage
+                id={getDescriptionKey()}
+                defaultMessage={
+                  type === "background"
+                    ? "Upload custom hero background image for the login page split layout (PNG, SVG, JPG, max 2MB)"
+                    : undefined
+                }
+              />
             </p>
           )}
 
@@ -288,6 +388,7 @@ const LogoUploadSection = forwardRef(function LogoUploadSection(
                   objectFit: "contain",
                 }}
               />
+
               <Button
                 data-testid="remove-logo-button"
                 kind="danger"

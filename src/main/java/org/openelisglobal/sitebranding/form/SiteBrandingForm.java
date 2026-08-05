@@ -15,6 +15,8 @@ public class SiteBrandingForm {
 
     private String loginLogoUrl;
 
+    private String loginBackgroundUrl;
+
     private Boolean useHeaderLogoForLogin = false;
 
     private String faviconUrl;
@@ -83,6 +85,14 @@ public class SiteBrandingForm {
 
     public void setLoginLogoUrl(String loginLogoUrl) {
         this.loginLogoUrl = loginLogoUrl;
+    }
+
+    public String getLoginBackgroundUrl() {
+        return loginBackgroundUrl;
+    }
+
+    public void setLoginBackgroundUrl(String loginBackgroundUrl) {
+        this.loginBackgroundUrl = loginBackgroundUrl;
     }
 
     public Boolean getUseHeaderLogoForLogin() {
