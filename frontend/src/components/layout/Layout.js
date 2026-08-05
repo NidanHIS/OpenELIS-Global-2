@@ -138,7 +138,10 @@ export default function Layout(props) {
               SIDENAV_MODES={SIDENAV_MODES}
               defaultMode={layoutConfig.defaultMode}
               storageKeyPrefix={layoutConfig.storageKeyPrefix}
-              showSideNavToggle={hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)}
+              showSideNavToggle={hasRole(
+                userSessionDetails,
+                Roles.GLOBAL_ADMIN,
+              )}
             />
           )}
           {/* Theme wrapper creates white theme zone for content area */}
@@ -162,5 +165,4 @@ export default function Layout(props) {
       </NotificationContext.Provider>
     </ConfigurationContext.Provider>
   );
-
 }
