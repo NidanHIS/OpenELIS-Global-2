@@ -169,7 +169,16 @@ li.clickableUserDetails:hover {
   }
 }
 
+/* Remove header offset padding when top navigation is hidden on Login Page */
+
+.login-content-override {
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 100vh;
+}
+
 /* REMOVED: Forcing black text caused dark mode input issues 
+
    Carbon's <Theme theme="white"> handles this correctly */
 .inputText {
   width: 100%;
