@@ -403,39 +403,32 @@ function Login(props) {
           )}
         </Section>
       </div>
+    </div>
+  );
 
-      {/* Powered By Section */}
-      <div
+  const renderPoweredByFooter = () => (
+    <div className="oe-loginFooter">
+      <span
         style={{
-          marginTop: "3rem",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "0.5rem",
+          fontSize: "0.75rem",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          color: "#525252",
+          fontWeight: 500,
+          opacity: 0.7,
         }}
       >
-        <span
-          style={{
-            fontSize: "0.75rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            color: "#525252",
-            fontWeight: 500,
-            opacity: 0.7,
-          }}
-        >
-          powered by
-        </span>
-        <img
-          src={`${process.env.PUBLIC_URL}/images/nidan-logo.png`}
-          alt="Nidan Logo"
-          style={{
-            height: "36px",
-            width: "auto",
-            objectFit: "contain",
-          }}
-        />
-      </div>
+        powered by
+      </span>
+      <img
+        src={`${process.env.PUBLIC_URL}/images/nidan-logo.png`}
+        alt="Nidan Logo"
+        style={{
+          height: "36px",
+          width: "auto",
+          objectFit: "contain",
+        }}
+      />
     </div>
   );
 
@@ -454,7 +447,8 @@ function Login(props) {
           {/* Right Form Pane (40%) */}
           <div className="oe-loginFormPane">
             {notificationVisible === true ? <AlertDialog /> : ""}
-            {renderLoginBox()}
+            <div className="oe-loginBoxWrapper">{renderLoginBox()}</div>
+            {renderPoweredByFooter()}
           </div>
         </div>
       ) : (
@@ -463,7 +457,8 @@ function Login(props) {
           className="loginPageContent oe-loginPageContent"
         >
           {notificationVisible === true ? <AlertDialog /> : ""}
-          {renderLoginBox()}
+          <div className="oe-loginBoxWrapper">{renderLoginBox()}</div>
+          {renderPoweredByFooter()}
         </div>
       )}
     </>
