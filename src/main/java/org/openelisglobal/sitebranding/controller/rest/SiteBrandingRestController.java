@@ -244,8 +244,11 @@ public class SiteBrandingRestController extends BaseRestController {
         form.setId(branding.getId());
         form.setHeaderLogoUrl(branding.getHeaderLogoPath() != null ? "/rest/site-branding/logo/header" : null);
         form.setLoginLogoUrl(branding.getLoginLogoPath() != null ? "/rest/site-branding/logo/login" : null);
+        form.setLoginBackgroundUrl(
+                branding.getLoginBackgroundPath() != null ? "/rest/site-branding/logo/background" : null);
         form.setUseHeaderLogoForLogin(branding.getUseHeaderLogoForLogin());
         form.setFaviconUrl(branding.getFaviconPath() != null ? "/rest/site-branding/logo/favicon" : null);
+
         form.setPrimaryColor(branding.getPrimaryColor());
         form.setSecondaryColor(branding.getSecondaryColor());
         form.setHeaderColor(branding.getHeaderColor());
@@ -402,6 +405,8 @@ public class SiteBrandingRestController extends BaseRestController {
             return branding.getHeaderLogoPath();
         case LOGIN:
             return branding.getLoginLogoPath();
+        case BACKGROUND:
+            return branding.getLoginBackgroundPath();
         case FAVICON:
             return branding.getFaviconPath();
         default:

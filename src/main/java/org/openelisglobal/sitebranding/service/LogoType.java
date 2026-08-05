@@ -4,7 +4,7 @@ package org.openelisglobal.sitebranding.service;
  * Enum for logo types in site branding
  */
 public enum LogoType {
-    HEADER("header"), LOGIN("login"), FAVICON("favicon");
+    HEADER("header"), LOGIN("login"), FAVICON("favicon"), BACKGROUND("background");
 
     private final String value;
 

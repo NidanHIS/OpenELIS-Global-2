@@ -31,4 +31,20 @@
             <dropColumn tableName="site_branding" columnName="login_lab_email_color"/>
         </rollback>
     </changeSet>
+
+    <changeSet id="nidan-add-login-background-path-column" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="site_branding"/>
+            <not>
+                <columnExists tableName="site_branding" columnName="login_background_path"/>
+            </not>
+        </preConditions>
+        <comment>Add login_background_path column to site_branding table</comment>
+        <addColumn tableName="site_branding">
+            <column name="login_background_path" type="VARCHAR(500)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="site_branding" columnName="login_background_path"/>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

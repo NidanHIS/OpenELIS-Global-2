@@ -104,6 +104,9 @@ export default function Layout(props) {
     });
   }, []);
 
+  const isLoginPage =
+    location.pathname.includes("/login") || location.pathname === "/login";
+
   return (
     <ConfigurationContext.Provider
       value={{
@@ -125,23 +128,34 @@ export default function Layout(props) {
         }}
       >
         <div className="d-flex flex-column min-vh-100">
-          <Header
-            onChangeLanguage={props.onChangeLanguage}
-            mode={mode}
-            isExpanded={isExpanded}
-            toggleSideNav={toggle}
-            setMode={setMode}
-            SIDENAV_MODES={SIDENAV_MODES}
-            defaultMode={layoutConfig.defaultMode}
-            storageKeyPrefix={layoutConfig.storageKeyPrefix}
-            showSideNavToggle={hasRole(userSessionDetails, Roles.GLOBAL_ADMIN)}
-          />
+          {!isLoginPage && (
+            <Header
+              onChangeLanguage={props.onChangeLanguage}
+              mode={mode}
+              isExpanded={isExpanded}
+              toggleSideNav={toggle}
+              setMode={setMode}
+              SIDENAV_MODES={SIDENAV_MODES}
+              defaultMode={layoutConfig.defaultMode}
+              storageKeyPrefix={layoutConfig.storageKeyPrefix}
+              showSideNavToggle={hasRole(
+                userSessionDetails,
+                Roles.GLOBAL_ADMIN,
+              )}
+            />
+          )}
           {/* Theme wrapper creates white theme zone for content area */}
           {/* Global SCSS theme = blue header/nav, this = light content */}
           <Theme theme="white">
             <Content
               data-testid="content-wrapper"
-              className={isLocked ? "content-nav-locked" : ""}
+              className={
+                isLoginPage
+                  ? "login-content-override"
+                  : isLocked
+                    ? "content-nav-locked"
+                    : ""
+              }
             >
               {children}
             </Content>
