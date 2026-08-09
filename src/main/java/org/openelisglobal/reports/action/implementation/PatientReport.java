@@ -508,6 +508,13 @@ public abstract class PatientReport extends Report {
         } else {
             reportParameters.put("useContactTracing", Boolean.FALSE);
         }
+        String sepDeptProp = ConfigurationProperties.getInstance()
+                .getPropertyValue(Property.SPLIT_DEPARTMENT_REPORT_PAGES);
+        if (!GenericValidator.isBlankOrNull(sepDeptProp) && "false".equalsIgnoreCase(sepDeptProp.trim())) {
+            reportParameters.put("splitDepartmentReportPages", Boolean.FALSE);
+        } else {
+            reportParameters.put("splitDepartmentReportPages", Boolean.TRUE);
+        }
     }
 
     protected abstract String getHeaderName();
