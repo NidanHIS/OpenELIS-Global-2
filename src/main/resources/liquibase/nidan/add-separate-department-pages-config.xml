@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- splitDepartmentReportPages: INSERT if missing -->
+    <changeSet id="nidan-site-config-split-department-report-pages-insert" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information
+                WHERE name = 'splitDepartmentReportPages'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert splitDepartmentReportPages site information configuration</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id" valueSequenceNext="site_information_seq"/>
+            <column name="name" value="splitDepartmentReportPages"/>
+            <column name="lastupdated" valueComputed="now()"/>
+            <column name="description" value="Split Department Report Pages"/>
+            <column name="value" value="true"/>
+            <column name="encrypted" value="false"/>
+            <column name="value_type" value="boolean"/>
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'printedReportsConfig')"/>
+            <column name="instruction_key" value="siteInfo.splitDept.i"/>
+            <column name="group" value="0"/>
+            <column name="description_key" value="siteInfo.splitDept.d"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

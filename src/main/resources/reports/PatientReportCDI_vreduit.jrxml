@@ -54,6 +54,9 @@
 	<parameter name="useContactTracing" class="java.lang.Boolean" isForPrompting="false">
 		<defaultValueExpression><![CDATA[Boolean.FALSE]]></defaultValueExpression>
 	</parameter>
+	<parameter name="splitDepartmentReportPages" class="java.lang.Boolean" isForPrompting="false">
+		<defaultValueExpression><![CDATA[Boolean.TRUE]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[]]>
 	</queryString>
@@ -261,10 +264,15 @@
 			<band splitType="Stretch"/>
 		</groupFooter>
 	</group>
-	<group name="section name" isStartNewPage="true" isReprintHeaderOnEachPage="true">
+	<group name="section name" isStartNewPage="false" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{testSection}]]></groupExpression>
 		<groupHeader>
 			<band height="33" splitType="Prevent">
+				<break type="Page">
+					<reportElement x="0" y="0" width="1" height="1" uuid="d6f1a842-8921-4f10-b19b-7e61a4f02891">
+						<printWhenExpression><![CDATA[Boolean.TRUE.equals($P{splitDepartmentReportPages}) && $V{Accession Number_COUNT} > 0]]></printWhenExpression>
+					</reportElement>
+				</break>
 				<!-- Department name: centered, bold, font 10, no border -->
 				<textField>
 					<reportElement x="0" y="0" width="553" height="16" forecolor="#000000"/>
