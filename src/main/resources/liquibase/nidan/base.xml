@@ -22,4 +22,5 @@
     <include relativeToChangelogFile="true" file="add-default-referring-site.xml"/>
   <include relativeToChangelogFile="true" file="add-login-page-branding-styles.xml"/>
   <include relativeToChangelogFile="true" file="add-separate-department-pages-config.xml"/>
+  <include relativeToChangelogFile="true" file="add-lab-test-remarks.xml"/>
 </databaseChangeLog>
