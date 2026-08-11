@@ -397,6 +397,27 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
             reportItem
                     .setCorrectedResult(sampleCorrectedMap.get(reportItem.getAccessionNumber().split("_")[0]) != null);
         }
+
+        // Aggregate remarks per section so groupFooter on the last record reliably displays all section remarks
+        java.util.Map<String, String> sectionRemarksMap = new java.util.LinkedHashMap<>();
+        for (ClinicalPatientData item : reportItems) {
+            String section = item.getTestSection();
+            String remark = item.getLabTestRemark();
+            if (section != null && remark != null && !remark.trim().isEmpty()) {
+                String existing = sectionRemarksMap.get(section);
+                if (existing == null || existing.isEmpty()) {
+                    sectionRemarksMap.put(section, remark.trim());
+                } else if (!existing.contains(remark.trim())) {
+                    sectionRemarksMap.put(section, existing + "<br/>" + remark.trim());
+                }
+            }
+        }
+        for (ClinicalPatientData item : reportItems) {
+            String section = item.getTestSection();
+            if (section != null && sectionRemarksMap.containsKey(section)) {
+                item.setLabTestRemark(sectionRemarksMap.get(section));
+            }
+        }
     }
 
     @Override

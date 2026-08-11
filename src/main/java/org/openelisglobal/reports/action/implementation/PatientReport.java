@@ -956,7 +956,8 @@ public abstract class PatientReport extends Report {
                     Long panelId = Long.parseLong(panel.getId());
                     String panelRemark = remarkService.getRemarkForEntity("PANEL", panelId);
                     if (!GenericValidator.isBlankOrNull(panelRemark)) {
-                        return panelRemark.trim();
+                        String name = panel.getLocalizedName() != null ? panel.getLocalizedName() : panel.getName();
+                        return (name != null ? name + ": " : "") + panelRemark.trim();
                     }
                 } catch (Exception ignored) {
                 }
@@ -968,7 +969,8 @@ public abstract class PatientReport extends Report {
                     Long testId = Long.parseLong(analysis.getTest().getId());
                     String testRemark = remarkService.getRemarkForEntity("TEST", testId);
                     if (!GenericValidator.isBlankOrNull(testRemark)) {
-                        return testRemark.trim();
+                        String name = analysis.getTest().getLocalizedName() != null ? analysis.getTest().getLocalizedName() : analysis.getTest().getName();
+                        return (name != null ? name + ": " : "") + testRemark.trim();
                     }
                 } catch (Exception ignored) {
                 }

@@ -265,7 +265,7 @@
 			<band splitType="Stretch"/>
 		</groupFooter>
 	</group>
-	<group name="section name" isStartNewPage="false" isReprintHeaderOnEachPage="true">
+	<group name="section name" isStartNewPage="false" isReprintHeaderOnEachPage="true" minHeightToStartNewPage="60">
 		<groupExpression><![CDATA[$F{testSection}]]></groupExpression>
 		<groupHeader>
 			<band height="33" splitType="Prevent">
@@ -350,7 +350,21 @@
 			</band>
 		</groupHeader>
 		<groupFooter>
-			<band/>
+			<band height="18" splitType="Prevent">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" mode="Transparent" x="1" y="2" width="551" height="14" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[$F{labTestRemark} != null && !$F{labTestRemark}.trim().isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="3" leftPadding="4" bottomPadding="3" rightPadding="4">
+						<pen lineWidth="0.0"/>
+					</box>
+					<textElement markup="html">
+						<font fontName="SansSerif" size="8" isBold="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["<b>Remarks:</b> " + $F{labTestRemark}]]></textFieldExpression>
+				</textField>
+			</band>
 		</groupFooter>
 	</group>
 	<background>
@@ -569,23 +583,6 @@
 					<paragraph lineSpacing="Single"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{note}]]></textFieldExpression>
-			</textField>
-			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-				<reportElement positionType="Float" mode="Opaque" x="10" y="15" width="543" height="14" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" backcolor="#EBF3FB">
-					<printWhenExpression><![CDATA[$F{labTestRemark} != null && !$F{labTestRemark}.trim().isEmpty()]]></printWhenExpression>
-				</reportElement>
-				<box topPadding="3" leftPadding="6" bottomPadding="3" rightPadding="6">
-					<pen lineWidth="0.5" lineColor="#1F4E79"/>
-					<topPen lineWidth="0.5" lineColor="#1F4E79"/>
-					<leftPen lineWidth="0.5" lineColor="#1F4E79"/>
-					<bottomPen lineWidth="0.5" lineColor="#1F4E79"/>
-					<rightPen lineWidth="0.5" lineColor="#1F4E79"/>
-				</box>
-				<textElement markup="html">
-					<font fontName="SansSerif" size="8" isBold="false" isItalic="true"/>
-					<paragraph lineSpacing="Single"/>
-				</textElement>
-				<textFieldExpression><![CDATA["<b>Remark:</b> " + $F{labTestRemark}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
