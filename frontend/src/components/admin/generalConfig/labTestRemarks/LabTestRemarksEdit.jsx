@@ -352,6 +352,14 @@ const LabTestRemarksEdit = () => {
                           onChange={({ selectedItem }) =>
                             updateRowEntity(row.rowKey, selectedItem)
                           }
+                          shouldFilterItem={({ item, inputValue }) => {
+                            if (!inputValue || !item) return true;
+                            const search = inputValue.trim().toLowerCase();
+                            if (search.length < 2) return true;
+                            const rawName = item.displayName ? item.displayName.toLowerCase() : "";
+                            const cleanName = rawName.replace(/^\[(?:test|panel)\]\s*/, "");
+                            return cleanName.includes(search) || rawName.includes(search);
+                          }}
                           placeholder="Search test or panel..."
                           titleText=""
                           autoAlign
