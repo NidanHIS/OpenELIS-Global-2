@@ -6,14 +6,9 @@ import {
   Column,
   Section,
   Heading,
-  Table,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell,
   TextArea,
   Loading,
+  Pagination,
 } from "@carbon/react";
 import { TrashCan, Add } from "@carbon/icons-react";
 import {
@@ -30,11 +25,11 @@ import { FormattedMessage, useIntl } from "react-intl";
 /**
  * Custom editor for the "labTestRemarks" site_information entry.
  *
- * Table: S.No | Test/Panel Name | Remarks | Delete
- *
- * - Table starts empty; user adds rows by picking a test/panel from the dropdown
- * - Test/Panel names are dynamic
- * - Delete tracks deletedIds for granular DB deletion on Save
+ * Flexbox Card Layout:
+ * - Header row (fixed height, bg #f4f4f4).
+ * - Body rowgroup (flex: 1 1 auto, minHeight: 0, overflowY: auto) fills all remaining card height.
+ * - Spacer div (flex: 1) absorbs leftover height below rendered rows.
+ * - Footer (fixed height, pinned) with Add Row button and Carbon Pagination.
  */
 const LabTestRemarksEdit = () => {
   const intl = useIntl();
@@ -47,6 +42,8 @@ const LabTestRemarksEdit = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [rowCounter, setRowCounter] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // ── Load data on mount ───────────────────────────────────────────────────
 
@@ -127,7 +124,6 @@ const LabTestRemarksEdit = () => {
   };
 
   const deleteRow = (targetRow) => {
-    // If it was already saved in DB (has an id), track its ID for deletion
     if (targetRow.id) {
       setDeletedIds((prev) => [...prev, targetRow.id]);
     }
@@ -167,7 +163,7 @@ const LabTestRemarksEdit = () => {
       addNotification({
         kind: NotificationKinds.error,
         title: intl.formatMessage({ id: "notification.title" }),
-        message: "Please select a Test or Panel for every row before saving.",
+        message: "Please select a Test or Panel for every row, or remove unassigned rows before saving.",
       });
       return;
     }
@@ -217,6 +213,8 @@ const LabTestRemarksEdit = () => {
     );
   }
 
+  const pagedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="adminPageContent">
       {notificationVisible && <AlertDialog />}
@@ -225,14 +223,13 @@ const LabTestRemarksEdit = () => {
       <Grid>
         <Column lg={16} md={8} sm={4}>
           <Section>
-            <Heading>Lab Test Remarks</Heading>
+            <Heading style={{ marginBottom: "8px" }}>Lab Test Remarks</Heading>
           </Section>
-          <br />
         </Column>
       </Grid>
 
       {/* Action Buttons */}
-      <Grid>
+      <Grid style={{ marginBottom: "12px" }}>
         <Column lg={16} md={8} sm={4}>
           <Button
             data-cy="lab-test-remarks-save"
@@ -252,30 +249,71 @@ const LabTestRemarksEdit = () => {
         </Column>
       </Grid>
 
-      <br />
-
-      {/* Table */}
+      {/* Flexbox Card Container */}
       <div className="orderLegendBody">
-        <div className="gridBoundary">
-          <div style={{ overflowX: "auto" }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeader style={{ width: "60px" }}>S.No.</TableHeader>
-                  <TableHeader style={{ width: "320px" }}>Test/Panel Name</TableHeader>
-                  <TableHeader>Remarks</TableHeader>
-                  <TableHeader style={{ width: "60px" }}></TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} style={{ textAlign: "center", color: "#6f6f6f", padding: "24px" }}>
-                      No remarks yet. Click &quot;Add Row&quot; to get started.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {rows.map((row, idx) => {
+        <div
+          className="gridBoundary"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "calc(100vh - 230px)",
+            border: "1px solid #d1d1d1",
+            borderRadius: "4px",
+            backgroundColor: "#ffffff",
+            overflow: "hidden",
+          }}
+        >
+          {/* Header row — fixed height, never grows/shrinks */}
+          <div
+            role="row"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "60px 35% 1fr 50px",
+              backgroundColor: "#f4f4f4",
+              fontWeight: 600,
+              padding: "12px 16px",
+              flexShrink: 0,
+              borderBottom: "1px solid #e0e0e0",
+            }}
+          >
+            <div>S.No.</div>
+            <div>Test/Panel Name</div>
+            <div>Remarks</div>
+            <div></div>
+          </div>
+
+          {/* Body — flex: 1 GUARANTEES this fills all remaining card height */}
+          <div
+            role="rowgroup"
+            style={{
+              flex: "1 1 auto",
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              overflowY: "auto",
+            }}
+          >
+            {rows.length === 0 ? (
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#525252",
+                }}
+              >
+                <div style={{ fontSize: "15px", fontWeight: 600, marginBottom: "4px" }}>
+                  No Lab Test Remarks Configured
+                </div>
+                <div style={{ fontSize: "13px", color: "#8d8d8d" }}>
+                  Click &quot;+ Add Row&quot; below to assign remarks to a test or panel.
+                </div>
+              </div>
+            ) : (
+              <>
+                {pagedRows.map((row, idx) => {
                   const availableOpts = getAvailableOptions(row);
                   const selectedOpt = row.entityId
                     ? options.find(
@@ -289,15 +327,23 @@ const LabTestRemarksEdit = () => {
                       }
                     : null;
 
-                  return (
-                    <TableRow key={row.rowKey}>
-                      {/* S.No */}
-                      <TableCell style={{ verticalAlign: "top", paddingTop: "20px" }}>
-                        {idx + 1}
-                      </TableCell>
+                  const isLimitExceeded = row.remarks && row.remarks.length >= 2000;
+                  const trueIdx = (currentPage - 1) * pageSize + idx;
 
-                      {/* Test/Panel Name — searchable ComboBox */}
-                      <TableCell style={{ verticalAlign: "top" }}>
+                  return (
+                    <div
+                      key={row.rowKey}
+                      role="row"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "60px 35% 1fr 50px",
+                        padding: "10px 16px",
+                        borderBottom: "1px solid #e0e0e0",
+                        alignItems: "start",
+                      }}
+                    >
+                      <div style={{ paddingTop: "10px" }}>{trueIdx + 1}</div>
+                      <div>
                         <ComboBox
                           id={`combo-${row.rowKey}`}
                           items={availableOpts}
@@ -308,12 +354,11 @@ const LabTestRemarksEdit = () => {
                           }
                           placeholder="Search test or panel..."
                           titleText=""
-                          style={{ minWidth: "280px" }}
+                          autoAlign
+                          style={{ width: "100%" }}
                         />
-                      </TableCell>
-
-                      {/* Remarks — free text, max 2000 chars */}
-                      <TableCell style={{ verticalAlign: "top" }}>
+                      </div>
+                      <div style={{ paddingRight: "12px" }}>
                         <TextArea
                           id={`remarks-${row.rowKey}`}
                           labelText=""
@@ -321,15 +366,18 @@ const LabTestRemarksEdit = () => {
                           onChange={(e) =>
                             updateRowRemarks(row.rowKey, e.target.value)
                           }
-                          maxCount={2000}
-                          enableCounter
-                          rows={3}
-                          style={{ minWidth: "300px" }}
+                          maxLength={2000}
+                          rows={2}
+                          invalid={isLimitExceeded}
+                          invalidText={
+                            isLimitExceeded
+                              ? "Maximum limit of 2000 characters reached."
+                              : ""
+                          }
+                          style={{ width: "100%" }}
                         />
-                      </TableCell>
-
-                      {/* Delete Icon */}
-                      <TableCell style={{ verticalAlign: "top", paddingTop: "16px" }}>
+                      </div>
+                      <div style={{ paddingTop: "6px" }}>
                         <Button
                           kind="ghost"
                           size="sm"
@@ -339,16 +387,28 @@ const LabTestRemarksEdit = () => {
                           onClick={() => deleteRow(row)}
                           data-cy={`delete-row-${row.rowKey}`}
                         />
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+                {/* Spacer eats leftover space below the last row — flex handles this natively */}
+                <div style={{ flex: 1 }} />
+              </>
+            )}
           </div>
 
-          {/* Add Row Button */}
-          <div style={{ marginTop: "16px", paddingLeft: "16px" }}>
+          {/* Footer — pinned, fixed height */}
+          <div
+            style={{
+              padding: "12px 16px",
+              borderTop: "1px solid #e0e0e0",
+              flexShrink: 0,
+              display: "flex",
+              justify: "space-between",
+              alignItems: "center",
+              backgroundColor: "#ffffff",
+            }}
+          >
             <Button
               kind="tertiary"
               size="sm"
@@ -358,6 +418,18 @@ const LabTestRemarksEdit = () => {
             >
               Add Row
             </Button>
+            {rows.length > pageSize && (
+              <Pagination
+                page={currentPage}
+                pageSize={pageSize}
+                pageSizes={[5, 10, 20]}
+                totalItems={rows.length}
+                onChange={({ page, pageSize: newSize }) => {
+                  setCurrentPage(page);
+                  setPageSize(newSize);
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
