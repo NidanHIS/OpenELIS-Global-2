@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { createPortal } from "react-dom";
 import {
   Button,
   ComboBox,
@@ -25,11 +26,8 @@ import { FormattedMessage, useIntl } from "react-intl";
 /**
  * Custom editor for the "labTestRemarks" site_information entry.
  *
- * Flexbox Card Layout:
- * - Header row (fixed height, bg #f4f4f4).
- * - Body rowgroup (flex: 1 1 auto, minHeight: 0, overflowY: auto) fills all remaining card height.
- * - Spacer div (flex: 1) absorbs leftover height below rendered rows.
- * - Footer (fixed height, pinned) with Add Row button and Carbon Pagination.
+ * Flexbox Card Layout with Column Gaps & Centered Remarks Header.
+ * Click-to-Expand Portal Overlay for Remarks (8-line expanded floating TextArea via React Portal).
  */
 const LabTestRemarksEdit = () => {
   const intl = useIntl();
@@ -44,6 +42,7 @@ const LabTestRemarksEdit = () => {
   const [rowCounter, setRowCounter] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [expandedRow, setExpandedRow] = useState(null); // { rowKey, top, left, width }
 
   // ── Load data on mount ───────────────────────────────────────────────────
 
@@ -136,11 +135,11 @@ const LabTestRemarksEdit = () => {
       prev.map((r) =>
         r.rowKey === rowKey
           ? {
-              ...r,
-              entityType: selectedItem.entityType,
-              entityId: selectedItem.entityId,
-              entityName: selectedItem.displayName.replace(/^\[(?:Test|Panel)\] /, ""),
-            }
+            ...r,
+            entityType: selectedItem.entityType,
+            entityId: selectedItem.entityId,
+            entityName: selectedItem.displayName.replace(/^\[(?:Test|Panel)\] /, ""),
+          }
           : r
       )
     );
@@ -153,6 +152,20 @@ const LabTestRemarksEdit = () => {
       )
     );
   };
+
+  // ── Expanded Overlay Controls ───────────────────────────────────────────
+
+  const openExpanded = (row, e) => {
+    const rect = e.target.getBoundingClientRect();
+    setExpandedRow({
+      rowKey: row.rowKey,
+      top: rect.top,
+      left: rect.left,
+      width: Math.max(rect.width, 420),
+    });
+  };
+
+  const closeExpanded = () => setExpandedRow(null);
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -263,12 +276,13 @@ const LabTestRemarksEdit = () => {
             overflow: "hidden",
           }}
         >
-          {/* Header row — fixed height, never grows/shrinks */}
+          {/* Header row — fixed height, centered Remarks title, columnGap separation */}
           <div
             role="row"
             style={{
               display: "grid",
               gridTemplateColumns: "60px 35% 1fr 50px",
+              columnGap: "20px",
               backgroundColor: "#f4f4f4",
               fontWeight: 600,
               padding: "12px 16px",
@@ -278,7 +292,7 @@ const LabTestRemarksEdit = () => {
           >
             <div>S.No.</div>
             <div>Test/Panel Name</div>
-            <div>Remarks</div>
+            <div style={{ textAlign: "center" }}>Remarks</div>
             <div></div>
           </div>
 
@@ -317,14 +331,14 @@ const LabTestRemarksEdit = () => {
                   const availableOpts = getAvailableOptions(row);
                   const selectedOpt = row.entityId
                     ? options.find(
-                        (o) =>
-                          o.entityType === row.entityType &&
-                          o.entityId === row.entityId
-                      ) || {
-                        entityType: row.entityType,
-                        entityId: row.entityId,
-                        displayName: row.entityName || `[Unknown ${row.entityType} (ID: ${row.entityId})]`,
-                      }
+                      (o) =>
+                        o.entityType === row.entityType &&
+                        o.entityId === row.entityId
+                    ) || {
+                      entityType: row.entityType,
+                      entityId: row.entityId,
+                      displayName: row.entityName || `[Unknown ${row.entityType} (ID: ${row.entityId})]`,
+                    }
                     : null;
 
                   const isLimitExceeded = row.remarks && row.remarks.length >= 2000;
@@ -337,6 +351,7 @@ const LabTestRemarksEdit = () => {
                       style={{
                         display: "grid",
                         gridTemplateColumns: "60px 35% 1fr 50px",
+                        columnGap: "20px",
                         padding: "10px 16px",
                         borderBottom: "1px solid #e0e0e0",
                         alignItems: "start",
@@ -366,7 +381,7 @@ const LabTestRemarksEdit = () => {
                           style={{ width: "100%" }}
                         />
                       </div>
-                      <div style={{ paddingRight: "12px" }}>
+                      <div>
                         <TextArea
                           id={`remarks-${row.rowKey}`}
                           labelText=""
@@ -374,6 +389,7 @@ const LabTestRemarksEdit = () => {
                           onChange={(e) =>
                             updateRowRemarks(row.rowKey, e.target.value)
                           }
+                          onFocus={(e) => openExpanded(row, e)}
                           maxLength={2000}
                           rows={2}
                           invalid={isLimitExceeded}
@@ -382,7 +398,7 @@ const LabTestRemarksEdit = () => {
                               ? "Maximum limit of 2000 characters reached."
                               : ""
                           }
-                          style={{ width: "100%" }}
+                          style={{ width: "100%", borderRadius: "4px" }}
                         />
                       </div>
                       <div style={{ paddingTop: "6px" }}>
@@ -399,7 +415,7 @@ const LabTestRemarksEdit = () => {
                     </div>
                   );
                 })}
-                {/* Spacer eats leftover space below the last row — flex handles this natively */}
+                {/* Spacer eats leftover space below the last row */}
                 <div style={{ flex: 1 }} />
               </>
             )}
@@ -441,6 +457,37 @@ const LabTestRemarksEdit = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Expanded Portal Overlay for Remarks */}
+      {expandedRow &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: expandedRow.top,
+              left: expandedRow.left,
+              width: expandedRow.width,
+              zIndex: 10000,
+              background: "#ffffff",
+              border: "2px solid #0f62fe",
+              borderRadius: "4px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <TextArea
+              id={`remarks-expanded-${expandedRow.rowKey}`}
+              labelText=""
+              value={rows.find((r) => r.rowKey === expandedRow.rowKey)?.remarks || ""}
+              onChange={(e) => updateRowRemarks(expandedRow.rowKey, e.target.value)}
+              onBlur={closeExpanded}
+              autoFocus
+              maxLength={2000}
+              rows={8}
+              style={{ width: "100%" }}
+            />
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
