@@ -85,6 +85,7 @@ public final class ClinicalPatientData {
     private String tbFollowupPeriodLine2;
     private String collector;
     private String collectionDateOnly;
+    private String labTestRemark = "";
 
     public ClinicalPatientData() {
     }
@@ -108,6 +109,7 @@ public final class ClinicalPatientData {
         accessionNumber = data.getAccessionNumber();
         receivedDate = data.getReceivedDate();
         testDate = data.getTestDate();
+        labTestRemark = data.getLabTestRemark();
         referralSentDate = data.getReferralSentDate();
         referralTestName = data.getReferralTestName();
         referralResult = data.getReferralResult();
@@ -688,5 +690,13 @@ public final class ClinicalPatientData {
 
     public void setCollectionDateOnly(String collectionDateOnly) {
         this.collectionDateOnly = collectionDateOnly;
+    }
+
+    public String getLabTestRemark() {
+        return labTestRemark;
+    }
+
+    public void setLabTestRemark(String labTestRemark) {
+        this.labTestRemark = labTestRemark;
     }
 }

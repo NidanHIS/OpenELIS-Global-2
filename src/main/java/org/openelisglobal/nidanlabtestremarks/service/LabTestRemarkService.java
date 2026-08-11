@@ -21,4 +21,10 @@ public interface LabTestRemarkService {
      * Granular save: deletes explicitly requested IDs, then upserts itemsToSave.
      */
     void save(SaveLabTestRemarksPayload payload, String sysUserId);
+
+    /**
+     * Look up configured remark for a given entity type ("TEST" / "PANEL") and entity ID.
+     * Returns empty string if none configured or if lookup fails.
+     */
+    String getRemarkForEntity(String entityType, Long entityId);
 }

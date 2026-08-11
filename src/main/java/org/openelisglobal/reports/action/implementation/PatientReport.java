@@ -53,11 +53,13 @@ import org.openelisglobal.common.util.DateUtil;
 import org.openelisglobal.dictionary.service.DictionaryService;
 import org.openelisglobal.dictionary.valueholder.Dictionary;
 import org.openelisglobal.internationalization.MessageUtil;
+import org.openelisglobal.nidanlabtestremarks.service.LabTestRemarkService;
 import org.openelisglobal.note.service.NoteService;
 import org.openelisglobal.note.service.NoteServiceImpl.NoteType;
 import org.openelisglobal.observationhistory.service.ObservationHistoryService;
 import org.openelisglobal.observationhistory.service.ObservationHistoryServiceImpl.ObservationType;
 import org.openelisglobal.organization.service.OrganizationService;
+import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.patient.action.bean.PatientSearch;
 import org.openelisglobal.patient.service.PatientService;
@@ -937,6 +939,46 @@ public abstract class PatientReport extends Report {
      *
      * @return A single record
      */
+    protected String fetchLabTestRemark(Analysis analysis) {
+        if (analysis == null) {
+            return "";
+        }
+        try {
+            LabTestRemarkService remarkService = SpringContext.getBean(LabTestRemarkService.class);
+            if (remarkService == null) {
+                return "";
+            }
+
+            // 1. Check Panel remark if analysis belongs to a panel
+            Panel panel = analysisService.getPanel(analysis);
+            if (panel != null && panel.getId() != null) {
+                try {
+                    Long panelId = Long.parseLong(panel.getId());
+                    String panelRemark = remarkService.getRemarkForEntity("PANEL", panelId);
+                    if (!GenericValidator.isBlankOrNull(panelRemark)) {
+                        return panelRemark.trim();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+
+            // 2. Check Test remark
+            if (analysis.getTest() != null && analysis.getTest().getId() != null) {
+                try {
+                    Long testId = Long.parseLong(analysis.getTest().getId());
+                    String testRemark = remarkService.getRemarkForEntity("TEST", testId);
+                    if (!GenericValidator.isBlankOrNull(testRemark)) {
+                        return testRemark.trim();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "fetchLabTestRemark", e.getMessage());
+        }
+        return "";
+    }
+
     protected ClinicalPatientData buildClinicalPatientData(boolean hasParent) {
         ClinicalPatientData data = new ClinicalPatientData();
         String testName = null;
@@ -1010,6 +1052,7 @@ public abstract class PatientReport extends Report {
             // during order entry / incoming order collection).
             String collectorName = currentAnalysis.getSampleItem().getCollector();
             data.setCollector(collectorName != null ? collectorName : "");
+            data.setLabTestRemark(fetchLabTestRemark(currentAnalysis));
         }
         if (AccessionFormat.ALPHANUM.toString()
                 .equals(ConfigurationProperties.getInstance().getPropertyValue(Property.AccessionFormat))) {

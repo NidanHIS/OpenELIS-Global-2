@@ -127,6 +127,23 @@ public class LabTestRemarkServiceImpl implements LabTestRemarkService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public String getRemarkForEntity(String entityType, Long entityId) {
+        if (entityType == null || entityId == null) {
+            return "";
+        }
+        try {
+            LabTestRemark remark = dao.getByEntityTypeAndId(entityType, entityId);
+            if (remark != null && remark.getRemarks() != null) {
+                return remark.getRemarks();
+            }
+        } catch (Exception e) {
+            LogEvent.logError(e);
+        }
+        return "";
+    }
+
     // ── Private Helpers ───────────────────────────────────────────────────────
 
     private String resolveEntityName(String entityType, Long entityId) {
