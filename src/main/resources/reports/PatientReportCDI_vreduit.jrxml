@@ -632,7 +632,7 @@
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="8" isBold="false"/>
 					</textElement>
-					<text><![CDATA[Lab Technician]]></text>
+					<text><![CDATA[Verified By]]></text>
 				</staticText>
 			</frame>
 			<!-- Col 2: Lab Assistant — 60px tall -->
@@ -695,15 +695,15 @@
 				</staticText>
 				<!-- role label -->
 				<staticText>
-					<reportElement x="1" y="32" width="183" height="12"/>
+					<reportElement x="1" y="44" width="183" height="12"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="8" isBold="false"/>
 					</textElement>
-					<text><![CDATA[Lab Director]]></text>
+					<text><![CDATA[Lab Incharge]]></text>
 				</staticText>
 				<!-- name and title below role label -->
 				<textField isBlankWhenNull="true">
-					<reportElement x="1" y="44" width="183" height="14">
+					<reportElement x="1" y="52" width="183" height="10">
 						<printWhenExpression><![CDATA[$P{labDirectorName} != null]]></printWhenExpression>
 					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
