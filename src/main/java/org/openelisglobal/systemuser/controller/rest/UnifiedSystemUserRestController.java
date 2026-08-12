@@ -77,8 +77,8 @@ public class UnifiedSystemUserRestController extends BaseController {
     public static final char DEFAULT_OBFUSCATED_CHARACTER = '@';
 
     private static final String[] ALLOWED_FIELDS = new String[] { "systemUserId", "loginUserId", "userLoginName",
-            "userPassword", "confirmPassword", "userFirstName", "userLastName", "expirationDate", "timeout",
-            "accountLocked", "accountDisabled", "accountActive", "selectedRoles*", "selectedLabUnitRoles",
+            "userPassword", "confirmPassword", "userFirstName", "userLastName", "licenseNumber", "expirationDate",
+            "timeout", "accountLocked", "accountDisabled", "accountActive", "selectedRoles*", "selectedLabUnitRoles",
             "testSectionId", "systemUsers", "systemUserIdToCopy", "allowCopyUserRoles" };
 
     @Autowired
@@ -379,6 +379,7 @@ public class UnifiedSystemUserRestController extends BaseController {
             form.setSystemUserId(systemUser.getId());
             form.setUserFirstName(systemUser.getFirstName());
             form.setUserLastName(systemUser.getLastName());
+            form.setLicenseNumber(systemUser.getLicenseNumber() != null ? systemUser.getLicenseNumber() : "");
             form.setAccountActive(systemUser.getIsActive());
             form.setSystemUserLastupdated(systemUser.getLastupdated());
 
@@ -661,6 +662,7 @@ public class UnifiedSystemUserRestController extends BaseController {
 
         systemUser.setFirstName(form.getUserFirstName());
         systemUser.setLastName(form.getUserLastName());
+        systemUser.setLicenseNumber(form.getLicenseNumber() != null ? form.getLicenseNumber().trim() : null);
         systemUser.setLoginName(form.getUserLoginName());
         systemUser.setIsActive(form.getAccountActive());
         systemUser.setIsEmployee("Y");

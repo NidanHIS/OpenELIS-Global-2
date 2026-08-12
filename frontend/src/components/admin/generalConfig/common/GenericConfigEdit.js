@@ -27,6 +27,7 @@ import config from "../../../../config.json";
 import { NotificationContext } from "../../../layout/Layout.js";
 
 import { FormattedMessage, useIntl } from "react-intl";
+import LabTestRemarksEdit from "../../generalConfig/labTestRemarks/LabTestRemarksEdit.jsx";
 
 const GenericConfigEdit = ({ menuType, ID }) => {
   const intl = useIntl();
@@ -197,6 +198,11 @@ const GenericConfigEdit = ({ menuType, ID }) => {
       );
     }
   };
+
+  // NEW — labTestRemarks custom editor dispatch (additive, no existing code changed)
+  if (FormEntryConfig?.valueType === "labTestRemarks") {
+    return <LabTestRemarksEdit />;
+  }
 
   return (
     <div className="adminPageContent">

@@ -111,6 +111,9 @@
         <class>org.openelisglobal.analyzer.valueholder.UnitMapping</class>
         <class>org.openelisglobal.analyzer.valueholder.QualitativeResultMapping</class>
 
+        <!-- Lab Test Remarks entity (nidan-lab-test-remarks) -->
+        <class>org.openelisglobal.nidanlabtestremarks.valueholder.LabTestRemark</class>
+
         <properties>
             <property name="hibernate.cfg_xml_file"
                 value="classpath:hibernate/hibernate.cfg.xml" />

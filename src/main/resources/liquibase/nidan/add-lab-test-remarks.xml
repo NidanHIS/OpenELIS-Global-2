@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- ChangeSet 0: Widen clinlims.site_information.value_type from VARCHAR(10) to VARCHAR(32) -->
+    <changeSet id="nidan-widen-site-info-value-type-to-32" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="character varying(10)">
+                SELECT data_type || '(' || character_maximum_length || ')'
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims'
+                  AND table_name   = 'site_information'
+                  AND column_name  = 'value_type'
+            </sqlCheck>
+        </preConditions>
+        <comment>Widen clinlims.site_information.value_type from VARCHAR(10) to VARCHAR(32) to support custom value types like labTestRemarks</comment>
+        <modifyDataType
+            schemaName="clinlims"
+            tableName="site_information"
+            columnName="value_type"
+            newDataType="VARCHAR(32)" />
+    </changeSet>
+
+    <!-- ChangeSet 1: Create lab_test_remarks table -->
+    <changeSet id="nidan-create-lab-test-remarks-table" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="clinlims" tableName="lab_test_remarks"/>
+            </not>
+        </preConditions>
+        <comment>Create lab_test_remarks table for storing per-test/panel remarks for printed reports</comment>
+        <sql>
+            CREATE TABLE clinlims.lab_test_remarks (
+                id           SERIAL PRIMARY KEY,
+                entity_type  VARCHAR(10)   NOT NULL,
+                entity_id    NUMERIC(10,0) NOT NULL,
+                remarks      VARCHAR(2000),
+                lastupdated  TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                sys_user_id  VARCHAR(255),
+                CONSTRAINT uq_lab_test_remarks_entity UNIQUE (entity_type, entity_id)
+            );
+            COMMENT ON TABLE clinlims.lab_test_remarks IS 'Stores per-test/panel remarks for printed reports.';
+            COMMENT ON COLUMN clinlims.lab_test_remarks.entity_type IS 'TEST or PANEL';
+            COMMENT ON COLUMN clinlims.lab_test_remarks.entity_id IS 'PK of clinlims.test or clinlims.panel.';
+        </sql>
+    </changeSet>
+
+    <!-- ChangeSet 2: Insert site_information row for Lab Test Remarks -->
+    <changeSet id="nidan-insert-lab-test-remarks-site-info" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.site_information WHERE name = 'labTestRemarks'
+            </sqlCheck>
+        </preConditions>
+        <comment>Insert Lab Test Remarks entry into site_information under printedReportsConfig domain</comment>
+        <insert schemaName="clinlims" tableName="site_information">
+            <column name="id"          valueSequenceNext="site_information_seq"/>
+            <column name="name"        value="labTestRemarks"/>
+            <column name="lastupdated" valueComputed="now()"/>
+            <column name="description" value="Lab Test Remarks for printed reports"/>
+            <column name="value"       value=""/>
+            <column name="encrypted"   valueBoolean="false"/>
+            <column name="value_type"  value="labTestRemarks"/>
+            <column name="domain_id"   valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'printedReportsConfig')"/>
+            <column name="group"       valueNumeric="0"/>
+            <column name="description_key" value="siteInfo.labTestRemarks"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

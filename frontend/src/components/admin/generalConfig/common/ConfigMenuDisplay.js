@@ -18,6 +18,7 @@ import {
   TableSelectAll,
   TableContainer,
   Pagination,
+  InlineNotification,
 } from "@carbon/react";
 import {
   getFromOpenElisServer,
@@ -50,6 +51,7 @@ function ConfigMenuDisplay(props) {
     useState([]);
 
   const [ConfigEdit, setConfigEdit] = useState(false);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   let breadcrumbs = [
     { label: "home.label", link: "/" },
@@ -68,12 +70,18 @@ function ConfigMenuDisplay(props) {
   };
 
   const handleMenuItems = (res) => {
-    if (res) {
+    if (res && res.menuList) {
       setformEntryConfigMenuList(res);
+      setIsUnauthorized(false);
+    } else {
+      setIsUnauthorized(true);
     }
   };
 
   const handleLogoResponse = (res, item) => {
+    if (!res || res.value === undefined) {
+      return;
+    }
     const value = res.value;
     const updatedItem = {
       id: item.id,
@@ -175,6 +183,30 @@ function ConfigMenuDisplay(props) {
     }
     return <TableCell key={cell.id}>{cell.value}</TableCell>;
   };
+
+  if (isUnauthorized) {
+    return (
+      <div className="adminPageContent">
+        <PageBreadCrumb breadcrumbs={breadcrumbs} />
+        <Grid fullWidth={true}>
+          <Column lg={16} md={8} sm={4}>
+            <Section>
+              <Heading>
+                <FormattedMessage id={props.id} />
+              </Heading>
+            </Section>
+            <br />
+            <InlineNotification
+              kind="error"
+              title="Not Permitted"
+              subtitle="You do not have permission to view or modify this configuration page. Please contact your system administrator."
+              hideCloseButton={true}
+            />
+          </Column>
+        </Grid>
+      </div>
+    );
+  }
 
   return (
     <>

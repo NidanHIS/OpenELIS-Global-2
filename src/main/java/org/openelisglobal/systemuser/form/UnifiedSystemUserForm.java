@@ -44,6 +44,8 @@ public class UnifiedSystemUserForm extends BaseForm {
     @ValidName(nameType = NameType.LAST_NAME)
     private String userLastName = "";
 
+    private String licenseNumber = "";
+
     // for display
     private List<DisplayRole> globalRoles;
 
@@ -169,6 +171,14 @@ public class UnifiedSystemUserForm extends BaseForm {
 
     public void setUserLastName(String userLastName) {
         this.userLastName = userLastName;
+    }
+
+    public String getLicenseNumber() {
+        return licenseNumber;
+    }
+
+    public void setLicenseNumber(String licenseNumber) {
+        this.licenseNumber = licenseNumber;
     }
 
     public List<DisplayRole> getGlobalRoles() {

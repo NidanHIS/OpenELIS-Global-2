@@ -25,18 +25,22 @@ import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.analysis.valueholder.Analysis;
+import org.openelisglobal.audittrail.valueholder.History;
 import org.openelisglobal.common.constants.Constants;
+import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.provider.validation.AccessionNumberValidatorFactory.AccessionFormat;
 import org.openelisglobal.common.provider.validation.AlphanumAccessionValidator;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService.AnalysisStatus;
 import org.openelisglobal.common.util.ConfigurationProperties;
 import org.openelisglobal.common.util.ConfigurationProperties.Property;
+import org.openelisglobal.history.service.HistoryService;
 import org.openelisglobal.image.service.ImageService;
 import org.openelisglobal.image.valueholder.Image;
 import org.openelisglobal.internationalization.MessageUtil;
 import org.openelisglobal.localization.service.LocalizationService;
 import org.openelisglobal.note.service.NoteService;
+import org.openelisglobal.referencetables.service.ReferenceTablesService;
 import org.openelisglobal.referral.valueholder.Referral;
 import org.openelisglobal.referral.valueholder.ReferralResult;
 import org.openelisglobal.reports.action.implementation.reportBeans.ClinicalPatientData;
@@ -45,6 +49,8 @@ import org.openelisglobal.sample.util.AccessionNumberUtil;
 import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.siteinformation.service.SiteInformationService;
 import org.openelisglobal.spring.util.SpringContext;
+import org.openelisglobal.systemuser.service.SystemUserService;
+import org.openelisglobal.systemuser.valueholder.SystemUser;
 import org.openelisglobal.test.service.TestServiceImpl;
 import org.openelisglobal.test.valueholder.Test;
 
@@ -139,6 +145,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
         List<Analysis> filteredAnalysisList = userService.filterAnalysesByLabUnitRoles(systemUserId, analysisList,
                 Constants.ROLE_REPORTS);
+        reportParameters.put("verifierName", fetchLatestVerifierName(filteredAnalysisList));
         List<ClinicalPatientData> currentSampleReportItems = new ArrayList<>(filteredAnalysisList.size());
         currentConclusion = null;
         for (Analysis analysis : filteredAnalysisList) {
@@ -176,6 +183,97 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
             }
         }
         setCollectionTime(sampleSet, currentSampleReportItems, true);
+    }
+
+    private String fetchLatestVerifierName(List<Analysis> analysisList) {
+        if (analysisList == null || analysisList.isEmpty()) {
+            return "";
+        }
+        try {
+            IStatusService statusService = SpringContext.getBean(IStatusService.class);
+            String finalizedStatusId = statusService.getStatusID(AnalysisStatus.Finalized);
+
+            // Guard 1: Check if at least one analysis is actually Finalized/Validated
+            boolean hasFinalized = false;
+            for (Analysis analysis : analysisList) {
+                if (analysis != null && finalizedStatusId.equals(analysis.getStatusId())) {
+                    hasFinalized = true;
+                    break;
+                }
+            }
+            if (!hasFinalized) {
+                return ""; // Unverified sample -> return blank
+            }
+
+            ReferenceTablesService referenceTablesService = SpringContext.getBean(ReferenceTablesService.class);
+            HistoryService historyService = SpringContext.getBean(HistoryService.class);
+            SystemUserService systemUserService = SpringContext.getBean(SystemUserService.class);
+
+            String analysisTableId = referenceTablesService.getReferenceTableByName("ANALYSIS").getId();
+            History latestHistory = null;
+
+            for (Analysis analysis : analysisList) {
+                if (analysis != null && analysis.getId() != null && finalizedStatusId.equals(analysis.getStatusId())) {
+                    List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(),
+                            analysisTableId);
+                    if (historyList != null) {
+                        for (History h : historyList) {
+                            if (h != null && h.getSysUserId() != null && h.getTimestamp() != null
+                                    && h.getChanges() != null) {
+                                String changesXml = new String(h.getChanges());
+                                if (changesXml.contains("statusId") || changesXml.contains("status")) {
+                                    if (latestHistory == null || h.getTimestamp().after(latestHistory.getTimestamp())) {
+                                        latestHistory = h;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback: If no status XML match was found but analysis is Finalized, get
+            // latest update history
+            if (latestHistory == null) {
+                for (Analysis analysis : analysisList) {
+                    if (analysis != null && analysis.getId() != null
+                            && finalizedStatusId.equals(analysis.getStatusId())) {
+                        List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(),
+                                analysisTableId);
+                        if (historyList != null) {
+                            for (History h : historyList) {
+                                if (h != null && h.getSysUserId() != null && h.getTimestamp() != null
+                                        && "U".equals(h.getActivity())) {
+                                    if (latestHistory == null || h.getTimestamp().after(latestHistory.getTimestamp())) {
+                                        latestHistory = h;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (latestHistory != null && latestHistory.getSysUserId() != null) {
+                SystemUser user = systemUserService.getUserById(latestHistory.getSysUserId());
+                if (user != null) {
+                    String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
+                    String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
+                    String fullName = (firstName + " " + lastName).trim();
+                    if (fullName.isEmpty()) {
+                        fullName = user.getLoginName() != null ? user.getLoginName().trim() : "";
+                    }
+                    String licenseNumber = user.getLicenseNumber() != null ? user.getLicenseNumber().trim() : "";
+                    if (!licenseNumber.isEmpty() && !fullName.isEmpty()) {
+                        fullName += " (NPHC: " + licenseNumber + ")";
+                    }
+                    return fullName;
+                }
+            }
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "fetchLatestVerifierName", e.getMessage());
+        }
+        return "";
     }
 
     @Override
@@ -396,6 +494,28 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
             reportItem
                     .setCorrectedResult(sampleCorrectedMap.get(reportItem.getAccessionNumber().split("_")[0]) != null);
+        }
+
+        // Aggregate remarks per section so groupFooter on the last record reliably
+        // displays all section remarks
+        java.util.Map<String, String> sectionRemarksMap = new java.util.LinkedHashMap<>();
+        for (ClinicalPatientData item : reportItems) {
+            String section = item.getTestSection();
+            String remark = item.getLabTestRemark();
+            if (section != null && remark != null && !remark.trim().isEmpty()) {
+                String existing = sectionRemarksMap.get(section);
+                if (existing == null || existing.isEmpty()) {
+                    sectionRemarksMap.put(section, remark.trim());
+                } else if (!existing.contains(remark.trim())) {
+                    sectionRemarksMap.put(section, existing + "<br/>" + remark.trim());
+                }
+            }
+        }
+        for (ClinicalPatientData item : reportItems) {
+            String section = item.getTestSection();
+            if (section != null && sectionRemarksMap.containsKey(section)) {
+                item.setLabTestRemark(sectionRemarksMap.get(section));
+            }
         }
     }
 

@@ -42,6 +42,7 @@
 	<parameter name="labDirectorSignature" class="java.io.InputStream" isForPrompting="false"/>
 	<parameter name="labEmail" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="labContactNumber" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="verifierName" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="useLetterhead" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["false"]]></defaultValueExpression>
 	</parameter>
@@ -102,6 +103,7 @@
 	<field name="contactTracingIndexRecordNumber" class="java.lang.String"/>
 	<field name="collector" class="java.lang.String"/>
 	<field name="collectionDateOnly" class="java.lang.String"/>
+	<field name="labTestRemark" class="java.lang.String"/>
 	<group name="person" isStartNewPage="true" isResetPageNumber="true" footerPosition="ForceAtBottom">
 		<groupExpression><![CDATA[$F{subjectNumber}]]></groupExpression>
 		<groupFooter>
@@ -264,7 +266,7 @@
 			<band splitType="Stretch"/>
 		</groupFooter>
 	</group>
-	<group name="section name" isStartNewPage="false" isReprintHeaderOnEachPage="true">
+	<group name="section name" isStartNewPage="false" isReprintHeaderOnEachPage="true" minHeightToStartNewPage="60">
 		<groupExpression><![CDATA[$F{testSection}]]></groupExpression>
 		<groupHeader>
 			<band height="33" splitType="Prevent">
@@ -349,7 +351,21 @@
 			</band>
 		</groupHeader>
 		<groupFooter>
-			<band/>
+			<band height="18" splitType="Prevent">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" mode="Transparent" x="1" y="2" width="551" height="14" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[$F{labTestRemark} != null && !$F{labTestRemark}.trim().isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="3" leftPadding="4" bottomPadding="3" rightPadding="4">
+						<pen lineWidth="0.0"/>
+					</box>
+					<textElement markup="html">
+						<font fontName="SansSerif" size="8" isBold="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["<b>Remarks</b><br/>" + $F{labTestRemark}]]></textFieldExpression>
+				</textField>
+			</band>
 		</groupFooter>
 	</group>
 	<background>
@@ -591,7 +607,7 @@
 				</textElement>
 				<text><![CDATA[Notes:]]></text>
 			</staticText>
-			<!-- Col 1: Lab Technician — 60px tall -->
+			<!-- Col 1: Verified By — 60px tall -->
 			<frame>
 				<reportElement x="1" y="40" width="183" height="60">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -603,6 +619,16 @@
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
+				<!-- verifier name (resolved from latest validation user) — sits above signature line -->
+				<textField isBlankWhenNull="true">
+					<reportElement x="1" y="16" width="181" height="14">
+						<printWhenExpression><![CDATA[$P{verifierName} != null && !$P{verifierName}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{verifierName}]]></textFieldExpression>
+				</textField>
 				<!-- signature line — sits directly above role label -->
 				<staticText>
 					<reportElement x="20" y="32" width="143" height="10"/>
@@ -617,7 +643,7 @@
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="8" isBold="false"/>
 					</textElement>
-					<text><![CDATA[Lab Technician]]></text>
+					<text><![CDATA[Verified By]]></text>
 				</staticText>
 			</frame>
 			<!-- Col 2: Lab Assistant — 60px tall -->
@@ -680,15 +706,15 @@
 				</staticText>
 				<!-- role label -->
 				<staticText>
-					<reportElement x="1" y="32" width="183" height="12"/>
+					<reportElement x="1" y="44" width="183" height="12"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="8" isBold="false"/>
 					</textElement>
-					<text><![CDATA[Lab Director]]></text>
+					<text><![CDATA[Lab Incharge]]></text>
 				</staticText>
 				<!-- name and title below role label -->
 				<textField isBlankWhenNull="true">
-					<reportElement x="1" y="44" width="183" height="14">
+					<reportElement x="1" y="52" width="183" height="10">
 						<printWhenExpression><![CDATA[$P{labDirectorName} != null]]></printWhenExpression>
 					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">

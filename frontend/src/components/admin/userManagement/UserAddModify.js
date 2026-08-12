@@ -186,6 +186,7 @@ function UserAddModify() {
         formAction: userData.formAction,
         formMethod: userData.formMethod,
         formName: userData.formName,
+        licenseNumber: userData.licenseNumber || "",
         loginUserId: userData.loginUserId,
         selectedRoles: userData.selectedRoles,
         selectedTestSectionLabUnits: userData.selectedTestSectionLabUnits,
@@ -213,6 +214,7 @@ function UserAddModify() {
         formName: userData.formName,
         globalRoles: userData.globalRoles,
         labUnitRoles: userData.labUnitRoles,
+        licenseNumber: userData.licenseNumber || "",
         loginUserId: userData.loginUserId,
         selectedRoles: userData.selectedRoles,
         selectedTestSectionLabUnits: userData.selectedTestSectionLabUnits,
@@ -586,6 +588,19 @@ function UserAddModify() {
     setUserDataShow((prevUserData) => ({
       ...prevUserData,
       userLastName: value,
+    }));
+  }
+
+  function handleLicenseNumberChange(e) {
+    const value = e.target.value;
+    setSaveButton(false);
+    setUserDataPost((prevUserDataPost) => ({
+      ...prevUserDataPost,
+      licenseNumber: value,
+    }));
+    setUserDataShow((prevUserData) => ({
+      ...prevUserData,
+      licenseNumber: value,
     }));
   }
 
@@ -1043,6 +1058,28 @@ function UserAddModify() {
                           : ""
                       }
                       onChange={(e) => handleUserLastNameChange(e)}
+                    />
+                  </Column>
+                </Grid>
+                <br />
+                <Grid fullWidth={true}>
+                  <Column lg={8} md={4} sm={4}>
+                    <>License Number :</>
+                  </Column>
+                  <Column lg={8} md={4} sm={4}>
+                    <TextInput
+                      id="license-number"
+                      className="defalut"
+                      type="text"
+                      labelText=""
+                      placeholder="License Number"
+                      maxLength={32}
+                      value={
+                        userDataShow && userDataShow.licenseNumber
+                          ? userDataShow.licenseNumber
+                          : ""
+                      }
+                      onChange={(e) => handleLicenseNumberChange(e)}
                     />
                   </Column>
                 </Grid>
