@@ -23,4 +23,5 @@
   <include relativeToChangelogFile="true" file="add-login-page-branding-styles.xml"/>
   <include relativeToChangelogFile="true" file="add-separate-department-pages-config.xml"/>
   <include relativeToChangelogFile="true" file="add-lab-test-remarks.xml"/>
+  <include relativeToChangelogFile="true" file="add-license-number-to-system-user.xml"/>
 </databaseChangeLog>

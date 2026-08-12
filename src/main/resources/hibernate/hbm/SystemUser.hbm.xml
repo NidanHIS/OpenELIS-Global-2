@@ -32,6 +32,9 @@
         <property name="initials" type="java.lang.String">
             <column name="INITIALS" length="3" />
         </property>
+        <property name="licenseNumber" type="java.lang.String">
+            <column name="LICENSE_NUMBER" length="32" />
+        </property>
         <property name="isActive" type="java.lang.String">
             <column name="IS_ACTIVE" length="1" not-null="true" />
         </property>
