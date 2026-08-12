@@ -47,6 +47,12 @@ import org.openelisglobal.siteinformation.service.SiteInformationService;
 import org.openelisglobal.spring.util.SpringContext;
 import org.openelisglobal.test.service.TestServiceImpl;
 import org.openelisglobal.test.valueholder.Test;
+import org.openelisglobal.audittrail.valueholder.History;
+import org.openelisglobal.history.service.HistoryService;
+import org.openelisglobal.referencetables.service.ReferenceTablesService;
+import org.openelisglobal.systemuser.service.SystemUserService;
+import org.openelisglobal.systemuser.valueholder.SystemUser;
+import org.openelisglobal.common.log.LogEvent;
 
 public class PatientCILNSPClinical_vreduit extends PatientReport implements IReportCreator, IReportParameterSetter {
 
@@ -139,6 +145,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
         List<Analysis> filteredAnalysisList = userService.filterAnalysesByLabUnitRoles(systemUserId, analysisList,
                 Constants.ROLE_REPORTS);
+        reportParameters.put("verifierName", fetchLatestVerifierName(filteredAnalysisList));
         List<ClinicalPatientData> currentSampleReportItems = new ArrayList<>(filteredAnalysisList.size());
         currentConclusion = null;
         for (Analysis analysis : filteredAnalysisList) {
@@ -176,6 +183,87 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
             }
         }
         setCollectionTime(sampleSet, currentSampleReportItems, true);
+    }
+
+    private String fetchLatestVerifierName(List<Analysis> analysisList) {
+        if (analysisList == null || analysisList.isEmpty()) {
+            return "";
+        }
+        try {
+            IStatusService statusService = SpringContext.getBean(IStatusService.class);
+            String finalizedStatusId = statusService.getStatusID(AnalysisStatus.Finalized);
+
+            // Guard 1: Check if at least one analysis is actually Finalized/Validated
+            boolean hasFinalized = false;
+            for (Analysis analysis : analysisList) {
+                if (analysis != null && finalizedStatusId.equals(analysis.getStatusId())) {
+                    hasFinalized = true;
+                    break;
+                }
+            }
+            if (!hasFinalized) {
+                return ""; // Unverified sample -> return blank
+            }
+
+            ReferenceTablesService referenceTablesService = SpringContext.getBean(ReferenceTablesService.class);
+            HistoryService historyService = SpringContext.getBean(HistoryService.class);
+            SystemUserService systemUserService = SpringContext.getBean(SystemUserService.class);
+
+            String analysisTableId = referenceTablesService.getReferenceTableByName("ANALYSIS").getId();
+            History latestHistory = null;
+
+            for (Analysis analysis : analysisList) {
+                if (analysis != null && analysis.getId() != null && finalizedStatusId.equals(analysis.getStatusId())) {
+                    List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(), analysisTableId);
+                    if (historyList != null) {
+                        for (History h : historyList) {
+                            if (h != null && h.getSysUserId() != null && h.getTimestamp() != null && h.getChanges() != null) {
+                                String changesXml = new String(h.getChanges());
+                                if (changesXml.contains("statusId") || changesXml.contains("status")) {
+                                    if (latestHistory == null || h.getTimestamp().after(latestHistory.getTimestamp())) {
+                                        latestHistory = h;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback: If no status XML match was found but analysis is Finalized, get latest update history
+            if (latestHistory == null) {
+                for (Analysis analysis : analysisList) {
+                    if (analysis != null && analysis.getId() != null && finalizedStatusId.equals(analysis.getStatusId())) {
+                        List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(), analysisTableId);
+                        if (historyList != null) {
+                            for (History h : historyList) {
+                                if (h != null && h.getSysUserId() != null && h.getTimestamp() != null && "U".equals(h.getActivity())) {
+                                    if (latestHistory == null || h.getTimestamp().after(latestHistory.getTimestamp())) {
+                                        latestHistory = h;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (latestHistory != null && latestHistory.getSysUserId() != null) {
+                SystemUser user = systemUserService.getUserById(latestHistory.getSysUserId());
+                if (user != null) {
+                    String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
+                    String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
+                    String fullName = (firstName + " " + lastName).trim();
+                    if (!fullName.isEmpty()) {
+                        return fullName;
+                    }
+                    return user.getLoginName() != null ? user.getLoginName().trim() : "";
+                }
+            }
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "fetchLatestVerifierName", e.getMessage());
+        }
+        return "";
     }
 
     @Override

@@ -42,6 +42,7 @@
 	<parameter name="labDirectorSignature" class="java.io.InputStream" isForPrompting="false"/>
 	<parameter name="labEmail" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="labContactNumber" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="verifierName" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="useLetterhead" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["false"]]></defaultValueExpression>
 	</parameter>
@@ -606,7 +607,7 @@
 				</textElement>
 				<text><![CDATA[Notes:]]></text>
 			</staticText>
-			<!-- Col 1: Lab Technician — 60px tall -->
+			<!-- Col 1: Verified By — 60px tall -->
 			<frame>
 				<reportElement x="1" y="40" width="183" height="60">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -618,6 +619,16 @@
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
+				<!-- verifier name (resolved from latest validation user) — sits above signature line -->
+				<textField isBlankWhenNull="true">
+					<reportElement x="1" y="16" width="181" height="14">
+						<printWhenExpression><![CDATA[$P{verifierName} != null && !$P{verifierName}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{verifierName}]]></textFieldExpression>
+				</textField>
 				<!-- signature line — sits directly above role label -->
 				<staticText>
 					<reportElement x="20" y="32" width="143" height="10"/>
