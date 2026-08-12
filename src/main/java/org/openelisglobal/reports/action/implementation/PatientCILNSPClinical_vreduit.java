@@ -254,10 +254,14 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                     String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
                     String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
                     String fullName = (firstName + " " + lastName).trim();
-                    if (!fullName.isEmpty()) {
-                        return fullName;
+                    if (fullName.isEmpty()) {
+                        fullName = user.getLoginName() != null ? user.getLoginName().trim() : "";
                     }
-                    return user.getLoginName() != null ? user.getLoginName().trim() : "";
+                    String licenseNumber = user.getLicenseNumber() != null ? user.getLicenseNumber().trim() : "";
+                    if (!licenseNumber.isEmpty() && !fullName.isEmpty()) {
+                        fullName += " (NPHC: " + licenseNumber + ")";
+                    }
+                    return fullName;
                 }
             }
         } catch (Exception e) {
