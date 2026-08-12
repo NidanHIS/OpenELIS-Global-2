@@ -8,12 +8,14 @@ import org.openelisglobal.nidanlabtestremarks.controller.rest.LabTestRemarkRestC
 public interface LabTestRemarkService {
 
     /**
-     * Returns all saved remarks with dynamic entity display names resolved from TestService/PanelService.
+     * Returns all saved remarks with dynamic entity display names resolved from
+     * TestService/PanelService.
      */
     List<LabTestRemarkDTO> getAll();
 
     /**
-     * Returns combined list of all active tests and panels for the searchable dropdown.
+     * Returns combined list of all active tests and panels for the searchable
+     * dropdown.
      */
     List<TestPanelOptionDTO> getOptions();
 
@@ -23,8 +25,8 @@ public interface LabTestRemarkService {
     void save(SaveLabTestRemarksPayload payload, String sysUserId);
 
     /**
-     * Look up configured remark for a given entity type ("TEST" / "PANEL") and entity ID.
-     * Returns empty string if none configured or if lookup fails.
+     * Look up configured remark for a given entity type ("TEST" / "PANEL") and
+     * entity ID. Returns empty string if none configured or if lookup fails.
      */
     String getRemarkForEntity(String entityType, Long entityId);
 }

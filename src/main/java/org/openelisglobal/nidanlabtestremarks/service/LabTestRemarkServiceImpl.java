@@ -39,12 +39,10 @@ public class LabTestRemarkServiceImpl implements LabTestRemarkService {
     @Transactional(readOnly = true)
     public List<LabTestRemarkDTO> getAll() {
         try {
-            return dao.getAll().stream()
-                    .map(r -> {
-                        String entityName = resolveEntityName(r.getEntityType(), r.getEntityId());
-                        return new LabTestRemarkDTO(r.getId(), r.getEntityType(), r.getEntityId(), entityName, r.getRemarks());
-                    })
-                    .collect(Collectors.toList());
+            return dao.getAll().stream().map(r -> {
+                String entityName = resolveEntityName(r.getEntityType(), r.getEntityId());
+                return new LabTestRemarkDTO(r.getId(), r.getEntityType(), r.getEntityId(), entityName, r.getRemarks());
+            }).collect(Collectors.toList());
         } catch (Exception e) {
             LogEvent.logError(e);
             throw new LIMSRuntimeException("Error in LabTestRemarkService getAll()", e);

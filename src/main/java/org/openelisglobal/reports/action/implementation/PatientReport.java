@@ -59,8 +59,8 @@ import org.openelisglobal.note.service.NoteServiceImpl.NoteType;
 import org.openelisglobal.observationhistory.service.ObservationHistoryService;
 import org.openelisglobal.observationhistory.service.ObservationHistoryServiceImpl.ObservationType;
 import org.openelisglobal.organization.service.OrganizationService;
-import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.organization.valueholder.Organization;
+import org.openelisglobal.panel.valueholder.Panel;
 import org.openelisglobal.patient.action.bean.PatientSearch;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.service.PatientServiceImpl;
@@ -956,8 +956,14 @@ public abstract class PatientReport extends Report {
                     Long panelId = Long.parseLong(panel.getId());
                     String panelRemark = remarkService.getRemarkForEntity("PANEL", panelId);
                     if (!GenericValidator.isBlankOrNull(panelRemark)) {
-                        String name = panel.getLocalizedName() != null ? panel.getLocalizedName() : panel.getName();
-                        return (name != null ? name + ": " : "") + panelRemark.trim();
+                        String name = panel.getPanelName();
+                        if (GenericValidator.isBlankOrNull(name)) {
+                            name = panel.getLocalizedName() != null ? panel.getLocalizedName() : panel.getName();
+                        }
+                        if (!GenericValidator.isBlankOrNull(name)) {
+                            return "<b>" + name.trim() + ":</b> " + panelRemark.trim();
+                        }
+                        return panelRemark.trim();
                     }
                 } catch (Exception ignored) {
                 }
@@ -969,8 +975,22 @@ public abstract class PatientReport extends Report {
                     Long testId = Long.parseLong(analysis.getTest().getId());
                     String testRemark = remarkService.getRemarkForEntity("TEST", testId);
                     if (!GenericValidator.isBlankOrNull(testRemark)) {
-                        String name = analysis.getTest().getLocalizedName() != null ? analysis.getTest().getLocalizedName() : analysis.getTest().getName();
-                        return (name != null ? name + ": " : "") + testRemark.trim();
+                        String name = null;
+                        try {
+                            name = TestServiceImpl.getUserLocalizedTestName(analysis.getTest());
+                        } catch (Exception ignored) {
+                        }
+                        if (GenericValidator.isBlankOrNull(name)) {
+                            name = TestServiceImpl.getUserLocalizedReportingTestName(analysis.getTest());
+                        }
+                        if (GenericValidator.isBlankOrNull(name) && analysis.getTest() != null) {
+                            name = analysis.getTest().getLocalizedName() != null ? analysis.getTest().getLocalizedName()
+                                    : analysis.getTest().getName();
+                        }
+                        if (!GenericValidator.isBlankOrNull(name)) {
+                            return "<b>" + name.trim() + ":</b> " + testRemark.trim();
+                        }
+                        return testRemark.trim();
                     }
                 } catch (Exception ignored) {
                 }

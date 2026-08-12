@@ -363,7 +363,7 @@
 						<font fontName="SansSerif" size="8" isBold="false"/>
 						<paragraph lineSpacing="Single"/>
 					</textElement>
-					<textFieldExpression><![CDATA["<b>Remarks:</b> " + $F{labTestRemark}]]></textFieldExpression>
+					<textFieldExpression><![CDATA["<b>Remarks</b><br/>" + $F{labTestRemark}]]></textFieldExpression>
 				</textField>
 			</band>
 		</groupFooter>

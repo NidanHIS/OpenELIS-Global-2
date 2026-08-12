@@ -34,9 +34,9 @@ const LabTestRemarksEdit = () => {
   const { notificationVisible, setNotificationVisible, addNotification } =
     useContext(NotificationContext);
 
-  const [rows, setRows] = useState([]);         // { rowKey, id, entityType, entityId, entityName, remarks }
+  const [rows, setRows] = useState([]); // { rowKey, id, entityType, entityId, entityName, remarks }
   const [deletedIds, setDeletedIds] = useState([]); // IDs to delete explicitly on Save
-  const [options, setOptions] = useState([]);   // { entityType, entityId, displayName }
+  const [options, setOptions] = useState([]); // { entityType, entityId, displayName }
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [rowCounter, setRowCounter] = useState(0);
@@ -64,7 +64,7 @@ const LabTestRemarksEdit = () => {
               entityId: r.entityId,
               entityName: r.entityName,
               remarks: r.remarks || "",
-            }))
+            })),
           );
           setOptions(optionsList);
           setIsLoading(false);
@@ -92,7 +92,7 @@ const LabTestRemarksEdit = () => {
   const selectedKeys = new Set(
     rows
       .filter((r) => r.entityType && r.entityId)
-      .map((r) => `${r.entityType}:${r.entityId}`)
+      .map((r) => `${r.entityType}:${r.entityId}`),
   );
 
   const getAvailableOptions = (row) => {
@@ -135,21 +135,22 @@ const LabTestRemarksEdit = () => {
       prev.map((r) =>
         r.rowKey === rowKey
           ? {
-            ...r,
-            entityType: selectedItem.entityType,
-            entityId: selectedItem.entityId,
-            entityName: selectedItem.displayName.replace(/^\[(?:Test|Panel)\] /, ""),
-          }
-          : r
-      )
+              ...r,
+              entityType: selectedItem.entityType,
+              entityId: selectedItem.entityId,
+              entityName: selectedItem.displayName.replace(
+                /^\[(?:Test|Panel)\] /,
+                "",
+              ),
+            }
+          : r,
+      ),
     );
   };
 
   const updateRowRemarks = (rowKey, value) => {
     setRows((prev) =>
-      prev.map((r) =>
-        r.rowKey === rowKey ? { ...r, remarks: value } : r
-      )
+      prev.map((r) => (r.rowKey === rowKey ? { ...r, remarks: value } : r)),
     );
   };
 
@@ -176,7 +177,8 @@ const LabTestRemarksEdit = () => {
       addNotification({
         kind: NotificationKinds.error,
         title: intl.formatMessage({ id: "notification.title" }),
-        message: "Please select a Test or Panel for every row, or remove unassigned rows before saving.",
+        message:
+          "Please select a Test or Panel for every row, or remove unassigned rows before saving.",
       });
       return;
     }
@@ -226,7 +228,10 @@ const LabTestRemarksEdit = () => {
     );
   }
 
-  const pagedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pagedRows = rows.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
 
   return (
     <div className="adminPageContent">
@@ -250,7 +255,11 @@ const LabTestRemarksEdit = () => {
             disabled={isSaving}
             style={{ marginRight: "8px" }}
           >
-            {isSaving ? "Saving..." : <FormattedMessage id="admin.page.configuration.formEntryConfigMenu.button.save" />}
+            {isSaving ? (
+              "Saving..."
+            ) : (
+              <FormattedMessage id="admin.page.configuration.formEntryConfigMenu.button.save" />
+            )}
           </Button>
           <Button
             data-cy="lab-test-remarks-back"
@@ -318,11 +327,18 @@ const LabTestRemarksEdit = () => {
                   color: "#525252",
                 }}
               >
-                <div style={{ fontSize: "15px", fontWeight: 600, marginBottom: "4px" }}>
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    marginBottom: "4px",
+                  }}
+                >
                   No Lab Test Remarks Configured
                 </div>
                 <div style={{ fontSize: "13px", color: "#8d8d8d" }}>
-                  Click &quot;+ Add Row&quot; below to assign remarks to a test or panel.
+                  Click &quot;+ Add Row&quot; below to assign remarks to a test
+                  or panel.
                 </div>
               </div>
             ) : (
@@ -331,17 +347,20 @@ const LabTestRemarksEdit = () => {
                   const availableOpts = getAvailableOptions(row);
                   const selectedOpt = row.entityId
                     ? options.find(
-                      (o) =>
-                        o.entityType === row.entityType &&
-                        o.entityId === row.entityId
-                    ) || {
-                      entityType: row.entityType,
-                      entityId: row.entityId,
-                      displayName: row.entityName || `[Unknown ${row.entityType} (ID: ${row.entityId})]`,
-                    }
+                        (o) =>
+                          o.entityType === row.entityType &&
+                          o.entityId === row.entityId,
+                      ) || {
+                        entityType: row.entityType,
+                        entityId: row.entityId,
+                        displayName:
+                          row.entityName ||
+                          `[Unknown ${row.entityType} (ID: ${row.entityId})]`,
+                      }
                     : null;
 
-                  const isLimitExceeded = row.remarks && row.remarks.length >= 2000;
+                  const isLimitExceeded =
+                    row.remarks && row.remarks.length >= 2000;
                   const trueIdx = (currentPage - 1) * pageSize + idx;
 
                   return (
@@ -362,7 +381,9 @@ const LabTestRemarksEdit = () => {
                         <ComboBox
                           id={`combo-${row.rowKey}`}
                           items={availableOpts}
-                          itemToString={(item) => (item ? item.displayName : "")}
+                          itemToString={(item) =>
+                            item ? item.displayName : ""
+                          }
                           selectedItem={selectedOpt}
                           onChange={({ selectedItem }) =>
                             updateRowEntity(row.rowKey, selectedItem)
@@ -371,9 +392,17 @@ const LabTestRemarksEdit = () => {
                             if (!inputValue || !item) return true;
                             const search = inputValue.trim().toLowerCase();
                             if (search.length < 2) return true;
-                            const rawName = item.displayName ? item.displayName.toLowerCase() : "";
-                            const cleanName = rawName.replace(/^\[(?:test|panel)\]\s*/, "");
-                            return cleanName.includes(search) || rawName.includes(search);
+                            const rawName = item.displayName
+                              ? item.displayName.toLowerCase()
+                              : "";
+                            const cleanName = rawName.replace(
+                              /^\[(?:test|panel)\]\s*/,
+                              "",
+                            );
+                            return (
+                              cleanName.includes(search) ||
+                              rawName.includes(search)
+                            );
                           }}
                           placeholder="Search test or panel..."
                           titleText=""
@@ -477,8 +506,12 @@ const LabTestRemarksEdit = () => {
             <TextArea
               id={`remarks-expanded-${expandedRow.rowKey}`}
               labelText=""
-              value={rows.find((r) => r.rowKey === expandedRow.rowKey)?.remarks || ""}
-              onChange={(e) => updateRowRemarks(expandedRow.rowKey, e.target.value)}
+              value={
+                rows.find((r) => r.rowKey === expandedRow.rowKey)?.remarks || ""
+              }
+              onChange={(e) =>
+                updateRowRemarks(expandedRow.rowKey, e.target.value)
+              }
               onBlur={closeExpanded}
               autoFocus
               maxLength={2000}
@@ -486,7 +519,7 @@ const LabTestRemarksEdit = () => {
               style={{ width: "100%" }}
             />
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );

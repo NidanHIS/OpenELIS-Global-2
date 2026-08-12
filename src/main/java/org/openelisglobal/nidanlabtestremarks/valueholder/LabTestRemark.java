@@ -9,9 +9,9 @@ import jakarta.persistence.Table;
 import java.sql.Timestamp;
 
 /**
- * Entity for clinlims.lab_test_remarks.
- * Maps entity_type ('TEST' or 'PANEL'), entity_id, and remarks text.
- * Test and panel names are dynamically resolved via TestService/PanelService.
+ * Entity for clinlims.lab_test_remarks. Maps entity_type ('TEST' or 'PANEL'),
+ * entity_id, and remarks text. Test and panel names are dynamically resolved
+ * via TestService/PanelService.
  */
 @Entity
 @Table(schema = "clinlims", name = "lab_test_remarks")

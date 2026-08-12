@@ -25,18 +25,22 @@ import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.analysis.valueholder.Analysis;
+import org.openelisglobal.audittrail.valueholder.History;
 import org.openelisglobal.common.constants.Constants;
+import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.provider.validation.AccessionNumberValidatorFactory.AccessionFormat;
 import org.openelisglobal.common.provider.validation.AlphanumAccessionValidator;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService.AnalysisStatus;
 import org.openelisglobal.common.util.ConfigurationProperties;
 import org.openelisglobal.common.util.ConfigurationProperties.Property;
+import org.openelisglobal.history.service.HistoryService;
 import org.openelisglobal.image.service.ImageService;
 import org.openelisglobal.image.valueholder.Image;
 import org.openelisglobal.internationalization.MessageUtil;
 import org.openelisglobal.localization.service.LocalizationService;
 import org.openelisglobal.note.service.NoteService;
+import org.openelisglobal.referencetables.service.ReferenceTablesService;
 import org.openelisglobal.referral.valueholder.Referral;
 import org.openelisglobal.referral.valueholder.ReferralResult;
 import org.openelisglobal.reports.action.implementation.reportBeans.ClinicalPatientData;
@@ -45,14 +49,10 @@ import org.openelisglobal.sample.util.AccessionNumberUtil;
 import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.siteinformation.service.SiteInformationService;
 import org.openelisglobal.spring.util.SpringContext;
-import org.openelisglobal.test.service.TestServiceImpl;
-import org.openelisglobal.test.valueholder.Test;
-import org.openelisglobal.audittrail.valueholder.History;
-import org.openelisglobal.history.service.HistoryService;
-import org.openelisglobal.referencetables.service.ReferenceTablesService;
 import org.openelisglobal.systemuser.service.SystemUserService;
 import org.openelisglobal.systemuser.valueholder.SystemUser;
-import org.openelisglobal.common.log.LogEvent;
+import org.openelisglobal.test.service.TestServiceImpl;
+import org.openelisglobal.test.valueholder.Test;
 
 public class PatientCILNSPClinical_vreduit extends PatientReport implements IReportCreator, IReportParameterSetter {
 
@@ -214,10 +214,12 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
             for (Analysis analysis : analysisList) {
                 if (analysis != null && analysis.getId() != null && finalizedStatusId.equals(analysis.getStatusId())) {
-                    List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(), analysisTableId);
+                    List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(),
+                            analysisTableId);
                     if (historyList != null) {
                         for (History h : historyList) {
-                            if (h != null && h.getSysUserId() != null && h.getTimestamp() != null && h.getChanges() != null) {
+                            if (h != null && h.getSysUserId() != null && h.getTimestamp() != null
+                                    && h.getChanges() != null) {
                                 String changesXml = new String(h.getChanges());
                                 if (changesXml.contains("statusId") || changesXml.contains("status")) {
                                     if (latestHistory == null || h.getTimestamp().after(latestHistory.getTimestamp())) {
@@ -230,14 +232,18 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                 }
             }
 
-            // Fallback: If no status XML match was found but analysis is Finalized, get latest update history
+            // Fallback: If no status XML match was found but analysis is Finalized, get
+            // latest update history
             if (latestHistory == null) {
                 for (Analysis analysis : analysisList) {
-                    if (analysis != null && analysis.getId() != null && finalizedStatusId.equals(analysis.getStatusId())) {
-                        List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(), analysisTableId);
+                    if (analysis != null && analysis.getId() != null
+                            && finalizedStatusId.equals(analysis.getStatusId())) {
+                        List<History> historyList = historyService.getHistoryByRefIdAndRefTableId(analysis.getId(),
+                                analysisTableId);
                         if (historyList != null) {
                             for (History h : historyList) {
-                                if (h != null && h.getSysUserId() != null && h.getTimestamp() != null && "U".equals(h.getActivity())) {
+                                if (h != null && h.getSysUserId() != null && h.getTimestamp() != null
+                                        && "U".equals(h.getActivity())) {
                                     if (latestHistory == null || h.getTimestamp().after(latestHistory.getTimestamp())) {
                                         latestHistory = h;
                                     }
@@ -490,7 +496,8 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                     .setCorrectedResult(sampleCorrectedMap.get(reportItem.getAccessionNumber().split("_")[0]) != null);
         }
 
-        // Aggregate remarks per section so groupFooter on the last record reliably displays all section remarks
+        // Aggregate remarks per section so groupFooter on the last record reliably
+        // displays all section remarks
         java.util.Map<String, String> sectionRemarksMap = new java.util.LinkedHashMap<>();
         for (ClinicalPatientData item : reportItems) {
             String section = item.getTestSection();

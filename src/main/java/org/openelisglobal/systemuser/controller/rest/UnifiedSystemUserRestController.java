@@ -77,8 +77,8 @@ public class UnifiedSystemUserRestController extends BaseController {
     public static final char DEFAULT_OBFUSCATED_CHARACTER = '@';
 
     private static final String[] ALLOWED_FIELDS = new String[] { "systemUserId", "loginUserId", "userLoginName",
-            "userPassword", "confirmPassword", "userFirstName", "userLastName", "licenseNumber", "expirationDate", "timeout",
-            "accountLocked", "accountDisabled", "accountActive", "selectedRoles*", "selectedLabUnitRoles",
+            "userPassword", "confirmPassword", "userFirstName", "userLastName", "licenseNumber", "expirationDate",
+            "timeout", "accountLocked", "accountDisabled", "accountActive", "selectedRoles*", "selectedLabUnitRoles",
             "testSectionId", "systemUsers", "systemUserIdToCopy", "allowCopyUserRoles" };
 
     @Autowired
