@@ -130,7 +130,11 @@ public class PanelItemDAOImpl extends BaseDAOImpl<PanelItem, String> implements 
     public List<PanelItem> getPanelItemsForPanel(String panelId) throws LIMSRuntimeException {
         List<PanelItem> list;
         try {
-            String sql = "from PanelItem p where p.panel.id = :panelId";
+            // Ordered by sort_order so the panel's test sequence is stable and matches
+            // what the user arranged; id is the tie-break for legacy rows whose
+            // sort_order was never populated. sort_order is a numeric column, so this
+            // sorts numerically despite the String-typed property.
+            String sql = "from PanelItem p where p.panel.id = :panelId order by p.sortOrder nulls last, p.id";
             Query<PanelItem> query = entityManager.unwrap(Session.class).createQuery(sql, PanelItem.class);
             query.setParameter("panelId", Integer.parseInt(panelId));
 
