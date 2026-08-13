@@ -138,10 +138,15 @@ public class PanelItemServiceImpl extends AuditableBaseObjectServiceImpl<PanelIt
         deleteAll(panelItems);
 
         List<PanelItem> newPanelItems = new ArrayList<>();
+        // newTests arrives in the order the user arranged in the UI. Persist that
+        // order in sort_order rather than relying on insertion order, which nothing
+        // guarantees on read and which integrations (Odoo) cannot reconstruct.
+        int sortOrder = 1;
         for (Test test : newTests) {
             PanelItem panelItem = new PanelItem();
             panelItem.setPanel(panel);
             panelItem.setTest(test);
+            panelItem.setSortOrder(String.valueOf(sortOrder++));
             panelItem.setLastupdatedFields();
             panelItem.setSysUserId(currentUser);
             insert(panelItem);

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        panel_item.sort_order was never populated: updatePanelItems inserted
+        members without it, so every existing row is NULL and the panel's test
+        order survived only as incidental insertion order (id).
+
+        Freeze that incidental order into sort_order so it becomes explicit and
+        can be carried to integrations (Odoo). Only NULL rows are touched, so a
+        deliberate order set after this ships is never overwritten.
+    -->
+    <changeSet id="nidan-backfill-panel-item-sort-order" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.panel_item WHERE sort_order IS NOT NULL
+            </sqlCheck>
+        </preConditions>
+        <comment>Freeze existing panel member order (by id) into panel_item.sort_order</comment>
+        <sql>
+            UPDATE clinlims.panel_item pi
+            SET sort_order = ranked.rn
+            FROM (
+                SELECT id, ROW_NUMBER() OVER (PARTITION BY panel_id ORDER BY id) AS rn
+                FROM clinlims.panel_item
+            ) ranked
+            WHERE pi.id = ranked.id
+              AND pi.sort_order IS NULL
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
