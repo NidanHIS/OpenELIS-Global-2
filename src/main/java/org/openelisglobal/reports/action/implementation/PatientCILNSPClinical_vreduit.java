@@ -423,6 +423,14 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                     return sectionSort;
                 }
 
+                String s1Name = o1.getTestSection() != null ? o1.getTestSection() : "";
+                String s2Name = o2.getTestSection() != null ? o2.getTestSection() : "";
+                int sectionNameSort = s1Name.compareTo(s2Name);
+
+                if (sectionNameSort != 0) {
+                    return sectionNameSort;
+                }
+
                 int sampleTypeSort = o1.getSampleType().compareTo(o2.getSampleType());
 
                 if (sampleTypeSort != 0) {
@@ -433,6 +441,21 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
                 if (sampleIdSort != 0) {
                     return sampleIdSort;
+                }
+
+                // Group all tests belonging to the same panel together within a section.
+                // Without this, tests from the same panel can be split by tests from other
+                // panels that have intermediate test.sort_order values.
+                String p1Id = (o1.getPanel() != null && o1.getPanel().getId() != null) ? o1.getPanel().getId() : "";
+                String p2Id = (o2.getPanel() != null && o2.getPanel().getId() != null) ? o2.getPanel().getId() : "";
+                if (!p1Id.equals(p2Id)) {
+                    // Both are panel tests but different panels — sort by panel id to keep each
+                    // panel's tests continuous.
+                    if (!p1Id.isEmpty() && !p2Id.isEmpty()) {
+                        return p1Id.compareTo(p2Id);
+                    }
+                    // One is a panel test, the other is standalone — panel tests come first.
+                    return p1Id.isEmpty() ? 1 : -1;
                 }
 
                 if (o1.getParentResult() != null && o2.getParentResult() != null) {
@@ -469,6 +492,8 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
         //
         // reportItems = augmentedList;
 
+        reportItems = augmentPanelHeaderRows(reportItems);
+
         String currentPanelId = null;
         for (ClinicalPatientData reportItem : reportItems) {
             if (reportItem.getPanel() != null && !reportItem.getPanel().getId().equals(currentPanelId)) {
@@ -480,10 +505,14 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
             }
 
             int dividerIndex = reportItem.getAccessionNumber().lastIndexOf("-");
-            reportItem.setAccessionNumber(reportItem.getAccessionNumber().substring(0, dividerIndex));
-            reportItem.setCompleteFlag(MessageUtil
-                    .getMessage(sampleCompleteMap.get(reportItem.getAccessionNumber()) ? "report.status.complete"
-                            : "report.status.partial"));
+            if (dividerIndex != -1) {
+                reportItem.setAccessionNumber(reportItem.getAccessionNumber().substring(0, dividerIndex));
+            }
+            if (sampleCompleteMap.containsKey(reportItem.getAccessionNumber())) {
+                reportItem.setCompleteFlag(MessageUtil
+                        .getMessage(sampleCompleteMap.get(reportItem.getAccessionNumber()) ? "report.status.complete"
+                                : "report.status.partial"));
+            }
             if (reportItem.isCorrectedResult()) {
                 if (reportItem.getNote() != null && reportItem.getNote().length() > 0) {
                     reportItem.setNote(MessageUtil.getMessage("result.corrected") + "<br/>" + reportItem.getNote());
@@ -516,6 +545,88 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
             if (section != null && sectionRemarksMap.containsKey(section)) {
                 item.setLabTestRemark(sectionRemarksMap.get(section));
             }
+        }
+    }
+
+    private List<ClinicalPatientData> augmentPanelHeaderRows(List<ClinicalPatientData> originalItems) {
+        if (originalItems == null || originalItems.isEmpty()) {
+            return originalItems;
+        }
+        try {
+            List<ClinicalPatientData> augmented = new ArrayList<>(originalItems.size() + 4);
+            String currentPanelId = null;
+            String currentSection = null;
+
+            for (int i = 0; i < originalItems.size(); i++) {
+                ClinicalPatientData item = originalItems.get(i);
+                String itemSection = item.getTestSection();
+
+                // Reset panel tracker if section changes
+                if (currentSection == null || !currentSection.equals(itemSection)) {
+                    currentSection = itemSection;
+                    currentPanelId = null;
+                }
+
+                // Check if entering a new panel
+                if (item.getPanel() != null && item.getPanel().getId() != null) {
+                    String panelId = item.getPanel().getId();
+                    if (!panelId.equals(currentPanelId)) {
+                        currentPanelId = panelId;
+
+                        // Insert Panel Header Row
+                        ClinicalPatientData headerMarker = new ClinicalPatientData(item);
+                        String panelName = item.getPanelName();
+                        if (GenericValidator.isBlankOrNull(panelName) && item.getPanel() != null) {
+                            panelName = item.getPanel().getPanelName();
+                        }
+                        if (GenericValidator.isBlankOrNull(panelName)) {
+                            panelName = "Panel";
+                        }
+
+                        headerMarker.setTestName("<b>" + panelName.trim() + " (Panel)</b>");
+                        headerMarker.setResult(null);
+                        headerMarker.setTestRefRange(null);
+                        headerMarker.setUom(null);
+                        headerMarker.setAlerts(null);
+                        headerMarker.setLabTestRemark("");
+                        headerMarker.setParentMarker(true);
+                        augmented.add(headerMarker);
+                    }
+                }
+
+                // Add the test item
+                augmented.add(item);
+
+                // Check if exiting a panel (next item has a different panel or no panel, or end
+                // of section)
+                if (currentPanelId != null) {
+                    boolean isLastInSection = (i == originalItems.size() - 1)
+                            || !currentSection.equals(originalItems.get(i + 1).getTestSection());
+                    boolean isLastInPanel = isLastInSection || originalItems.get(i + 1).getPanel() == null
+                            || !currentPanelId.equals(originalItems.get(i + 1).getPanel().getId());
+
+                    if (isLastInPanel) {
+                        currentPanelId = null;
+
+                        // Insert Trailing Spacer Line if not at section boundary
+                        if (!isLastInSection) {
+                            ClinicalPatientData spacerMarker = new ClinicalPatientData(item);
+                            spacerMarker.setTestName("");
+                            spacerMarker.setResult(null);
+                            spacerMarker.setTestRefRange(null);
+                            spacerMarker.setUom(null);
+                            spacerMarker.setAlerts(null);
+                            spacerMarker.setLabTestRemark("");
+                            spacerMarker.setParentMarker(false);
+                            augmented.add(spacerMarker);
+                        }
+                    }
+                }
+            }
+            return augmented;
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "augmentPanelHeaderRows", e.getMessage());
+            return originalItems;
         }
     }
 
