@@ -1,4 +1,5 @@
 {
+  "user.designation": "Designation",
   "accept.action.button": "Accept",
   "accessDenied.message": "You do not have access to this module ,please contact your system administrator",
   "accessDenied.okButton": "OK",

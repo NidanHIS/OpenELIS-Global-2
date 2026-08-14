@@ -46,6 +46,8 @@ public class UnifiedSystemUserForm extends BaseForm {
 
     private String licenseNumber = "";
 
+    private String designation = "";
+
     // for display
     private List<DisplayRole> globalRoles;
 
@@ -179,6 +181,14 @@ public class UnifiedSystemUserForm extends BaseForm {
 
     public void setLicenseNumber(String licenseNumber) {
         this.licenseNumber = licenseNumber;
+    }
+
+    public String getDesignation() {
+        return designation;
+    }
+
+    public void setDesignation(String designation) {
+        this.designation = designation;
     }
 
     public List<DisplayRole> getGlobalRoles() {

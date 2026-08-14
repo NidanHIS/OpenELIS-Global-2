@@ -145,7 +145,24 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
         List<Analysis> filteredAnalysisList = userService.filterAnalysesByLabUnitRoles(systemUserId, analysisList,
                 Constants.ROLE_REPORTS);
-        reportParameters.put("verifierName", fetchLatestVerifierName(filteredAnalysisList));
+        SystemUser verifierUser = fetchLatestVerifierUser(filteredAnalysisList);
+        if (verifierUser != null) {
+            String firstName = verifierUser.getFirstName() != null ? verifierUser.getFirstName().trim() : "";
+            String lastName = verifierUser.getLastName() != null ? verifierUser.getLastName().trim() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            if (fullName.isEmpty()) {
+                fullName = verifierUser.getLoginName() != null ? verifierUser.getLoginName().trim() : "";
+            }
+            reportParameters.put("verifierName", fullName);
+            reportParameters.put("verifierDesignation",
+                    verifierUser.getDesignation() != null ? verifierUser.getDesignation().trim() : "");
+            reportParameters.put("verifierLicenseNumber",
+                    verifierUser.getLicenseNumber() != null ? verifierUser.getLicenseNumber().trim() : "");
+        } else {
+            reportParameters.put("verifierName", "");
+            reportParameters.put("verifierDesignation", "");
+            reportParameters.put("verifierLicenseNumber", "");
+        }
         List<ClinicalPatientData> currentSampleReportItems = new ArrayList<>(filteredAnalysisList.size());
         currentConclusion = null;
         for (Analysis analysis : filteredAnalysisList) {
@@ -185,9 +202,9 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
         setCollectionTime(sampleSet, currentSampleReportItems, true);
     }
 
-    private String fetchLatestVerifierName(List<Analysis> analysisList) {
+    private SystemUser fetchLatestVerifierUser(List<Analysis> analysisList) {
         if (analysisList == null || analysisList.isEmpty()) {
-            return "";
+            return null;
         }
         try {
             IStatusService statusService = SpringContext.getBean(IStatusService.class);
@@ -202,7 +219,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                 }
             }
             if (!hasFinalized) {
-                return ""; // Unverified sample -> return blank
+                return null; // Unverified sample -> return null
             }
 
             ReferenceTablesService referenceTablesService = SpringContext.getBean(ReferenceTablesService.class);
@@ -255,25 +272,12 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
             }
 
             if (latestHistory != null && latestHistory.getSysUserId() != null) {
-                SystemUser user = systemUserService.getUserById(latestHistory.getSysUserId());
-                if (user != null) {
-                    String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
-                    String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
-                    String fullName = (firstName + " " + lastName).trim();
-                    if (fullName.isEmpty()) {
-                        fullName = user.getLoginName() != null ? user.getLoginName().trim() : "";
-                    }
-                    String licenseNumber = user.getLicenseNumber() != null ? user.getLicenseNumber().trim() : "";
-                    if (!licenseNumber.isEmpty() && !fullName.isEmpty()) {
-                        fullName += " (NPHC: " + licenseNumber + ")";
-                    }
-                    return fullName;
-                }
+                return systemUserService.getUserById(latestHistory.getSysUserId());
             }
         } catch (Exception e) {
-            LogEvent.logError(this.getClass().getSimpleName(), "fetchLatestVerifierName", e.getMessage());
+            LogEvent.logError(this.getClass().getSimpleName(), "fetchLatestVerifierUser", e.getMessage());
         }
-        return "";
+        return null;
     }
 
     @Override

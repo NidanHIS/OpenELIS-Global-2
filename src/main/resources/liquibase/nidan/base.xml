@@ -24,5 +24,6 @@
   <include relativeToChangelogFile="true" file="add-separate-department-pages-config.xml"/>
   <include relativeToChangelogFile="true" file="add-lab-test-remarks.xml"/>
   <include relativeToChangelogFile="true" file="add-license-number-to-system-user.xml"/>
+  <include relativeToChangelogFile="true" file="add-designation-to-system-user.xml"/>
   <include relativeToChangelogFile="true" file="backfill-panel-item-sort-order.xml"/>
 </databaseChangeLog>
