@@ -829,6 +829,10 @@ public class TestResultItem implements ResultItem, Serializable {
         return getAccessionNumber() + "-" + getSequenceNumber();
     }
 
+    private String panelId;
+    private String panelName;
+    private int panelSortOrder = 999999;
+
     @Override
     public String getTestSortOrder() {
         return testSortOrder;
@@ -836,6 +840,34 @@ public class TestResultItem implements ResultItem, Serializable {
 
     public void setTestSortOrder(String testSortOrder) {
         this.testSortOrder = testSortOrder;
+    }
+
+    @Override
+    public String getPanelId() {
+        return panelId;
+    }
+
+    @Override
+    public void setPanelId(String panelId) {
+        this.panelId = panelId;
+    }
+
+    public String getPanelName() {
+        return panelName;
+    }
+
+    public void setPanelName(String panelName) {
+        this.panelName = panelName;
+    }
+
+    @Override
+    public int getPanelSortOrder() {
+        return panelSortOrder;
+    }
+
+    @Override
+    public void setPanelSortOrder(int panelSortOrder) {
+        this.panelSortOrder = panelSortOrder;
     }
 
     public int getReflexParentGroup() {

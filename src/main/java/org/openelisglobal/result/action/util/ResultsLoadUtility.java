@@ -57,6 +57,9 @@ import org.openelisglobal.note.service.NoteServiceImpl.NoteType;
 import org.openelisglobal.observationhistory.service.ObservationHistoryService;
 import org.openelisglobal.observationhistory.valueholder.ObservationHistory;
 import org.openelisglobal.observationhistory.valueholder.ObservationHistory.ValueType;
+import org.openelisglobal.panel.valueholder.Panel;
+import org.openelisglobal.panelitem.service.PanelItemService;
+import org.openelisglobal.panelitem.valueholder.PanelItem;
 import org.openelisglobal.patient.form.PatientInfoForm;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.util.PatientUtil;
@@ -157,6 +160,8 @@ public class ResultsLoadUtility {
     private TestResultService testResultService;
     @Autowired
     private SampleEQAService sampleEQAService;
+    @Autowired
+    private PanelItemService panelItemService;
 
     private final StatusRules statusRules = new StatusRules();
 
@@ -346,6 +351,26 @@ public class ResultsLoadUtility {
                 int accessionSort = b.getSequenceAccessionNumber().compareTo(a.getSequenceAccessionNumber());
 
                 if (accessionSort == 0) { // only the accession number sorting is reversed
+                    int panelOrderCompare = Integer.compare(a.getPanelSortOrder(), b.getPanelSortOrder());
+                    if (panelOrderCompare != 0) {
+                        return panelOrderCompare;
+                    }
+
+                    if (!GenericValidator.isBlankOrNull(a.getPanelId())
+                            && !GenericValidator.isBlankOrNull(b.getPanelId())) {
+                        try {
+                            int panelIdCompare = Integer.parseInt(a.getPanelId()) - Integer.parseInt(b.getPanelId());
+                            if (panelIdCompare != 0) {
+                                return panelIdCompare;
+                            }
+                        } catch (NumberFormatException e) {
+                            int panelIdCompare = a.getPanelId().compareTo(b.getPanelId());
+                            if (panelIdCompare != 0) {
+                                return panelIdCompare;
+                            }
+                        }
+                    }
+
                     if (!GenericValidator.isBlankOrNull(a.getTestSortOrder())
                             && !GenericValidator.isBlankOrNull(b.getTestSortOrder())) {
                         try {
@@ -371,6 +396,26 @@ public class ResultsLoadUtility {
                 int accessionSort = a.getSequenceAccessionNumber().compareTo(b.getSequenceAccessionNumber());
 
                 if (accessionSort == 0) {
+                    int panelOrderCompare = Integer.compare(a.getPanelSortOrder(), b.getPanelSortOrder());
+                    if (panelOrderCompare != 0) {
+                        return panelOrderCompare;
+                    }
+
+                    if (!GenericValidator.isBlankOrNull(a.getPanelId())
+                            && !GenericValidator.isBlankOrNull(b.getPanelId())) {
+                        try {
+                            int panelIdCompare = Integer.parseInt(a.getPanelId()) - Integer.parseInt(b.getPanelId());
+                            if (panelIdCompare != 0) {
+                                return panelIdCompare;
+                            }
+                        } catch (NumberFormatException e) {
+                            int panelIdCompare = a.getPanelId().compareTo(b.getPanelId());
+                            if (panelIdCompare != 0) {
+                                return panelIdCompare;
+                            }
+                        }
+                    }
+
                     if (!GenericValidator.isBlankOrNull(a.getTestSortOrder())
                             && !GenericValidator.isBlankOrNull(b.getTestSortOrder())) {
                         try {
@@ -775,7 +820,39 @@ public class ResultsLoadUtility {
         testItem.setReferralCanceled(referralCanceled);
         testItem.setInitialSampleCondition(initialSampleConditions);
         testItem.setSampleType(sampleType);
-        testItem.setTestSortOrder(testService.getSortOrder(test));
+        // Use panel_item.sort_order when this analysis belongs to a panel so that
+        // the result-entry page respects the admin-configured test sequence.
+        // Every failure path falls back to test.getSortOrder() — no regression.
+        String resolvedSortOrder = testService.getSortOrder(test);
+        try {
+            Panel analysisPanel = analysis.getPanel();
+            if (analysisPanel != null && !GenericValidator.isBlankOrNull(analysisPanel.getId())) {
+                testItem.setPanelId(analysisPanel.getId());
+                testItem.setPanelName(analysisPanel.getPanelName());
+                int pSort = analysisPanel.getSortOrderInt();
+                if (pSort > 0 && pSort < Integer.MAX_VALUE) {
+                    testItem.setPanelSortOrder(pSort);
+                } else {
+                    try {
+                        testItem.setPanelSortOrder(Integer.parseInt(analysisPanel.getId()));
+                    } catch (Exception ignored) {
+                        testItem.setPanelSortOrder(999999);
+                    }
+                }
+                List<PanelItem> panelItems = panelItemService.getPanelItemsForPanelAndItemList(analysisPanel.getId(),
+                        java.util.List.of(Integer.parseInt(test.getId())));
+                if (panelItems != null && !panelItems.isEmpty()
+                        && !GenericValidator.isBlankOrNull(panelItems.get(0).getSortOrder())) {
+                    resolvedSortOrder = panelItems.get(0).getSortOrder();
+                }
+            }
+        } catch (Exception e) {
+            // Swallow: fall back to test-level sort order. Never break result entry.
+            LogEvent.logWarn(this.getClass().getSimpleName(), "createTestResultItem",
+                    "panel_item.sort_order lookup failed for analysis " + analysis.getId() + ", test " + test.getId()
+                            + ": " + e.getMessage());
+        }
+        testItem.setTestSortOrder(resolvedSortOrder);
         testItem.setFailedValidation(statusRules.hasFailedValidation(analysisService.getStatusId(analysis)));
         if (useCurrentUserAsTechDefault && GenericValidator.isBlankOrNull(testItem.getTechnician())) {
             testItem.setTechnician(currentUserName);

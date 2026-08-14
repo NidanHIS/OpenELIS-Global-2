@@ -43,4 +43,12 @@ public interface ResultItem {
     public String getTestSortOrder();
 
     public String getTestName();
+
+    public String getPanelId();
+
+    public void setPanelId(String panelId);
+
+    public int getPanelSortOrder();
+
+    public void setPanelSortOrder(int panelSortOrder);
 }
