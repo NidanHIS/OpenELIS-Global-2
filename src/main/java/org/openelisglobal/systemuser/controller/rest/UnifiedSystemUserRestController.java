@@ -77,9 +77,9 @@ public class UnifiedSystemUserRestController extends BaseController {
     public static final char DEFAULT_OBFUSCATED_CHARACTER = '@';
 
     private static final String[] ALLOWED_FIELDS = new String[] { "systemUserId", "loginUserId", "userLoginName",
-            "userPassword", "confirmPassword", "userFirstName", "userLastName", "licenseNumber", "expirationDate",
-            "timeout", "accountLocked", "accountDisabled", "accountActive", "selectedRoles*", "selectedLabUnitRoles",
-            "testSectionId", "systemUsers", "systemUserIdToCopy", "allowCopyUserRoles" };
+            "userPassword", "confirmPassword", "userFirstName", "userLastName", "licenseNumber", "designation",
+            "expirationDate", "timeout", "accountLocked", "accountDisabled", "accountActive", "selectedRoles*",
+            "selectedLabUnitRoles", "testSectionId", "systemUsers", "systemUserIdToCopy", "allowCopyUserRoles" };
 
     @Autowired
     private UnifiedSystemUserFormValidator formValidator;
@@ -380,6 +380,7 @@ public class UnifiedSystemUserRestController extends BaseController {
             form.setUserFirstName(systemUser.getFirstName());
             form.setUserLastName(systemUser.getLastName());
             form.setLicenseNumber(systemUser.getLicenseNumber() != null ? systemUser.getLicenseNumber() : "");
+            form.setDesignation(systemUser.getDesignation() != null ? systemUser.getDesignation() : "");
             form.setAccountActive(systemUser.getIsActive());
             form.setSystemUserLastupdated(systemUser.getLastupdated());
 
@@ -663,6 +664,7 @@ public class UnifiedSystemUserRestController extends BaseController {
         systemUser.setFirstName(form.getUserFirstName());
         systemUser.setLastName(form.getUserLastName());
         systemUser.setLicenseNumber(form.getLicenseNumber() != null ? form.getLicenseNumber().trim() : null);
+        systemUser.setDesignation(form.getDesignation() != null ? form.getDesignation().trim() : null);
         systemUser.setLoginName(form.getUserLoginName());
         systemUser.setIsActive(form.getAccountActive());
         systemUser.setIsEmployee("Y");

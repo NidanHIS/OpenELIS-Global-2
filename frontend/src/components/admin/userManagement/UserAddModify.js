@@ -186,6 +186,7 @@ function UserAddModify() {
         formAction: userData.formAction,
         formMethod: userData.formMethod,
         formName: userData.formName,
+        designation: userData.designation || "",
         licenseNumber: userData.licenseNumber || "",
         loginUserId: userData.loginUserId,
         selectedRoles: userData.selectedRoles,
@@ -208,6 +209,7 @@ function UserAddModify() {
         cancelAction: userData.cancelAction,
         cancelMethod: userData.cancelMethod,
         confirmPassword: userData.confirmPassword,
+        designation: userData.designation || "",
         expirationDate: userData.expirationDate,
         formAction: userData.formAction,
         formMethod: userData.formMethod,
@@ -601,6 +603,19 @@ function UserAddModify() {
     setUserDataShow((prevUserData) => ({
       ...prevUserData,
       licenseNumber: value,
+    }));
+  }
+
+  function handleDesignationChange(e) {
+    const value = e.target.value;
+    setSaveButton(false);
+    setUserDataPost((prevUserDataPost) => ({
+      ...prevUserDataPost,
+      designation: value,
+    }));
+    setUserDataShow((prevUserData) => ({
+      ...prevUserData,
+      designation: value,
     }));
   }
 
@@ -1080,6 +1095,28 @@ function UserAddModify() {
                           : ""
                       }
                       onChange={(e) => handleLicenseNumberChange(e)}
+                    />
+                  </Column>
+                </Grid>
+                <br />
+                <Grid fullWidth={true}>
+                  <Column lg={8} md={4} sm={4}>
+                    <>Designation :</>
+                  </Column>
+                  <Column lg={8} md={4} sm={4}>
+                    <TextInput
+                      id="user-designation"
+                      className="defalut"
+                      type="text"
+                      labelText=""
+                      placeholder="Designation"
+                      maxLength={255}
+                      value={
+                        userDataShow && userDataShow.designation
+                          ? userDataShow.designation
+                          : ""
+                      }
+                      onChange={(e) => handleDesignationChange(e)}
                     />
                   </Column>
                 </Grid>
