@@ -7,6 +7,7 @@ const OrderEntryValidationSchema = Yup.object().shape({
   sampleOrderItems: Yup.object()
     .shape({
       labNo: Yup.string().required("Sample Lab Number is required"),
+      sampleNumber: Yup.string().required("Sample Number is required"),
       referringSiteName: Yup.string(),
       referringSiteId: Yup.string(),
       providerLastName: Yup.string().required(

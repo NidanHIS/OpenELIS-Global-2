@@ -203,6 +203,29 @@ const AddOrder = (props) => {
     );
   };
 
+  const handleSampleNoGeneration = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+    getFromOpenElisServer(
+      "/rest/SampleEntryGenerateScanProvider?format=DAILY_SAMPLE_NUMBER",
+      fetchGeneratedSampleNo,
+    );
+  };
+
+  function fetchGeneratedSampleNo(res) {
+    if (res.status) {
+      setOrderFormValues((prev) => ({
+        ...prev,
+        sampleOrderItems: {
+          ...prev.sampleOrderItems,
+          sampleNumber: res.body,
+        },
+      }));
+      setNotificationVisible(false);
+    }
+  }
+
   function accessionNumberValidationResults(res) {
     if (res.status === false) {
       setNotificationVisible(true);
@@ -331,6 +354,29 @@ const AddOrder = (props) => {
     if (value) {
       getFromOpenElisServer(
         "/rest/SampleEntryAccessionNumberValidation?ignoreYear=false&ignoreUsage=false&field=labNo&accessionNumber=" +
+          value,
+        accessionNumberValidationResults,
+      );
+    }
+  };
+
+  function handleSampleNo(e) {
+    const value = e?.target?.value;
+    setOrderFormValues({
+      ...orderFormValues,
+      sampleOrderItems: {
+        ...orderFormValues.sampleOrderItems,
+        sampleNumber: value,
+      },
+    });
+    handleSampleNoValidationOnChange(value);
+    setNotificationVisible(false);
+  }
+
+  const handleSampleNoValidationOnChange = (value) => {
+    if (value) {
+      getFromOpenElisServer(
+        "/rest/SampleEntryAccessionNumberValidation?ignoreYear=false&ignoreUsage=false&field=sampleNumber&format=DAILY_SAMPLE_NUMBER&accessionNumber=" +
           value,
         accessionNumberValidationResults,
       );
@@ -530,6 +576,30 @@ const AddOrder = (props) => {
                 </div>
               </div>
             </Column>
+
+            <Column lg={8} md={4} sm={4}>
+              <div>
+                <TextInput
+                  id="sampleNumber"
+                  name="sampleNumber"
+                  labelText="Sample Number"
+                  placeholder="Auto-generated e.g. 1408-0001"
+                  value={orderFormValues.sampleOrderItems.sampleNumber || ""}
+                  onChange={handleSampleNo}
+                />
+                <div>
+                  <FormattedMessage id="label.order.scan.text" />{" "}
+                  <Link
+                    data-cy="generate-sampleNumber"
+                    href="#"
+                    onClick={(e) => handleSampleNoGeneration(e)}
+                  >
+                    <FormattedMessage id="sample.label.labnumber.generate" />
+                  </Link>
+                </div>
+              </div>
+            </Column>
+
             <Column lg={8} md={4} sm={4}>
               <Select
                 id="priorityId"

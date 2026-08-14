@@ -224,6 +224,11 @@ const Validation = (props) => {
               {formatLabNum
                 ? convertAlphaNumLabNumForDisplay(row.accessionNumber)
                 : row.accessionNumber}
+              {row.sampleNumber && (
+                <div style={{ marginTop: "4px", fontSize: "0.85rem", fontWeight: "bold", color: "#0f62fe" }}>
+                  Sample Number: {row.sampleNumber}
+                </div>
+              )}
               <br></br>
               <br></br>
             </div>

@@ -1149,6 +1149,11 @@ export function SearchResults(props) {
                 : row.accessionNumber) +
                 "-" +
                 row.sequenceNumber}
+              {row.sampleNumber && (
+                <div style={{ marginTop: "4px", fontSize: "0.85rem", fontWeight: "bold", color: "#0f62fe" }}>
+                  Sample Number: {row.sampleNumber}
+                </div>
+              )}
               {row.isEqaSample && <EQABadge priority={row.eqaPriority} />}
               <br></br>
               {row.patientName} <br></br>
