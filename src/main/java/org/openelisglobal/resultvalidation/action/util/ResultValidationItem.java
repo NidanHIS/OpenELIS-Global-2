@@ -374,9 +374,32 @@ public class ResultValidationItem implements ResultItem, Serializable {
         return getAccessionNumber() + "-" + getSequenceNumber();
     }
 
+    private String panelId;
+    private int panelSortOrder = 999999;
+
     @Override
     public String getTestSortOrder() {
         return null;
+    }
+
+    @Override
+    public String getPanelId() {
+        return panelId;
+    }
+
+    @Override
+    public void setPanelId(String panelId) {
+        this.panelId = panelId;
+    }
+
+    @Override
+    public int getPanelSortOrder() {
+        return panelSortOrder;
+    }
+
+    @Override
+    public void setPanelSortOrder(int panelSortOrder) {
+        this.panelSortOrder = panelSortOrder;
     }
 
     public boolean isReflexGroup() {
