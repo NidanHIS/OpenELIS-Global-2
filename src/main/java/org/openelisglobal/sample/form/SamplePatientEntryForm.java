@@ -79,6 +79,8 @@ public class SamplePatientEntryForm extends BaseForm {
     @Valid
     private SampleOrderItem sampleOrderItems;
 
+    private String sampleNumber;
+
     // for display
     private List<IdValuePair> initialSampleConditionList;
 
@@ -316,5 +318,13 @@ public class SamplePatientEntryForm extends BaseForm {
 
     public void setPostSavePrintDialog(PostSavePrintDialogForm postSavePrintDialog) {
         this.postSavePrintDialog = postSavePrintDialog;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 }

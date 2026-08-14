@@ -27,6 +27,7 @@ public class ResultValidationItem implements ResultItem, Serializable {
 
     private static final long serialVersionUID = 1L;
     private String accessionNumber;
+    private String sampleNumber;
     private String sequenceNumber;
     private boolean showSampleDetails = true;
     /*
@@ -94,6 +95,14 @@ public class ResultValidationItem implements ResultItem, Serializable {
     @Override
     public void setAccessionNumber(String accessionNumber) {
         this.accessionNumber = accessionNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     @Override

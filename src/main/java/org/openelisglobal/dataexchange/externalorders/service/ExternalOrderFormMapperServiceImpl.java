@@ -149,6 +149,11 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             form.getSampleOrderItems().setLabNo(generateAccessionNumber());
         }
 
+        if (form.getSampleOrderItems().getSampleNumber() == null
+                || form.getSampleOrderItems().getSampleNumber().trim().isEmpty()) {
+            form.getSampleOrderItems().setSampleNumber(generateSampleNumber());
+        }
+
         ExternalOrderXmlBuilder xmlBuilder = new ExternalOrderXmlBuilder();
         List<ExternalOrderRequest.ExternalOrderSample> originalSamples = externalOrderRequest.getSamples();
 
@@ -429,6 +434,18 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             attempts++;
         }
         throw new IllegalStateException("Unable to generate accession number");
+    }
+
+    private String generateSampleNumber() {
+        try {
+            org.openelisglobal.common.provider.validation.DailySampleNumberValidator validator = org.openelisglobal.spring.util.SpringContext
+                    .getBean(org.openelisglobal.common.provider.validation.DailySampleNumberValidator.class);
+            return validator.getNextAccessionNumber(null, true);
+        } catch (Exception e) {
+            org.openelisglobal.common.log.LogEvent.logError(this.getClass().getSimpleName(), "generateSampleNumber",
+                    e.toString());
+            return null;
+        }
     }
 
     private String toUiDate(String date) {

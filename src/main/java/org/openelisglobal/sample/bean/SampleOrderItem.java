@@ -64,6 +64,8 @@ public class SampleOrderItem implements Serializable {
             SampleEditForm.SampleEdit.class })
     private String labNo;
 
+    private String sampleNumber;
+
     @OptionalNotBlank(formFields = { Field.SampleEntryUseRequestDate }, groups = {
             SamplePatientEntryForm.SamplePatientEntry.class, SampleEditForm.SampleEdit.class })
     @ValidDate(relative = DateRelation.PAST, groups = { SamplePatientEntryForm.SamplePatientEntry.class,
@@ -251,6 +253,14 @@ public class SampleOrderItem implements Serializable {
 
     public void setNewRequesterName(String newRequesterName) {
         this.newRequesterName = newRequesterName;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     public Collection getOrderTypes() {

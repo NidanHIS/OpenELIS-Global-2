@@ -76,6 +76,12 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
      */
     private String nidanVisitType;
 
+    /**
+     * Daily auto-incrementing sample identifier (formatted DDMM-XXXX, e.g.
+     * 1408-0001). Resets automatically per day.
+     */
+    private String sampleNumber;
+
     // testing one-to-many
     // this is for HSE I and II - ability to enter up to two projects
     private List sampleProjects;
@@ -488,5 +494,13 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
 
     public void setNidanVisitType(String nidanVisitType) {
         this.nidanVisitType = nidanVisitType;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 }

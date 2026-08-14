@@ -266,6 +266,35 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
         return sample;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Sample getSampleBySampleNumber(String sampleNumber) throws LIMSRuntimeException {
+        Sample sample = null;
+        try {
+            if (sampleNumber != null && sampleNumber.contains(".")) {
+                sampleNumber = sampleNumber.substring(0, sampleNumber.indexOf('.'));
+            }
+            if (sampleNumber != null && sampleNumber.contains("-")) {
+                String[] parts = sampleNumber.split("-");
+                if (parts.length > 2) {
+                    sampleNumber = parts[0] + "-" + parts[1];
+                }
+            }
+            String sql = "from Sample s where sampleNumber = :param order by enteredDate desc";
+            Query<Sample> query = entityManager.unwrap(Session.class).createQuery(sql, Sample.class);
+
+            query.setParameter("param", sampleNumber);
+            List<Sample> list = query.list();
+            if ((list != null) && !list.isEmpty()) {
+                sample = list.get(0);
+            }
+        } catch (RuntimeException e) {
+            LogEvent.logError(e);
+            throw new LIMSRuntimeException("Exception occurred in getSampleBySampleNumber", e);
+        }
+        return sample;
+    }
+
     /**
      * Get unassigned Sample by accession number - only returns sample if it has an
      * unassigned referral (not assigned to a shipping box, not lost, not canceled)

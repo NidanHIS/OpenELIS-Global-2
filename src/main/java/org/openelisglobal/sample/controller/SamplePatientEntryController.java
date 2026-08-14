@@ -250,6 +250,7 @@ public class SamplePatientEntryController extends BaseSampleEntryController {
         testAndInitializePatientForSaving(request, patientInfo, patientUpdate, updateData);
 
         updateData.setAccessionNumber(sampleOrder.getLabNo());
+        updateData.setSampleNumber(sampleOrder.getSampleNumber());
         updateData.setReferringId(sampleOrder.getExternalOrderNumber());
         updateData.setPriority(sampleOrder.getPriority());
         updateData.initProvider(sampleOrder);

@@ -72,6 +72,7 @@ public class SamplePatientUpdateData {
     private Provider provider;
     private String patientId;
     private String accessionNumber;
+    private String sampleNumber;
     private String referringId;
     private OrderPriority priority;
 
@@ -158,6 +159,14 @@ public class SamplePatientUpdateData {
 
     public void setAccessionNumber(String accessionNumber) {
         this.accessionNumber = accessionNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     public String getReferringId() {
@@ -328,6 +337,7 @@ public class SamplePatientUpdateData {
         sample = new Sample();
         sample.setSysUserId(currentUserId);
         sample.setAccessionNumber(accessionNumber);
+        sample.setSampleNumber(sampleNumber);
         sample.setReferringId(referringId);
 
         LogEvent.logInfo(this.getClass().getSimpleName(), "createPopulatedSample",

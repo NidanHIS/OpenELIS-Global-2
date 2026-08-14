@@ -56,6 +56,10 @@ public interface SampleService extends BaseObjectService<Sample, String> {
 
     Sample getSampleByAccessionNumber(String accessionNumber);
 
+    Sample getSampleBySampleNumber(String sampleNumber);
+
+    String generateSampleNumber(Sample sample);
+
     Sample getUnassignedSampleByAccessionNumber(String accessionNumber);
 
     List<Sample> getPageOfSamples(int startingRecNo);

@@ -26,7 +26,7 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
 
     public enum AccessionFormat {
         MAIN, GENERAL, SITEYEARNUM, PROGRAMNUM, YEARNUM_SIX, YEARNUM_DASH_SEVEN, YEARNUM_SEVEN, UNFORMATTED, ALT_YEAR,
-        ALPHANUM
+        ALPHANUM, DAILY_SAMPLE_NUMBER
     }
 
     private AccessionFormat mainAccessionFormat;
@@ -107,6 +107,8 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
             return getYearNumValidator(7, null);
         case ALT_YEAR:
             return getAltYearValidator();
+        case DAILY_SAMPLE_NUMBER:
+            return getDailySampleNumberValidator();
         default:
             throw new LIMSInvalidConfigurationException(
                     "AccessionNumberValidatorFactory: Unable to find validator for " + accessionFormat);
@@ -136,6 +138,8 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
             return getYearNumValidator(7, null);
         case ALT_YEAR:
             return getAltYearValidator();
+        case DAILY_SAMPLE_NUMBER:
+            return getDailySampleNumberValidator();
         case GENERAL:
             throw new LIMSInvalidConfigurationException(
                     "AccessionNumberValidatorFactory: ALL_ACTIVE unable to be used as a generator ");
@@ -172,6 +176,10 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
 
     private IAccessionNumberGenerator getProgramValidator() {
         return new ProgramAccessionValidator();
+    }
+
+    private IAccessionNumberGenerator getDailySampleNumberValidator() {
+        return new DailySampleNumberValidator();
     }
 
     @Override

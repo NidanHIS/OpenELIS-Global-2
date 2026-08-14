@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="nidan-sample-add-sample-number-001" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists schemaName="clinlims" tableName="sample" columnName="sample_number"/>
+            </not>
+        </preConditions>
+
+        <addColumn schemaName="clinlims" tableName="sample">
+            <column name="sample_number" type="VARCHAR(20)"/>
+        </addColumn>
+
+        <createIndex schemaName="clinlims" tableName="sample" indexName="idx_sample_entered_date_sample_number">
+            <column name="entered_date"/>
+            <column name="sample_number"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -779,6 +779,9 @@ public class ResultsLoadUtility {
         TestResultItem testItem = new TestResultItem();
 
         testItem.setAccessionNumber(accessionNumber);
+        if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
+            testItem.setSampleNumber(analysis.getSampleItem().getSample().getSampleNumber());
+        }
         testItem.setAnalysisId(analysis.getId());
         // Set SampleItem ID for storage location lookup
         if (analysis.getSampleItem() != null && analysis.getSampleItem().getId() != null) {

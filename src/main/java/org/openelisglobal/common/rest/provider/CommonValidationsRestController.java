@@ -55,6 +55,15 @@ public class CommonValidationsRestController {
         boolean parseForProjectFormName = "true".equalsIgnoreCase(request.getParameter("parseForProjectFormName"));
         boolean ignoreYear = "true".equals(request.getParameter("ignoreYear"));
         boolean ignoreUsage = "true".equals(request.getParameter("ignoreUsage"));
+        String formatStr = request.getParameter("format");
+        AccessionFormat formatParam = null;
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(formatStr)) {
+            try {
+                formatParam = AccessionFormat.valueOf(formatStr);
+            } catch (Exception e) {
+                // fallback to default
+            }
+        }
 
         IAccessionNumberValidator.ValidationResults result;
 
@@ -63,7 +72,10 @@ public class CommonValidationsRestController {
         }
         boolean projectFormNameUsed = ProjectForm.findProjectFormByFormId(projectFormName) != null;
 
-        if (ignoreYear || ignoreUsage) {
+        if (formatParam != null) {
+            IAccessionNumberValidator validator = AccessionNumberUtil.getAccessionNumberValidator(formatParam);
+            result = validator.checkAccessionNumberValidity(accessionNumber, recordType, isRequired, projectFormName);
+        } else if (ignoreYear || ignoreUsage) {
             result = projectFormNameUsed ? new ProgramAccessionValidator().validFormat(accessionNumber, !ignoreYear)
                     : AccessionNumberUtil.getGeneralAccessionNumberValidator().validFormat(accessionNumber,
                             !ignoreYear);
@@ -98,7 +110,11 @@ public class CommonValidationsRestController {
             break;
         default:
             String message;
-            if (projectFormNameUsed) {
+            if (formatParam != null) {
+                IAccessionNumberValidator validator = AccessionNumberUtil.getAccessionNumberValidator(formatParam);
+                message = !ignoreUsage ? validator.getInvalidMessage(result)
+                        : validator.getInvalidFormatMessage(result);
+            } else if (projectFormNameUsed) {
                 message = !ignoreUsage ? new ProgramAccessionValidator().getInvalidMessage(result)
                         : new ProgramAccessionValidator().getInvalidFormatMessage(result);
             } else {
