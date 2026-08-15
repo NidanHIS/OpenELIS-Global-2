@@ -305,7 +305,16 @@ public class SamplePatientUpdateData {
             String message = AccessionNumberUtil.getInvalidMessage(result);
             errors.reject(message);
         }
-
+        if (!org.apache.commons.validator.GenericValidator.isBlankOrNull(sampleNumber)) {
+            org.openelisglobal.common.provider.validation.DailySampleNumberValidator sampleValidator = SpringContext
+                    .getBean(org.openelisglobal.common.provider.validation.DailySampleNumberValidator.class);
+            IAccessionNumberValidator.ValidationResults sampleNumResult = sampleValidator
+                    .checkAccessionNumberValidity(sampleNumber, null, null, null);
+            if (sampleNumResult != IAccessionNumberValidator.ValidationResults.SUCCESS) {
+                String sampleNumMsg = sampleValidator.getInvalidMessage(sampleNumResult);
+                errors.reject(sampleNumMsg);
+            }
+        }
         // assure that there is at least 1 sample
         if (sampleItemsTests.isEmpty()) {
             errors.reject("errors.no.sample");

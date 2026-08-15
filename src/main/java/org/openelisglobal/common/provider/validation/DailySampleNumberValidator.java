@@ -62,11 +62,15 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator {
         if (sampleNumber == null || sampleNumber.trim().isEmpty()) {
             return ValidationResults.FORMAT_FAIL;
         }
+        // Block SQL-injection / dangerous characters
         if (sampleNumber.matches(".*['\"<>\\[\\](){};:/?!@#$%^&+=].*")) {
             return ValidationResults.FORMAT_FAIL;
         }
-        // Pattern: DDMM-XXXX (e.g. 1408-0001 or 1408-0001-1)
-        if (!sampleNumber.matches("^\\d{4}-\\d{4}(-\\d+)?$")) {
+        // Accept daily counter format: DDMM-XXXX (e.g. 1508-0001 or 1508-0001-1)
+        boolean isDailyFormat = sampleNumber.matches("^\\d{4}-\\d{4}(-\\d+)?$");
+        // Accept user-defined alphanumeric: letters, digits, underscores, hyphens, max 20 chars
+        boolean isCustom = sampleNumber.matches("^[A-Za-z0-9_\\-]{1,20}$");
+        if (!isDailyFormat && !isCustom) {
             return ValidationResults.FORMAT_FAIL;
         }
         return ValidationResults.SUCCESS;
@@ -74,38 +78,45 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator {
 
     @Override
     public String getInvalidMessage(ValidationResults results) {
-        return "Invalid sample number. Expected format: DDMM-XXXX (e.g. 1408-0001) and must not already be in use.";
+        return "Sample number is already in use.";
     }
 
     @Override
     public String getInvalidFormatMessage(ValidationResults results) {
-        return "Invalid sample number format. Expected format: DDMM-XXXX (e.g. 1408-0001)";
+        return "Invalid sample number. Use DDMM-XXXX format or alphanumeric only (max 20 chars).";
     }
 
     @Override
     public ValidationResults checkAccessionNumberValidity(String sampleNumber, String recordType, String isRequired,
             String projectFormName) {
-        return validFormat(sampleNumber, true);
+        ValidationResults fmt = validFormat(sampleNumber, true);
+        if (fmt != ValidationResults.SUCCESS) {
+            return fmt;
+        }
+        if (accessionNumberIsUsed(sampleNumber, recordType)) {
+            return ValidationResults.SAMPLE_FOUND;
+        }
+        return ValidationResults.SUCCESS;
     }
 
     @Override
     public int getMaxAccessionLength() {
-        return 9; // DDMM-XXXX
+        return 20; // max chars matching VARCHAR(20) DB column
     }
 
     @Override
     public int getMinAccessionLength() {
-        return 9;
+        return 1;
     }
 
     @Override
     public int getInvarientLength() {
-        return 5; // DDMM-
+        return 0;
     }
 
     @Override
     public int getChangeableLength() {
-        return 4; // XXXX
+        return 20;
     }
 
     @Override

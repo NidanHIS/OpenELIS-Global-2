@@ -45,6 +45,8 @@ const AddOrder = (props) => {
   const [siteNames, setSiteNames] = useState([]);
   const [innitialized, setInnitialized] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [sampleNumberError, setSampleNumberError] = useState("");
+  const sampleNumberRef = useRef("");
 
   useEffect(() => {
     componentMounted.current = true;
@@ -222,6 +224,7 @@ const AddOrder = (props) => {
           sampleNumber: res.body,
         },
       }));
+      setSampleNumberError("");
       setNotificationVisible(false);
     }
   }
@@ -347,7 +350,9 @@ const AddOrder = (props) => {
       });
     }
     handleLabNoValidationOnChange(e?.target?.value);
-    setNotificationVisible(false);
+    if (!sampleNumberError) {
+      setNotificationVisible(false);
+    }
   }
 
   const handleLabNoValidationOnChange = (value) => {
@@ -362,6 +367,8 @@ const AddOrder = (props) => {
 
   function handleSampleNo(e) {
     const value = e?.target?.value;
+    sampleNumberRef.current = value ?? "";
+    setChanged({ ...changed, "sampleOrderItems.sampleNumber": true });
     setOrderFormValues({
       ...orderFormValues,
       sampleOrderItems: {
@@ -369,17 +376,35 @@ const AddOrder = (props) => {
         sampleNumber: value,
       },
     });
+    if (!value) {
+      setSampleNumberError("");
+    }
     handleSampleNoValidationOnChange(value);
-    setNotificationVisible(false);
   }
 
   const handleSampleNoValidationOnChange = (value) => {
     if (value) {
       getFromOpenElisServer(
         "/rest/SampleEntryAccessionNumberValidation?ignoreYear=false&ignoreUsage=false&field=sampleNumber&format=DAILY_SAMPLE_NUMBER&accessionNumber=" +
-          value,
-        accessionNumberValidationResults,
+          encodeURIComponent(value),
+        (res) => {
+          // discard stale response — value no longer matches what's in the field
+          if (value !== sampleNumberRef.current) return;
+          if (res.status === false) {
+            setSampleNumberError(res.body);
+            setNotificationVisible(true);
+            addNotification({
+              kind: NotificationKinds.error,
+              title: intl.formatMessage({ id: "notification.title" }),
+              message: res.body,
+            });
+          } else {
+            setSampleNumberError("");
+          }
+        },
       );
+    } else {
+      setSampleNumberError("");
     }
   };
 
@@ -583,9 +608,17 @@ const AddOrder = (props) => {
                   id="sampleNumber"
                   name="sampleNumber"
                   labelText="Sample Number"
-                  placeholder="Auto-generated e.g. 1408-0001"
+                  placeholder="e.g. 1508-0001 or PAT232323"
                   value={orderFormValues.sampleOrderItems.sampleNumber || ""}
                   onChange={handleSampleNo}
+                  invalid={
+                    Boolean(sampleNumberError) ||
+                    (changed["sampleOrderItems.sampleNumber"] &&
+                      Boolean(error("sampleOrderItems.sampleNumber")))
+                  }
+                  invalidText={
+                    sampleNumberError || error("sampleOrderItems.sampleNumber")
+                  }
                 />
                 <div>
                   <FormattedMessage id="label.order.scan.text" />{" "}

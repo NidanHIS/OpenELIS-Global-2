@@ -22,4 +22,20 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="nidan-sample-number-unique-002" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="clinlims" tableName="sample" indexName="uq_sample_number_notnull"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE UNIQUE INDEX uq_sample_number_notnull
+            ON clinlims.sample(sample_number)
+            WHERE sample_number IS NOT NULL;
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS clinlims.uq_sample_number_notnull;
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>

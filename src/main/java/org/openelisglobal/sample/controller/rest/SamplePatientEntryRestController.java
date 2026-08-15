@@ -280,6 +280,7 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
                     "VALIDATION FAILED before placeOrder. errorsCount=" + result.getErrorCount());
             saveErrors(result);
             setupForm(form, request, "");
+            return form;
         }
 
         SamplePatientUpdateData updateData = new SamplePatientUpdateData(getSysUserId(request));
@@ -335,6 +336,7 @@ public class SamplePatientEntryRestController extends BaseSampleEntryController 
         if (result.hasErrors()) {
             saveErrors(result);
             setupForm(form, request, "");
+            return form;
         }
 
         try {

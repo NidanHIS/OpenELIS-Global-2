@@ -276,11 +276,12 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
             }
             if (sampleNumber != null && sampleNumber.contains("-")) {
                 String[] parts = sampleNumber.split("-");
-                if (parts.length > 2) {
+                // Only strip overflow segment (e.g. DDMM-XXXX-1) when all parts are numeric
+                if (parts.length > 2 && parts[0].matches("\\d+") && parts[1].matches("\\d+")) {
                     sampleNumber = parts[0] + "-" + parts[1];
                 }
             }
-            String sql = "from Sample s where sampleNumber = :param order by enteredDate desc";
+            String sql = "from Sample s where s.sampleNumber = :param order by s.enteredDate desc";
             Query<Sample> query = entityManager.unwrap(Session.class).createQuery(sql, Sample.class);
 
             query.setParameter("param", sampleNumber);
