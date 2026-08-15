@@ -1150,7 +1150,14 @@ export function SearchResults(props) {
                 "-" +
                 row.sequenceNumber}
               {row.sampleNumber && (
-                <div style={{ marginTop: "4px", fontSize: "0.85rem", fontWeight: "bold", color: "#0f62fe" }}>
+                <div
+                  style={{
+                    marginTop: "4px",
+                    fontSize: "0.85rem",
+                    fontWeight: "bold",
+                    color: "#0f62fe",
+                  }}
+                >
                   Sample Number: {row.sampleNumber}
                 </div>
               )}

@@ -68,7 +68,8 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator {
         }
         // Accept daily counter format: DDMM-XXXX (e.g. 1508-0001 or 1508-0001-1)
         boolean isDailyFormat = sampleNumber.matches("^\\d{4}-\\d{4}(-\\d+)?$");
-        // Accept user-defined alphanumeric: letters, digits, underscores, hyphens, max 20 chars
+        // Accept user-defined alphanumeric: letters, digits, underscores, hyphens, max
+        // 20 chars
         boolean isCustom = sampleNumber.matches("^[A-Za-z0-9_\\-]{1,20}$");
         if (!isDailyFormat && !isCustom) {
             return ValidationResults.FORMAT_FAIL;
