@@ -645,6 +645,7 @@ public class ResultsValidationUtility {
         testUnits = augmentUOMWithRange(testUnits, testResultItem.getResult());
 
         analysisResultItem.setAccessionNumber(testResultItem.getAccessionNumber());
+        analysisResultItem.setSampleNumber(testResultItem.getSampleNumber());
         analysisResultItem.setLowerCritical(
                 testResultItem.getLowerCritical() == Double.NEGATIVE_INFINITY ? 0 : testResultItem.getLowerCritical());
         analysisResultItem.setHigherCritical(testResultItem.getHigherCritical() == Double.POSITIVE_INFINITY ? 0
