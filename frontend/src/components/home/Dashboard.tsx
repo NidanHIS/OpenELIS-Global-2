@@ -1204,7 +1204,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       header: <FormattedMessage id="incomingOrders.table.patientName" />,
     },
     { key: "actions", header: "Actions" },
-    { key: "labNumber", header: <FormattedMessage id="eorder.labNumber" /> },
+    { key: "labNumber", header: "Lab & Sample Number" },
     {
       key: "pendingResultCount",
       header: <FormattedMessage id="dashboard.table.pendingResult" />,
@@ -1230,7 +1230,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       header: <FormattedMessage id="incomingOrders.table.patientName" />,
     },
     { key: "actions", header: "Actions" },
-    { key: "labNumber", header: <FormattedMessage id="eorder.labNumber" /> },
+    { key: "labNumber", header: "Lab & Sample Number" },
     { key: "testName", header: <FormattedMessage id="eorder.test.name" /> },
   ];
 
@@ -1260,50 +1260,72 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       true;
 
     if (cell.info.header === "labNumber" && cell.value) {
+      const targetItem = data.find(
+        (item: any) => String(item.id) === String(row.id),
+      );
+      const sampleNumber = targetItem?.sampleNumber;
+
       return (
         <TableCell key={cell.id}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Button
-              onClick={async () => {
-                if ("clipboard" in navigator)
-                  return await navigator.clipboard.writeText(cell.value);
-                return document.execCommand("copy", true, cell.value);
-              }}
-              kind="ghost"
-              iconDescription={intl.formatMessage({
-                id: "instructions.copy.labnum",
-              })}
-              hasIconOnly
-              renderIcon={Copy}
-            />
-            {isSplitLayout(selectedTile.type) ? (
-              <Link
-                style={{ color: "blue", cursor: "pointer" }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  const patientGuid =
-                    data.find((item: any) => String(item.id) === String(row.id))
-                      ?.patientGuid || "";
-                  const targetUrl = usesInProgressView(selectedTile.type)
-                    ? getFullPath(
-                        "/result?type=order&doRange=false&accessionNumber=" +
-                          cell.value,
-                      )
-                    : getFullPath(
-                        "/validation?type=order&accessionNumber=" + cell.value,
-                      );
-                  handleAction(patientGuid, targetUrl, false, cell.value);
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Button
+                onClick={async () => {
+                  if ("clipboard" in navigator)
+                    return await navigator.clipboard.writeText(cell.value);
+                  return document.execCommand("copy", true, cell.value);
+                }}
+                kind="ghost"
+                iconDescription={intl.formatMessage({
+                  id: "instructions.copy.labnum",
+                })}
+                hasIconOnly
+                renderIcon={Copy}
+              />
+              {isSplitLayout(selectedTile.type) ? (
+                <Link
+                  style={{ color: "blue", cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const patientGuid =
+                      data.find(
+                        (item: any) => String(item.id) === String(row.id),
+                      )?.patientGuid || "";
+                    const targetUrl = usesInProgressView(selectedTile.type)
+                      ? getFullPath(
+                          "/result?type=order&doRange=false&accessionNumber=" +
+                            cell.value,
+                        )
+                      : getFullPath(
+                          "/validation?type=order&accessionNumber=" +
+                            cell.value,
+                        );
+                    handleAction(patientGuid, targetUrl, false, cell.value);
+                  }}
+                >
+                  <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
+                </Link>
+              ) : (
+                <>{convertAlphaNumLabNumForDisplay(cell.value)}</>
+              )}
+              {isInBacklog && (
+                <Tag type="red" size="sm" style={{ marginLeft: "0.5rem" }}>
+                  Backlog
+                </Tag>
+              )}
+            </div>
+            {sampleNumber && (
+              <div
+                style={{
+                  marginTop: "2px",
+                  fontSize: "0.8rem",
+                  fontWeight: "bold",
+                  color: "#0f62fe",
+                  paddingLeft: "2rem",
                 }}
               >
-                <u>{convertAlphaNumLabNumForDisplay(cell.value)}</u>
-              </Link>
-            ) : (
-              <>{convertAlphaNumLabNumForDisplay(cell.value)}</>
-            )}
-            {isInBacklog && (
-              <Tag type="red" size="sm" style={{ marginLeft: "0.5rem" }}>
-                Backlog
-              </Tag>
+                Sample No: {sampleNumber}
+              </div>
             )}
           </div>
         </TableCell>
