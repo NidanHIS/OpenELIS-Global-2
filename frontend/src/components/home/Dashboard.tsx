@@ -1039,11 +1039,13 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       const fmt = item.labNumber
         ? convertAlphaNumLabNumForDisplay(String(item.labNumber)).toLowerCase()
         : "";
+      const sampleNum = String(item.sampleNumber ?? "").toLowerCase();
       return (
         pid.includes(q) ||
         pname.includes(q) ||
         raw.includes(q) ||
-        fmt.includes(q)
+        fmt.includes(q) ||
+        sampleNum.includes(q)
       );
     });
   }, [sectionFilteredData, rightSearch]);
@@ -1067,6 +1069,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     return backlogTableData.filter(
       (item) =>
         String(item.labNumber ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(item.sampleNumber ?? "")
           .toLowerCase()
           .includes(q) ||
         String(item.patientName ?? "")

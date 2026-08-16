@@ -12,6 +12,8 @@ public class OrderDisplayBean {
 
     private String labNumber;
 
+    private String sampleNumber;
+
     private String testName;
 
     private String userFirstName;
@@ -96,6 +98,14 @@ public class OrderDisplayBean {
 
     public void setLabNumber(String labNumber) {
         this.labNumber = labNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     public String getTestName() {
