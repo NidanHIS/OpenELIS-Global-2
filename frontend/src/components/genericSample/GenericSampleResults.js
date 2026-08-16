@@ -17,6 +17,7 @@ import {
 } from "@carbon/react";
 import { Copy } from "@carbon/icons-react";
 import PageBreadCrumb from "../common/PageBreadCrumb";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import CustomLabNumberInput from "../common/CustomLabNumberInput";
 import {
   getFromOpenElisServer,
@@ -332,7 +333,7 @@ function GenericSampleResults({
                   color: "#0f62fe",
                 }}
               >
-                Sample Number: {row.sampleNumber}
+                Sample Number: {displaySampleNumber(row.sampleNumber)}
               </div>
             )}
             <br />

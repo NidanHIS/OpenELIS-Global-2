@@ -181,7 +181,9 @@ public class CommonValidationsRestController {
         if (success) {
             responseObject.setStatus(true);
         }
-        String result = GenericValidator.isBlankOrNull(error) ? nextNumber : error;
+        String result = GenericValidator.isBlankOrNull(error)
+                ? org.openelisglobal.sample.util.SampleNumberUtil.toDisplay(nextNumber)
+                : error;
         responseObject.setBody(result);
         return responseObject;
     }

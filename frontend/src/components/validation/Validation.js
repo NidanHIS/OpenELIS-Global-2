@@ -18,6 +18,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import ValidationSearchFormValues from "../formModel/innitialValues/ValidationSearchFormValues";
 import { NotificationKinds } from "../common/CustomNotification";
 import { postToOpenElisServer } from "../utils/Utils";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import { NotificationContext } from "../layout/Layout";
 import { getFromOpenElisServer } from "../utils/Utils";
 import { ConfigurationContext } from "../layout/Layout";
@@ -233,7 +234,7 @@ const Validation = (props) => {
                     color: "#0f62fe",
                   }}
                 >
-                  Sample Number: {row.sampleNumber}
+                  Sample Number: {displaySampleNumber(row.sampleNumber)}
                 </div>
               )}
               <br></br>

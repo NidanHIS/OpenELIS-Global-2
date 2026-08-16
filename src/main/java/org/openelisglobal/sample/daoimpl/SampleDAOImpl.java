@@ -281,13 +281,24 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
                     sampleNumber = parts[0] + "-" + parts[1];
                 }
             }
+
+            String searchParam = org.openelisglobal.sample.util.SampleNumberUtil.toStorage(sampleNumber);
+
             String sql = "from Sample s where s.sampleNumber = :param order by s.enteredDate desc";
             Query<Sample> query = entityManager.unwrap(Session.class).createQuery(sql, Sample.class);
 
-            query.setParameter("param", sampleNumber);
+            query.setParameter("param", searchParam);
             List<Sample> list = query.list();
             if ((list != null) && !list.isEmpty()) {
                 sample = list.get(0);
+            } else if (searchParam != null && !searchParam.equals(sampleNumber)) {
+                // Fallback lookup using raw input if storage-converted query yields no match
+                Query<Sample> fallbackQuery = entityManager.unwrap(Session.class).createQuery(sql, Sample.class);
+                fallbackQuery.setParameter("param", sampleNumber);
+                List<Sample> fallbackList = fallbackQuery.list();
+                if (fallbackList != null && !fallbackList.isEmpty()) {
+                    sample = fallbackList.get(0);
+                }
             }
         } catch (RuntimeException e) {
             LogEvent.logError(e);

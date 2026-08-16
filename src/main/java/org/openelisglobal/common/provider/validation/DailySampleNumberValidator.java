@@ -45,7 +45,8 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator {
                         AccessionFormat.DAILY_SAMPLE_NUMBER);
             }
 
-            return String.format("%s-%04d", dayMonth, nextSeq);
+            String yy = prefixKey.substring(0, 2);
+            return String.format("%s%s-%04d", yy, dayMonth, nextSeq);
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "getNextAccessionNumber", e.toString());
             return null;
@@ -66,8 +67,9 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator {
         if (sampleNumber.matches(".*['\"<>\\[\\](){};:/?!@#$%^&+=].*")) {
             return ValidationResults.FORMAT_FAIL;
         }
-        // Accept daily counter format: DDMM-XXXX (e.g. 1508-0001 or 1508-0001-1)
-        boolean isDailyFormat = sampleNumber.matches("^\\d{4}-\\d{4}(-\\d+)?$");
+        // Accept daily counter format: YYDDMM-XXXX or DDMM-XXXX (e.g. 261508-0001 or
+        // 1508-0001)
+        boolean isDailyFormat = sampleNumber.matches("^(\\d{2})?\\d{4}-\\d{4}(-\\d+)?$");
         // Accept user-defined alphanumeric: letters, digits, underscores, hyphens, max
         // 20 chars
         boolean isCustom = sampleNumber.matches("^[A-Za-z0-9_\\-]{1,20}$");
@@ -128,7 +130,12 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator {
         try {
             org.openelisglobal.sample.service.SampleService sampleService = SpringContext
                     .getBean(org.openelisglobal.sample.service.SampleService.class);
-            return sampleService.getSampleBySampleNumber(accessionNumber) != null;
+            String storageKey = org.openelisglobal.sample.util.SampleNumberUtil.toStorage(accessionNumber);
+            boolean exists = sampleService.getSampleBySampleNumber(storageKey) != null;
+            if (!exists && !storageKey.equals(accessionNumber)) {
+                exists = sampleService.getSampleBySampleNumber(accessionNumber) != null;
+            }
+            return exists;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "accessionNumberIsUsed", e.toString());
             return false;

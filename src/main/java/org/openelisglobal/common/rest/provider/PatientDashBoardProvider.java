@@ -255,7 +255,9 @@ public class PatientDashBoardProvider {
                     Patient patient = sampleHumanService.getPatientForSample(sample);
                     bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                     bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                    bean.setSampleNumber(sample.getSampleNumber() != null ? sample.getSampleNumber() : "");
+                    bean.setSampleNumber(sample.getSampleNumber() != null
+                            ? org.openelisglobal.sample.util.SampleNumberUtil.toDisplay(sample.getSampleNumber())
+                            : "");
                     bean.setPatientId(patient != null ? getPatientDisplayId(patient) : "");
                     bean.setPatientName(getPatientName(patient));
                     bean.setPatientGuid(

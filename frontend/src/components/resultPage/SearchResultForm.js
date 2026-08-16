@@ -8,6 +8,7 @@ import {
   Roles,
 } from "../utils/Utils";
 import { stripBasePath, getFullPath } from "../utils/Navigation";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import {
   Form,
   TextInput,
@@ -1158,7 +1159,7 @@ export function SearchResults(props) {
                     color: "#0f62fe",
                   }}
                 >
-                  Sample Number: {row.sampleNumber}
+                  Sample Number: {displaySampleNumber(row.sampleNumber)}
                 </div>
               )}
               {row.isEqaSample && <EQABadge priority={row.eqaPriority} />}

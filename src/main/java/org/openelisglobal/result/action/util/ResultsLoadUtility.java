@@ -780,7 +780,8 @@ public class ResultsLoadUtility {
 
         testItem.setAccessionNumber(accessionNumber);
         if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
-            testItem.setSampleNumber(analysis.getSampleItem().getSample().getSampleNumber());
+            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
+                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
         }
         testItem.setAnalysisId(analysis.getId());
         // Set SampleItem ID for storage location lookup

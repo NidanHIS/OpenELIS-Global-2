@@ -42,6 +42,7 @@ import barcodeIcon from "./assets/barcode.png";
 import resultIcon from "./assets/results.png";
 import reportIcon from "./assets/report.png";
 import validateIcon from "./assets/validate.png";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import {
   getFromOpenElisServer,
   getFromOpenElisServerV2,
@@ -1324,7 +1325,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                   paddingLeft: "2rem",
                 }}
               >
-                Sample No: {sampleNumber}
+                Sample No: {displaySampleNumber(sampleNumber)}
               </div>
             )}
           </div>

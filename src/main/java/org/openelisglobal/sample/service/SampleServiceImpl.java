@@ -102,6 +102,8 @@ public class SampleServiceImpl extends AuditableBaseObjectServiceImpl<Sample, St
         }
         if (sample.getSampleNumber() == null || sample.getSampleNumber().trim().isEmpty()) {
             sample.setSampleNumber(generateSampleNumber(sample));
+        } else {
+            sample.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil.toStorage(sample.getSampleNumber()));
         }
         return super.insert(sample);
     }
