@@ -562,7 +562,10 @@
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
-            <version>1.8.10</version>
+            <!-- 1.8.x predates Java 9. On a JDK 21 toolchain javac rejects the jar
+                with "Invalid CEN header (invalid zip64 extra data field size)", which fails
+                every full build. 1.9.x is the Java 9+ line. -->
+            <version>1.9.24</version>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.barbecue</groupId>
