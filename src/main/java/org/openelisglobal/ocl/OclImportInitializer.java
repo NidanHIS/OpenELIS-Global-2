@@ -28,8 +28,11 @@ public class OclImportInitializer {
     @Autowired
     private OclZipImporter oclZipImporter;
 
+    // Injected by interface, not concrete type: OclConfigurationHandler is
+    // @Transactional and therefore a JDK proxy, which is not an instance of the
+    // concrete class.
     @Autowired
-    private OclConfigurationHandler oclConfigurationHandler;
+    private OclImporter oclImporter;
 
     /**
      * Public method to trigger OCL import manually. This can be called from REST
@@ -64,7 +67,7 @@ public class OclImportInitializer {
         }
         if (!oclNodes.isEmpty()) {
             // Use the handler's performImport method
-            oclConfigurationHandler.performImport(oclNodes);
+            oclImporter.performImport(oclNodes);
         }
     }
 }

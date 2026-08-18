@@ -562,7 +562,10 @@
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
-            <version>1.8.10</version>
+            <!-- 1.8.x predates Java 9. On a JDK 21 toolchain javac rejects the jar
+                with "Invalid CEN header (invalid zip64 extra data field size)", which fails
+                every full build. 1.9.x is the Java 9+ line. -->
+            <version>1.9.24</version>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.barbecue</groupId>
@@ -800,6 +803,11 @@
                     <!-- move to release when we compile in java versions >= 9 -->
                     <release>${maven.java.release}</release>
                     <parameters>true</parameters>
+                    <!-- JDK 21 + compiler plugin 3.13.0 do not run annotation processors
+                        discovered on the classpath unless this is explicit. Without it Lombok never
+                        runs and a clean build fails with ~190 "cannot find symbol" errors for @Data-generated
+                        accessors. -->
+                    <proc>full</proc>
                     <!-- legacy for java versions < 9 -->
                     <!-- <source>${maven.compiler.source}</source> -->
                     <!-- <target>${maven.compiler.target}</target> -->

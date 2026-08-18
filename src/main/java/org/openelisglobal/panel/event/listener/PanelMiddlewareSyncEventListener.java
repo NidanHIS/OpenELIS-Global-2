@@ -5,9 +5,10 @@ import org.openelisglobal.panel.event.PanelCreatedOrUpdatedEvent;
 import org.openelisglobal.panel.service.middleware.PanelMiddlewareSyncService;
 import org.openelisglobal.panel.valueholder.Panel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class PanelMiddlewareSyncEventListener {
@@ -16,7 +17,16 @@ public class PanelMiddlewareSyncEventListener {
     private PanelMiddlewareSyncService panelMiddlewareSyncService;
 
     @Async
-    @EventListener
+    // AFTER_COMMIT: the panel write must be committed before Odoo or CIS is told
+    // about
+    // it. With a plain @EventListener this fired at publish time, so an @Async
+    // thread
+    // could read uncommitted state (or a detached entity) from a session it does
+    // not
+    // own. fallbackExecution keeps the listener firing for any publisher that is
+    // not
+    // inside a transaction, which is how it behaved before.
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handlePanelCreatedOrUpdatedEvent(PanelCreatedOrUpdatedEvent event) {
         try {
             Panel panel = event.getPanel();
