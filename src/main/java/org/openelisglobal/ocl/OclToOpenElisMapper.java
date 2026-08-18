@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openelisglobal.common.constants.Constants;
+import org.openelisglobal.configuration.service.FieldProvenanceService;
 import org.openelisglobal.dictionary.service.DictionaryService;
 import org.openelisglobal.dictionary.valueholder.Dictionary;
 import org.openelisglobal.dictionarycategory.service.DictionaryCategoryService;
@@ -73,6 +74,7 @@ public class OclToOpenElisMapper {
     private UnitOfMeasureService uomSerivice = SpringContext.getBean(UnitOfMeasureService.class);
     private TypeOfSampleService typeOfSampleService = SpringContext.getBean(TypeOfSampleService.class);
     private DictionaryService dictionaryService = SpringContext.getBean(DictionaryService.class);
+    private FieldProvenanceService fieldProvenanceService = SpringContext.getBean(FieldProvenanceService.class);
     private DictionaryCategoryService dictionaryCategoryService = SpringContext
             .getBean(DictionaryCategoryService.class);
     private LocalizationService localizationService = SpringContext.getBean(LocalizationService.class);
@@ -519,6 +521,12 @@ public class OclToOpenElisMapper {
                 // Update all mutable fields from OCL
                 boolean needsUpdate = false;
 
+                // Fields a human has edited belong to the lab from then on. The package
+                // keeps managing everything else, so an upstream correction to a field
+                // nobody touched still lands. One lookup per test, not per field.
+                Set<String> labOwned = fieldProvenanceService.userOwnedFields(FieldProvenanceService.ENTITY_TEST,
+                        dbTest.getId());
+
                 // Stamp GUID if missing or changed
                 if (StringUtils.isNotBlank(externalId) && !externalId.equals(dbTest.getGuid())) {
                     log.info("OCL test upsert: stamping GUID '" + externalId + "' on test '" + englishName + "'.");
@@ -527,14 +535,15 @@ public class OclToOpenElisMapper {
                 }
 
                 // Update LOINC
-                if (StringUtils.isNotBlank(loinc) && !loinc.equals(dbTest.getLoinc())) {
+                if (!labOwned.contains(FieldProvenanceService.FIELD_LOINC) && StringUtils.isNotBlank(loinc)
+                        && !loinc.equals(dbTest.getLoinc())) {
                     dbTest.setLoinc(loinc);
                     needsUpdate = true;
                 }
 
                 // Update section — resolve via P1/P1.5/P2/P3/P4/P5
                 TestSection resolvedSection = resolveTestSection(concept);
-                if (resolvedSection != null) {
+                if (resolvedSection != null && !labOwned.contains(FieldProvenanceService.FIELD_TEST_SECTION)) {
                     TestSection currentSection = dbTest.getTestSection();
                     if (currentSection == null || !resolvedSection.getId().equals(currentSection.getId())) {
                         log.info("OCL test upsert: updating section for '" + englishName + "': '"
@@ -547,7 +556,8 @@ public class OclToOpenElisMapper {
 
                 // Update UOM — resolve or create
                 JsonNode extrasNode = concept.get("extras");
-                if (extrasNode != null && extrasNode.has("units")) {
+                if (extrasNode != null && extrasNode.has("units")
+                        && !labOwned.contains(FieldProvenanceService.FIELD_UOM)) {
                     String units = getText(extrasNode, "units");
                     if (StringUtils.isNotBlank(units)) {
                         // resolveOrCreateUom returns a session-managed entity — safe to assign
@@ -565,7 +575,8 @@ public class OclToOpenElisMapper {
                 // Sync active/retired flag
                 boolean retired = Boolean.parseBoolean(getText(concept, "retired"));
                 String expectedActive = retired ? "N" : "Y";
-                if (!expectedActive.equals(dbTest.getIsActive())) {
+                if (!labOwned.contains(FieldProvenanceService.FIELD_IS_ACTIVE)
+                        && !expectedActive.equals(dbTest.getIsActive())) {
                     dbTest.setIsActive(expectedActive);
                     needsUpdate = true;
                 }

@@ -7,6 +7,7 @@ import org.openelisglobal.common.exception.LIMSDuplicateRecordException;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
 import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.service.AuditableBaseObjectServiceImpl;
+import org.openelisglobal.configuration.service.FieldProvenanceService;
 import org.openelisglobal.panel.event.PanelCreatedOrUpdatedEvent;
 import org.openelisglobal.panel.service.PanelService;
 import org.openelisglobal.panel.valueholder.Panel;
@@ -27,6 +28,9 @@ public class PanelItemServiceImpl extends AuditableBaseObjectServiceImpl<PanelIt
     private PanelService panelService;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private FieldProvenanceService fieldProvenanceService;
 
     PanelItemServiceImpl() {
         super(PanelItem.class);
@@ -130,7 +134,7 @@ public class PanelItemServiceImpl extends AuditableBaseObjectServiceImpl<PanelIt
     @Override
     @Transactional
     public void updatePanelItems(List<PanelItem> panelItems, Panel panel, boolean updatePanel, String currentUser,
-            List<Test> newTests) {
+            List<Test> newTests, boolean oclManaged) {
 
         for (PanelItem oldPanelItem : panelItems) {
             oldPanelItem.setSysUserId(currentUser);
@@ -162,6 +166,15 @@ public class PanelItemServiceImpl extends AuditableBaseObjectServiceImpl<PanelIt
             panel.setIsActive("N");
             panel.setSysUserId(currentUser);
             panelService.update(panel);
+        }
+
+        // A human editing a panel takes ownership of its membership. Recorded here,
+        // in the one place every caller already funnels through, rather than in each
+        // controller: a write path added later inherits the safe answer without its
+        // author needing to know this mechanism exists.
+        if (!oclManaged) {
+            fieldProvenanceService.markUserOwned(FieldProvenanceService.ENTITY_PANEL, panel.getId(),
+                    List.of(FieldProvenanceService.FIELD_PANEL_ITEMS));
         }
 
         // Publish event so integrations (e.g. Odoo) can react to panel membership

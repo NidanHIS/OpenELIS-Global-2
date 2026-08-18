@@ -20,6 +20,7 @@ import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.services.DisplayListService;
 import org.openelisglobal.configuration.service.ConfigImportLogService;
 import org.openelisglobal.configuration.service.DomainConfigurationHandler;
+import org.openelisglobal.configuration.service.FieldProvenanceService;
 import org.openelisglobal.localization.valueholder.Localization;
 import org.openelisglobal.panel.service.PanelService;
 import org.openelisglobal.panel.valueholder.Panel;
@@ -64,6 +65,9 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
 
     @Autowired
     private ConfigImportLogService configImportLogService;
+
+    @Autowired
+    private FieldProvenanceService fieldProvenanceService;
 
     @Autowired
     private TestAddService testAddService;
@@ -229,6 +233,16 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
             log.info("Mapping tests for Panel " + englishName);
 
             if (dbPanel != null) {
+                // The lab owns a panel's membership once someone has edited it. Without
+                // this guard updatePanelItems() below deletes every row and reinserts the
+                // package's list, which is how an unclean shutdown silently reverted
+                // Bijaynagar's panels.
+                if (fieldProvenanceService.isUserOwned(FieldProvenanceService.ENTITY_PANEL, dbPanel.getId(),
+                        FieldProvenanceService.FIELD_PANEL_ITEMS)) {
+                    log.info("Panel '{}' membership is lab-owned; leaving it untouched.", englishName);
+                    continue;
+                }
+
                 List<PanelItem> panelItems = panelItemService.getPanelItemsForPanel(dbPanel.getId());
 
                 List<Test> newTests = new ArrayList<>();
@@ -243,7 +257,7 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
                     }
                 }
                 try {
-                    panelItemService.updatePanelItems(panelItems, dbPanel, false, "1", newTests);
+                    panelItemService.updatePanelItems(panelItems, dbPanel, false, "1", newTests, true);
                 } catch (LIMSRuntimeException e) {
                     LogEvent.logError("OCL import: failed to seed panel items for panel " + englishName, e);
                     throw e;

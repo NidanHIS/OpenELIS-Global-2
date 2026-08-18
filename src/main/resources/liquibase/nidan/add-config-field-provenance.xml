@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+      Who owns each configurable field: the OCL package, or a human.
+
+      The OCL importer treats the shipped package as authoritative on every run.
+      Anything a lab changed in the UI that the package disagrees with gets
+      written back, which is why panel membership and test departments revert
+      after an unclean shutdown re-triggers the import.
+
+      Modelled as a side table rather than columns on `test` and `panel_item`
+      deliberately. 83 of the 121 hbm mappings declare `lastupdated` as a
+      Hibernate <version> column with optimistic-lock="version", so adding
+      columns to those entities means touching the valueholder, the hbm mapping
+      and the locking surface of tables that carry live patient-linked data.
+      A side table needs none of that.
+
+      Granularity is per field, so correcting a test's LOINC by hand does not
+      also freeze its department. Panel membership is set-valued rather than
+      field-valued, so it is tracked as one unit: ('panel', <id>, 'items').
+
+      Absence means OCL-owned. Only a human edit writes a row.
+    -->
+    <changeSet id="add-config-field-provenance" author="Dipak Thapa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="clinlims" tableName="config_field_provenance"/>
+            </not>
+        </preConditions>
+
+        <createTable schemaName="clinlims" tableName="config_field_provenance">
+            <column name="entity_type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="field_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="owner" type="VARCHAR(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey schemaName="clinlims" tableName="config_field_provenance"
+                       columnNames="entity_type, entity_id, field_name"
+                       constraintName="config_field_provenance_pk"/>
+    </changeSet>
+
+    <!--
+      Backfill: freeze everything that already exists.
+
+      Direction matters. Defaulting existing rows to OCL would let the first
+      import after this migration overwrite the lab's configuration one final
+      time, which is the exact failure being fixed. Defaulting to USER freezes
+      current state instead: OCL stops managing what is already there, and
+      manages only what it creates from here on.
+
+      On a fresh install there are no rows yet, so this backfills nothing and
+      seeding proceeds normally. No branching needed between the two cases.
+    -->
+    <changeSet id="backfill-config-field-provenance" author="Dipak Thapa">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.config_field_provenance
+            </sqlCheck>
+        </preConditions>
+
+        <sql>
+            INSERT INTO clinlims.config_field_provenance
+                (entity_type, entity_id, field_name, owner, updated_at)
+            SELECT 'test', t.id::text, f.field_name, 'USER', CURRENT_TIMESTAMP
+            FROM clinlims.test t
+            CROSS JOIN (VALUES ('test_section'), ('loinc'), ('unit_of_measure'), ('is_active'))
+                AS f(field_name);
+        </sql>
+
+        <sql>
+            INSERT INTO clinlims.config_field_provenance
+                (entity_type, entity_id, field_name, owner, updated_at)
+            SELECT 'panel', p.id::text, 'items', 'USER', CURRENT_TIMESTAMP
+            FROM clinlims.panel p
+            WHERE EXISTS (SELECT 1 FROM clinlims.panel_item pi WHERE pi.panel_id = p.id);
+        </sql>
+
+        <rollback>
+            DELETE FROM clinlims.config_field_provenance;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

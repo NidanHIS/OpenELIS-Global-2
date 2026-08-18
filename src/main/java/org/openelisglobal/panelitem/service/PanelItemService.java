@@ -26,8 +26,18 @@ public interface PanelItemService extends BaseObjectService<PanelItem, String> {
 
     List<PanelItem> getPanelItemsForPanel(String panelId);
 
+    /**
+     * Replaces a panel's membership.
+     *
+     * <p>
+     * {@code oclManaged} says who this write belongs to and has no default on
+     * purpose. Passing {@code false} records the panel's membership as lab-owned,
+     * which stops the OCL importer from ever overwriting it. Passing {@code true}
+     * is for the importer itself. Making it a required parameter means a new call
+     * site cannot silently inherit the wrong answer: the compiler asks.
+     */
     void updatePanelItems(List<PanelItem> panelItems, Panel panel, boolean updatePanel, String currentUser,
-            List<Test> newTests);
+            List<Test> newTests, boolean oclManaged);
 
     boolean duplicatePanelItemExists(PanelItem panelItem) throws LIMSRuntimeException;
 }
