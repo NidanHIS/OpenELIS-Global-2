@@ -40,6 +40,8 @@ public class SystemUser extends EnumValueItemImpl implements PermissionAgent {
 
     private String licenseNumber;
 
+    private String designation;
+
     public SystemUser() {
     }
 
@@ -97,6 +99,14 @@ public class SystemUser extends EnumValueItemImpl implements PermissionAgent {
 
     public String getLicenseNumber() {
         return licenseNumber;
+    }
+
+    public void setDesignation(String designation) {
+        this.designation = designation;
+    }
+
+    public String getDesignation() {
+        return designation;
     }
 
     public void setIsActive(String isActive) {

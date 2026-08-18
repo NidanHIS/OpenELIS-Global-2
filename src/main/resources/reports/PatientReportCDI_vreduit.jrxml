@@ -43,6 +43,8 @@
 	<parameter name="labEmail" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="labContactNumber" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="verifierName" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="verifierDesignation" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="verifierLicenseNumber" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="useLetterhead" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["false"]]></defaultValueExpression>
 	</parameter>
@@ -607,9 +609,9 @@
 	</detail>
 	<columnFooter>
 		<band height="100" splitType="Stretch">
-			<!-- Notes box — full width, 40px -->
+			<!-- Notes box — Top Right (x=221 to 552, width=331, height=40) -->
 			<staticText>
-				<reportElement x="1" y="0" width="551" height="40">
+				<reportElement x="221" y="0" width="331" height="40">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box topPadding="2" leftPadding="4">
@@ -625,9 +627,9 @@
 				</textElement>
 				<text><![CDATA[Notes:]]></text>
 			</staticText>
-			<!-- Left Column: Verified By (x=1 to 277, width=276) -->
+			<!-- Left Column: Verified By — Full Height (x=1 to 221, width=220, height=100) -->
 			<frame>
-				<reportElement x="1" y="40" width="276" height="60">
+				<reportElement x="1" y="0" width="220" height="100">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box>
@@ -637,9 +639,17 @@
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<!-- verifier name (resolved from latest validation user) — sits above signature line -->
+				<!-- Top Signature Line (Centered in 220px: x=(220-143)/2 = 38, y=42) -->
+				<staticText>
+					<reportElement x="38" y="42" width="143" height="10"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="7"/>
+					</textElement>
+					<text><![CDATA[___________________________]]></text>
+				</staticText>
+				<!-- Verifier Full Name (y=55) -->
 				<textField isBlankWhenNull="true">
-					<reportElement x="1" y="16" width="274" height="14">
+					<reportElement x="1" y="55" width="218" height="13">
 						<printWhenExpression><![CDATA[$P{verifierName} != null && !$P{verifierName}.isEmpty()]]></printWhenExpression>
 					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
@@ -647,26 +657,30 @@
 					</textElement>
 					<textFieldExpression><![CDATA[$P{verifierName}]]></textFieldExpression>
 				</textField>
-				<!-- signature line — sits directly above role label -->
-				<staticText>
-					<reportElement x="66" y="32" width="143" height="10"/>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="7"/>
-					</textElement>
-					<text><![CDATA[___________________________]]></text>
-				</staticText>
-				<!-- role label -->
-				<staticText>
-					<reportElement x="1" y="44" width="274" height="14"/>
+				<!-- Designation (y=69) -->
+				<textField isBlankWhenNull="true">
+					<reportElement x="1" y="69" width="218" height="13">
+						<printWhenExpression><![CDATA[$P{verifierDesignation} != null && !$P{verifierDesignation}.isEmpty()]]></printWhenExpression>
+					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="8" isBold="false"/>
 					</textElement>
-					<text><![CDATA[Verified By]]></text>
-				</staticText>
+					<textFieldExpression><![CDATA[$P{verifierDesignation}]]></textFieldExpression>
+				</textField>
+				<!-- License / NPHC Number (y=83) -->
+				<textField isBlankWhenNull="true">
+					<reportElement x="1" y="83" width="218" height="13">
+						<printWhenExpression><![CDATA[$P{verifierLicenseNumber} != null && !$P{verifierLicenseNumber}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{verifierLicenseNumber}]]></textFieldExpression>
+				</textField>
 			</frame>
-			<!-- Right Column: Lab Incharge (x=277 to 552, width=275) -->
+			<!-- Right Column: Lab Incharge — Bottom Right (x=221 to 552, width=331, height=60) -->
 			<frame>
-				<reportElement x="277" y="40" width="275" height="60">
+				<reportElement x="221" y="40" width="331" height="60">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box>
@@ -676,16 +690,16 @@
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<!-- signature image (env-driven, sits in top portion) -->
+				<!-- signature image (env-driven, centered in 331px: x=(331-179)/2 = 76) -->
 				<image>
-					<reportElement x="93" y="2" width="179" height="28">
+					<reportElement x="76" y="2" width="179" height="28">
 						<printWhenExpression><![CDATA[$P{useLabDirectorSignature}]]></printWhenExpression>
 					</reportElement>
 					<imageExpression><![CDATA[$P{labDirectorSignature}]]></imageExpression>
 				</image>
-				<!-- signature line (shown when no image) — sits directly above role label -->
+				<!-- signature line (shown when no image, centered in 331px: x=(331-145)/2 = 93) -->
 				<staticText>
-					<reportElement x="110" y="32" width="145" height="10">
+					<reportElement x="93" y="32" width="145" height="10">
 						<printWhenExpression><![CDATA[!$P{useLabDirectorSignature}]]></printWhenExpression>
 					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
@@ -695,7 +709,7 @@
 				</staticText>
 				<!-- role label -->
 				<staticText>
-					<reportElement x="91" y="44" width="183" height="12"/>
+					<reportElement x="1" y="44" width="329" height="12"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="8" isBold="false"/>
 					</textElement>
@@ -703,7 +717,7 @@
 				</staticText>
 				<!-- name and title below role label -->
 				<textField isBlankWhenNull="true">
-					<reportElement x="91" y="52" width="183" height="10">
+					<reportElement x="1" y="52" width="329" height="10">
 						<printWhenExpression><![CDATA[$P{labDirectorName} != null]]></printWhenExpression>
 					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">

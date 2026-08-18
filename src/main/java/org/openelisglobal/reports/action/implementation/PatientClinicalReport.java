@@ -165,8 +165,7 @@ public class PatientClinicalReport extends PatientReport implements IReportCreat
                         data.setReferralResult(addIfNotEmpty(reportReferralResultValue, uom));
                     }
                     data.setTestRefRange(addIfNotEmpty(getRange(referralResult.getResult()), uom));
-                    data.setTestSortOrder(GenericValidator.isBlankOrNull(test.getSortOrder()) ? Integer.MAX_VALUE
-                            : Integer.parseInt(test.getSortOrder()));
+                    data.setTestSortOrder(resolveTestSortOrder(currentAnalysis, test));
                     data.setSectionSortOrder(analysisService.getTestSection(currentAnalysis).getSortOrderInt());
                     data.setTestSection(analysisService.getTestSection(currentAnalysis).getLocalizedName());
                 }
