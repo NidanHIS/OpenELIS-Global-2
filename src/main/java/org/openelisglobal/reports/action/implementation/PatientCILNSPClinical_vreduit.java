@@ -342,8 +342,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                         data.setReferralResult(addIfNotEmpty(reportReferralResultValue, uom));
                     }
                     data.setTestRefRange(addIfNotEmpty(getRange(referralResult.getResult()), uom));
-                    data.setTestSortOrder(GenericValidator.isBlankOrNull(test.getSortOrder()) ? Integer.MAX_VALUE
-                            : Integer.parseInt(test.getSortOrder()));
+                    data.setTestSortOrder(resolveTestSortOrder(currentAnalysis, test));
                     data.setSectionSortOrder(currentAnalysis.getTestSection().getSortOrderInt());
                     data.setTestSection(currentAnalysis.getTestSection().getLocalizedName());
                 }

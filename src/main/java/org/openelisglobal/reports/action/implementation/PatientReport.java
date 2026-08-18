@@ -61,6 +61,8 @@ import org.openelisglobal.observationhistory.service.ObservationHistoryServiceIm
 import org.openelisglobal.organization.service.OrganizationService;
 import org.openelisglobal.organization.valueholder.Organization;
 import org.openelisglobal.panel.valueholder.Panel;
+import org.openelisglobal.panelitem.service.PanelItemService;
+import org.openelisglobal.panelitem.valueholder.PanelItem;
 import org.openelisglobal.patient.action.bean.PatientSearch;
 import org.openelisglobal.patient.service.PatientService;
 import org.openelisglobal.patient.service.PatientServiceImpl;
@@ -119,6 +121,7 @@ public abstract class PatientReport extends Report {
     protected ObservationHistoryService observationService = SpringContext.getBean(ObservationHistoryService.class);
     protected AnalysisService analysisService = SpringContext.getBean(AnalysisService.class);
     protected NoteService noteService = SpringContext.getBean(NoteService.class);
+    protected PanelItemService panelItemService = SpringContext.getBean(PanelItemService.class);
     protected PersonAddressService addressService = SpringContext.getBean(PersonAddressService.class);
     protected AddressPartService addressPartService = SpringContext.getBean(AddressPartService.class);
     protected OrganizationService organizationService = SpringContext.getBean(OrganizationService.class);
@@ -610,8 +613,7 @@ public abstract class PatientReport extends Report {
             data.setNote(note);
         }
         data.setTestSection(analysisService.getTestSection(currentAnalysis).getLocalizedName());
-        data.setTestSortOrder(GenericValidator.isBlankOrNull(test.getSortOrder()) ? Integer.MAX_VALUE
-                : Integer.parseInt(test.getSortOrder()));
+        data.setTestSortOrder(resolveTestSortOrder(currentAnalysis, test));
         data.setSectionSortOrder(test.getTestSection().getSortOrderInt());
 
         if (SpringContext.getBean(IStatusService.class).matches(analysisService.getStatusId(currentAnalysis),
@@ -1214,6 +1216,47 @@ public abstract class PatientReport extends Report {
             int days = DateUtil.getAgeInDays(dobDate, DateUtil.getNowAsSqlDate());
             return days + " " + MessageUtil.getMessage("abbreviation.day.single");
         }
+    }
+
+    protected int resolveTestSortOrder(Analysis analysis, Test test) {
+        if (test == null) {
+            return Integer.MAX_VALUE;
+        }
+        int fallbackSortOrder = Integer.MAX_VALUE;
+        if (!GenericValidator.isBlankOrNull(test.getSortOrder())) {
+            try {
+                fallbackSortOrder = Integer.parseInt(test.getSortOrder());
+            } catch (Exception e) {
+                fallbackSortOrder = Integer.MAX_VALUE;
+            }
+        }
+
+        if (analysis == null) {
+            return fallbackSortOrder;
+        }
+
+        try {
+            Panel panel = analysis.getPanel();
+            if (panel != null && !GenericValidator.isBlankOrNull(panel.getId())
+                    && !GenericValidator.isBlankOrNull(test.getId())) {
+                if (panelItemService == null) {
+                    panelItemService = SpringContext.getBean(PanelItemService.class);
+                }
+                if (panelItemService != null) {
+                    List<PanelItem> panelItems = panelItemService.getPanelItemsForPanelAndItemList(panel.getId(),
+                            java.util.List.of(Integer.parseInt(test.getId())));
+                    if (panelItems != null && !panelItems.isEmpty() && panelItems.get(0) != null
+                            && !GenericValidator.isBlankOrNull(panelItems.get(0).getSortOrder())) {
+                        return Integer.parseInt(panelItems.get(0).getSortOrder());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LogEvent.logWarn(this.getClass().getSimpleName(), "resolveTestSortOrder",
+                    "Fallback to test.getSortOrder() due to exception: " + e.getMessage());
+        }
+
+        return fallbackSortOrder;
     }
 
     @Override
