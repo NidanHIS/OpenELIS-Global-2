@@ -50,7 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
  * tests, panels, and dictionaries in OpenELIS.
  */
 @Component
-public class OclConfigurationHandler implements DomainConfigurationHandler {
+public class OclConfigurationHandler implements DomainConfigurationHandler, OclImporter {
 
     private static final Logger log = LoggerFactory.getLogger(OclConfigurationHandler.class);
 
@@ -181,6 +181,7 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
      * point is transactional too. When reached from {@link #processConfiguration}
      * this simply joins that transaction (propagation REQUIRED).
      */
+    @Override
     @Transactional
     public void performImport(List<JsonNode> oclNodes) {
         log.info("OCL Import: Found {} nodes to process.", oclNodes.size());
