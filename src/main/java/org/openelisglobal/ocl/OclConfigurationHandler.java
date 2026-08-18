@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -16,6 +18,7 @@ import org.json.simple.parser.ParseException;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
 import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.services.DisplayListService;
+import org.openelisglobal.configuration.service.ConfigImportLogService;
 import org.openelisglobal.configuration.service.DomainConfigurationHandler;
 import org.openelisglobal.localization.valueholder.Localization;
 import org.openelisglobal.panel.service.PanelService;
@@ -58,6 +61,9 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
 
     @Autowired
     private OclZipImporter oclZipImporter;
+
+    @Autowired
+    private ConfigImportLogService configImportLogService;
 
     @Autowired
     private TestAddService testAddService;
@@ -125,19 +131,35 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
             tempFile = File.createTempFile("ocl-", ".zip");
             tempFile.deleteOnExit();
 
-            // Copy InputStream to temp file
+            // Copy InputStream to temp file, hashing as we go so the package can be
+            // identified without a second read.
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    digest.update(buffer, 0, bytesRead);
                     fos.write(buffer, 0, bytesRead);
                 }
+            }
+            String checksum = HexFormat.of().formatHex(digest.digest());
+
+            // Durable gate. The framework's properties-file checksum is a fast
+            // pre-filter, but it does not survive a power cut, so this is the marker
+            // that actually decides. It is read and written inside this method's
+            // transaction, so it cannot disagree with the data it guards.
+            if (configImportLogService.isAlreadyImported(getDomainName(), fileName, checksum)) {
+                log.info("OCL Import: package {} already imported (checksum {}). Skipping.", fileName, checksum);
+                return;
             }
 
             // Process the ZIP file
             List<JsonNode> oclNodes = new ArrayList<>();
             oclZipImporter.importOclZip(tempFile.getAbsolutePath(), oclNodes);
             performImport(oclNodes);
+
+            configImportLogService.recordImport(getDomainName(), fileName, checksum);
+            log.info("OCL Import: recorded package {} as imported (checksum {}).", fileName, checksum);
         } finally {
             // Clean up temp file
             if (tempFile != null && tempFile.exists()) {

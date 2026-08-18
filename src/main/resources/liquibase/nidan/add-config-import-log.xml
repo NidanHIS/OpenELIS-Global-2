@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+      Durable record of which configuration packages have been imported.
+
+      Replaces the role that ocl-checksums.properties played for the OCL domain.
+      That file was written with a plain FileWriter, no fsync and no atomic
+      rename, and only after the whole domain finished. A power cut during the
+      import, between the import and the write, or inside the filesystem
+      writeback window left the file missing or zero-length, so the next boot
+      re-ran the import and overwrote lab-owned configuration.
+
+      This table is written inside the same transaction as the import itself, so
+      the marker and the data commit or roll back together.
+    -->
+    <changeSet id="add-config-import-log" author="Dipak Thapa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="clinlims" tableName="config_import_log"/>
+            </not>
+        </preConditions>
+
+        <createTable schemaName="clinlims" tableName="config_import_log">
+            <column name="domain" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="checksum" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="imported_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey schemaName="clinlims" tableName="config_import_log"
+                       columnNames="domain, file_name"
+                       constraintName="config_import_log_pk"/>
+    </changeSet>
+
+</databaseChangeLog>
