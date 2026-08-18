@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.common.services.DisplayListService;
+import org.openelisglobal.configuration.service.FieldProvenanceService;
 import org.openelisglobal.localization.service.LocalizationService;
 import org.openelisglobal.localization.valueholder.Localization;
 import org.openelisglobal.panel.service.PanelService;
@@ -46,6 +47,9 @@ public class TestModifyServiceImpl implements TestModifyService {
     private PanelItemService panelItemService;
     @Autowired
     private TestService testService;
+
+    @Autowired
+    private FieldProvenanceService fieldProvenanceService;
     @Autowired
     private ResultLimitService resultLimitService;
     @Autowired
@@ -215,6 +219,12 @@ public class TestModifyServiceImpl implements TestModifyService {
             test.setIsActive(isActive);
             test.setOrderable(orderable);
             testService.update(test);
+            // This screen can change every field the OCL package also manages, so all
+            // four become lab-owned. The other two testService.update() calls in this
+            // class set sort order and default result, which OCL does not touch, so
+            // they deliberately do not stamp anything.
+            fieldProvenanceService.markUserOwned(FieldProvenanceService.ENTITY_TEST, test.getId(),
+                    FieldProvenanceService.testFields());
         }
     }
 
