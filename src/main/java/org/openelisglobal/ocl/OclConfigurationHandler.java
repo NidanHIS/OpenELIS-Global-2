@@ -160,7 +160,7 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
 
                     try {
                         log.info("OCL Import: Processing concept #{} - attempting to create test", conceptCount);
-                        handlenNewTests(form);
+                        handleNewTests(form);
                         testsCreated++;
                     } catch (Exception ex) {
                         testsSkipped++;
@@ -168,7 +168,7 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
                     }
                 }
                 try {
-                    mapLabsetPannels(mapper);
+                    mapLabsetPanels(mapper);
                 } catch (Exception ex) {
                     log.error("Error while Handling Lab sets", ex);
                 }
@@ -180,8 +180,6 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
     }
 
     private void refreshDisplayLists() {
-        displayListService.refreshList(DisplayListService.ListType.PANELS);
-        displayListService.refreshList(DisplayListService.ListType.PANELS_INACTIVE);
         testService.refreshTestNames();
         displayListService.refreshList(DisplayListService.ListType.SAMPLE_TYPE_ACTIVE);
         displayListService.refreshList(DisplayListService.ListType.SAMPLE_TYPE_INACTIVE);
@@ -194,7 +192,7 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
         SpringContext.getBean(TypeOfSampleService.class).clearCache();
     }
 
-    private void mapLabsetPannels(OclToOpenElisMapper mapper) {
+    private void mapLabsetPanels(OclToOpenElisMapper mapper) {
         for (JsonNode panel : mapper.getLabSetPanelNodes()) {
             Map<String, String> names = mapper.extractNames(panel);
             String englishName = names.get("englishName");
@@ -205,13 +203,13 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
                 List<PanelItem> panelItems = panelItemService.getPanelItemsForPanel(dbPanel.getId());
 
                 List<Test> newTests = new ArrayList<>();
-                Set<String> memebers = mapper.getLabSetMemebrs(panel);
-                log.info("Mapped Lab Set Memebrs: " + memebers);
-                for (String testName : mapper.getLabSetMemebrs(panel)) {
-                    log.info("Adding Test " + testName + " to Pannel " + englishName);
+                Set<String> members = mapper.getLabSetMembers(panel);
+                log.info("Mapped Lab Set Members: " + members);
+                for (String testName : members) {
+                    log.info("Adding Test " + testName + " to Panel " + englishName);
                     Test test = testService.getTestByLocalizedName(testName, Locale.ENGLISH);
                     if (test != null) {
-                        log.info("Test " + testName + "Added to Pannel " + englishName);
+                        log.info("Test " + testName + " added to Panel " + englishName);
                         newTests.add(test);
                     }
                 }
@@ -225,7 +223,7 @@ public class OclConfigurationHandler implements DomainConfigurationHandler {
         }
     }
 
-    public TestAddForm handlenNewTests(TestAddForm form) {
+    public TestAddForm handleNewTests(TestAddForm form) {
 
         String jsonString = (form.getJsonWad());
         JSONParser parser = new JSONParser();

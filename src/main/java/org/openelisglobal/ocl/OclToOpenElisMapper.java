@@ -1391,7 +1391,7 @@ public class OclToOpenElisMapper {
         return roleModule;
     }
 
-    public Set<String> getLabSetMemebrs(JsonNode concept) {
+    public Set<String> getLabSetMembers(JsonNode concept) {
         String dataType = getText(concept, "datatype");
         String conceptClass = getText(concept, "concept_class");
         boolean isLabSet = conceptClass != null && LABSET_CONCEPT_CLASSES.contains(conceptClass.toUpperCase())
