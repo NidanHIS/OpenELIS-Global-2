@@ -309,13 +309,22 @@ public class PatientClinicalReport extends PatientReport implements IReportCreat
             reportItem.setCompleteFlag(MessageUtil
                     .getMessage(sampleCompleteMap.get(reportItem.getAccessionNumber()) ? "report.status.complete"
                             : "report.status.partial"));
-            if (reportItem.isCorrectedResult()) {
-                // The report is French only
-                if (reportItem.getNote() != null && reportItem.getNote().length() > 0) {
-                    reportItem.setNote("Résultat corrigé<br/>" + reportItem.getNote());
-                } else {
-                    reportItem.setNote("Résultat corrigé");
+            // Suppress auto-generated corrected result annotations from printed report
+            String note = reportItem.getNote();
+            if (note != null && !note.trim().isEmpty()) {
+                String correctedMsg = MessageUtil.getMessage("note.corrected.result");
+                String[] lines = note.split("<br\\s*/?>");
+                StringBuilder cleanNote = new StringBuilder();
+                for (String line : lines) {
+                    if ((correctedMsg == null || !line.contains(correctedMsg)) && !line.contains("Result corrected") && !line.contains("Résultat corrigé")) {
+                        if (cleanNote.length() > 0) {
+                            cleanNote.append("<br/>");
+                        }
+                        cleanNote.append(line.trim());
+                    }
                 }
+                note = cleanNote.toString().trim();
+                reportItem.setNote(note.isEmpty() ? null : note);
             }
 
             reportItem
