@@ -137,11 +137,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
         boolean isConfirmationSample = sampleService.isConfirmationSample(currentSample);
         List<Analysis> analysisList = analysisService
-                .getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample), analysisStatusIds);
-        if (onlyResultsForReportBySite) {
-            analysisList = analysisService.getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample),
-                    validatedAnalysisStatusIds);
-        }
+                .getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample), validatedAnalysisStatusIds);
 
         List<Analysis> filteredAnalysisList = userService.filterAnalysesByLabUnitRoles(systemUserId, analysisList,
                 Constants.ROLE_REPORTS);
