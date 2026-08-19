@@ -45,10 +45,12 @@ import org.openelisglobal.test.valueholder.Test;
 public class PatientCILNSPClinical extends PatientReport implements IReportCreator, IReportParameterSetter {
 
     private static Set<Integer> analysisStatusIds;
+    private static Set<Integer> validatedAnalysisStatusIds;
     protected List<ClinicalPatientData> clinicalReportItems;
 
     static {
         analysisStatusIds = new HashSet<>();
+        validatedAnalysisStatusIds = new HashSet<>();
         analysisStatusIds.add(Integer
                 .parseInt(SpringContext.getBean(IStatusService.class).getStatusID(AnalysisStatus.BiologistRejected)));
         analysisStatusIds.add(
@@ -63,6 +65,8 @@ public class PatientCILNSPClinical extends PatientReport implements IReportCreat
                 Integer.parseInt(SpringContext.getBean(IStatusService.class).getStatusID(AnalysisStatus.Canceled)));
         analysisStatusIds.add(Integer
                 .parseInt(SpringContext.getBean(IStatusService.class).getStatusID(AnalysisStatus.TechnicalRejected)));
+        validatedAnalysisStatusIds.add(
+                Integer.parseInt(SpringContext.getBean(IStatusService.class).getStatusID(AnalysisStatus.Finalized)));
     }
 
     static final String configName = ConfigurationProperties.getInstance().getPropertyValue(Property.configurationName);
@@ -105,7 +109,7 @@ public class PatientCILNSPClinical extends PatientReport implements IReportCreat
 
         boolean isConfirmationSample = sampleService.isConfirmationSample(currentSample);
         List<Analysis> analysisList = analysisService
-                .getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample), analysisStatusIds);
+                .getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample), validatedAnalysisStatusIds);
         List<Analysis> filteredAnalysisList = userService.filterAnalysesByLabUnitRoles(systemUserId, analysisList,
                 Constants.ROLE_REPORTS);
         List<ClinicalPatientData> currentSampleReportItems = new ArrayList<>(filteredAnalysisList.size());
@@ -340,12 +344,22 @@ public class PatientCILNSPClinical extends PatientReport implements IReportCreat
             reportItem.setCompleteFlag(MessageUtil
                     .getMessage(sampleCompleteMap.get(reportItem.getAccessionNumber()) ? "report.status.complete"
                             : "report.status.partial"));
-            if (reportItem.isCorrectedResult()) {
-                if (reportItem.getNote() != null && reportItem.getNote().length() > 0) {
-                    reportItem.setNote(MessageUtil.getMessage("result.corrected") + "<br/>" + reportItem.getNote());
-                } else {
-                    reportItem.setNote(MessageUtil.getMessage("result.corrected"));
+            // Suppress auto-generated corrected result annotations from printed report
+            String note = reportItem.getNote();
+            if (note != null && !note.trim().isEmpty()) {
+                String correctedMsg = MessageUtil.getMessage("note.corrected.result");
+                String[] lines = note.split("<br\\s*/?>");
+                StringBuilder cleanNote = new StringBuilder();
+                for (String line : lines) {
+                    if ((correctedMsg == null || !line.contains(correctedMsg)) && !line.contains("Result corrected")) {
+                        if (cleanNote.length() > 0) {
+                            cleanNote.append("<br/>");
+                        }
+                        cleanNote.append(line.trim());
+                    }
                 }
+                note = cleanNote.toString().trim();
+                reportItem.setNote(note.isEmpty() ? null : note);
             }
 
             reportItem

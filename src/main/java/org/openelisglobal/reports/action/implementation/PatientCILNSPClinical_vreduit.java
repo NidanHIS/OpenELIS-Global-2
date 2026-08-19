@@ -137,11 +137,7 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
 
         boolean isConfirmationSample = sampleService.isConfirmationSample(currentSample);
         List<Analysis> analysisList = analysisService
-                .getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample), analysisStatusIds);
-        if (onlyResultsForReportBySite) {
-            analysisList = analysisService.getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample),
-                    validatedAnalysisStatusIds);
-        }
+                .getAnalysesBySampleIdAndStatusId(sampleService.getId(currentSample), validatedAnalysisStatusIds);
 
         List<Analysis> filteredAnalysisList = userService.filterAnalysesByLabUnitRoles(systemUserId, analysisList,
                 Constants.ROLE_REPORTS);
@@ -516,12 +512,22 @@ public class PatientCILNSPClinical_vreduit extends PatientReport implements IRep
                         .getMessage(sampleCompleteMap.get(reportItem.getAccessionNumber()) ? "report.status.complete"
                                 : "report.status.partial"));
             }
-            if (reportItem.isCorrectedResult()) {
-                if (reportItem.getNote() != null && reportItem.getNote().length() > 0) {
-                    reportItem.setNote(MessageUtil.getMessage("result.corrected") + "<br/>" + reportItem.getNote());
-                } else {
-                    reportItem.setNote(MessageUtil.getMessage("result.corrected"));
+            // Suppress auto-generated corrected result annotations from printed report
+            String note = reportItem.getNote();
+            if (note != null && !note.trim().isEmpty()) {
+                String correctedMsg = MessageUtil.getMessage("note.corrected.result");
+                String[] lines = note.split("<br\\s*/?>");
+                StringBuilder cleanNote = new StringBuilder();
+                for (String line : lines) {
+                    if ((correctedMsg == null || !line.contains(correctedMsg)) && !line.contains("Result corrected")) {
+                        if (cleanNote.length() > 0) {
+                            cleanNote.append("<br/>");
+                        }
+                        cleanNote.append(line.trim());
+                    }
                 }
+                note = cleanNote.toString().trim();
+                reportItem.setNote(note.isEmpty() ? null : note);
             }
 
             reportItem
