@@ -316,7 +316,8 @@ public class PatientClinicalReport extends PatientReport implements IReportCreat
                 String[] lines = note.split("<br\\s*/?>");
                 StringBuilder cleanNote = new StringBuilder();
                 for (String line : lines) {
-                    if ((correctedMsg == null || !line.contains(correctedMsg)) && !line.contains("Result corrected") && !line.contains("Résultat corrigé")) {
+                    if ((correctedMsg == null || !line.contains(correctedMsg)) && !line.contains("Result corrected")
+                            && !line.contains("Résultat corrigé")) {
                         if (cleanNote.length() > 0) {
                             cleanNote.append("<br/>");
                         }
