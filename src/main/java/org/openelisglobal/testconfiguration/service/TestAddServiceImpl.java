@@ -1,6 +1,7 @@
 package org.openelisglobal.testconfiguration.service;
 
 import java.util.List;
+import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.localization.service.LocalizationService;
 import org.openelisglobal.localization.valueholder.Localization;
 import org.openelisglobal.panel.service.PanelService;
@@ -85,6 +86,10 @@ public class TestAddServiceImpl implements TestAddService {
             for (PanelItem item : set.panelItems) {
                 item.setSysUserId(currentUserId);
                 item.setTest(set.test);
+                if (item.getPanel() != null && !GenericValidator.isBlankOrNull(item.getPanel().getId())
+                        && GenericValidator.isBlankOrNull(item.getSortOrder())) {
+                    item.setSortOrder(getNextSortOrderForPanel(item.getPanel().getId()));
+                }
                 panelItemService.insert(item);
                 if (item.getPanel() != null) {
                     Panel panel = item.getPanel();
@@ -114,6 +119,30 @@ public class TestAddServiceImpl implements TestAddService {
             // Publish event AFTER all related data is inserted (including result_limits)
             // This ensures integrations (Odoo, FHIR) can access complete test data
             eventPublisher.publishEvent(new TestCreatedEvent(this, set.test));
+        }
+    }
+
+    private String getNextSortOrderForPanel(String panelId) {
+        try {
+            List<PanelItem> existingPanelItems = panelItemService.getPanelItemsForPanel(panelId);
+            if (existingPanelItems == null || existingPanelItems.isEmpty()) {
+                return "1";
+            }
+            int maxSortOrder = 0;
+            for (PanelItem pi : existingPanelItems) {
+                if (pi != null && !GenericValidator.isBlankOrNull(pi.getSortOrder())) {
+                    try {
+                        int order = Integer.parseInt(pi.getSortOrder().trim());
+                        if (order > maxSortOrder) {
+                            maxSortOrder = order;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            return String.valueOf(maxSortOrder + 1);
+        } catch (Exception e) {
+            return "1";
         }
     }
 }
