@@ -12,6 +12,8 @@ import org.openelisglobal.localization.valueholder.Localization;
 import org.openelisglobal.panel.event.PanelCreatedOrUpdatedEvent;
 import org.openelisglobal.panel.service.PanelService;
 import org.openelisglobal.panel.valueholder.Panel;
+import org.openelisglobal.systemmodule.service.SystemModuleService;
+import org.openelisglobal.systemmodule.valueholder.SystemModule;
 import org.openelisglobal.testconfiguration.form.PanelRenameEntryForm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,6 +39,9 @@ public class PanelRenameEntryRestController extends BaseController {
     LocalizationService localizationService;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private SystemModuleService systemModuleService;
 
     @InitBinder
     public void initBinder(WebDataBinder binder) {
@@ -92,16 +97,33 @@ public class PanelRenameEntryRestController extends BaseController {
         Panel panel = panelService.getPanelById(panelId);
 
         if (panel != null) {
+            String trimmedEnglish = nameEnglish != null ? nameEnglish.trim() : "";
+            String trimmedFrench = nameFrench != null ? nameFrench.trim() : "";
 
             Localization name = panel.getLocalization();
-            name.setEnglish(nameEnglish.trim());
-            name.setFrench(nameFrench.trim());
-            name.setSysUserId(userId);
+            String oldEnglishName = null;
+            if (name != null) {
+                oldEnglishName = name.getEnglish();
+                name.setEnglish(trimmedEnglish);
+                name.setFrench(trimmedFrench);
+                name.setSysUserId(userId);
 
-            try {
-                localizationService.update(name);
-            } catch (LIMSRuntimeException e) {
-                LogEvent.logDebug(e);
+                try {
+                    localizationService.update(name);
+                } catch (LIMSRuntimeException e) {
+                    LogEvent.logDebug(e);
+                }
+            } else if (!GenericValidator.isBlankOrNull(panel.getPanelName())) {
+                oldEnglishName = panel.getPanelName();
+            }
+
+            // Synchronize base Panel table fields (panelName & description)
+            if (!GenericValidator.isBlankOrNull(trimmedEnglish)) {
+                String safePanelName = trimmedEnglish.length() > 20 ? trimmedEnglish.substring(0, 20) : trimmedEnglish;
+                String safeDescription = trimmedEnglish.length() > 60 ? trimmedEnglish.substring(0, 60)
+                        : trimmedEnglish;
+                panel.setPanelName(safePanelName);
+                panel.setDescription(safeDescription);
             }
 
             java.math.BigDecimal panelPrice = null;
@@ -117,9 +139,43 @@ public class PanelRenameEntryRestController extends BaseController {
             panel.setSysUserId(userId);
             panelService.update(panel);
 
+            // Synchronize associated SystemModule records if English name changed
+            if (!GenericValidator.isBlankOrNull(oldEnglishName) && !GenericValidator.isBlankOrNull(trimmedEnglish)
+                    && !oldEnglishName.equalsIgnoreCase(trimmedEnglish)) {
+                updateSystemModulesForPanel(oldEnglishName, trimmedEnglish, userId);
+            }
+
             eventPublisher.publishEvent(new PanelCreatedOrUpdatedEvent(this, panel));
         }
         DisplayListService.getInstance().getFreshList(DisplayListService.ListType.PANELS);
+        DisplayListService.getInstance().getFreshList(DisplayListService.ListType.PANELS_ACTIVE);
+        DisplayListService.getInstance().getFreshList(DisplayListService.ListType.PANELS_INACTIVE);
+    }
+
+    private void updateSystemModulesForPanel(String oldName, String newName, String userId) {
+        String[] modulePrefixes = new String[] { "Workplan", "LogbookResults", "ResultValidation" };
+        for (String prefix : modulePrefixes) {
+            try {
+                SystemModule module = systemModuleService.getSystemModuleByName(prefix + ":" + oldName);
+                if (module != null) {
+                    String rawModuleName = prefix + ":" + newName;
+                    String safeModuleName = rawModuleName.length() > 32 ? rawModuleName.substring(0, 32)
+                            : rawModuleName;
+                    String rawModuleDesc = prefix + "=>panel=>" + newName;
+                    String safeModuleDesc = rawModuleDesc.length() > 80 ? rawModuleDesc.substring(0, 80)
+                            : rawModuleDesc;
+
+                    module.setSystemModuleName(safeModuleName);
+                    module.setDescription(safeModuleDesc);
+                    module.setSysUserId(userId);
+                    systemModuleService.update(module);
+                }
+            } catch (Exception e) {
+                LogEvent.logError(this.getClass().getSimpleName(), "updateSystemModulesForPanel",
+                        "Error updating system module for prefix " + prefix + " from " + oldName + " to " + newName
+                                + ": " + e.getMessage());
+            }
+        }
     }
 
     @Override
