@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Widens clinlims.panel.name from VARCHAR(20) to VARCHAR(60).
+
+        The original 20-char limit was sized for short legacy codes.
+        Panel names with suffixes or full descriptive names (e.g. "COMPLETE BLOOD COUNT [OLD]")
+        require up to 60 characters, matching the existing description column on the same table.
+
+        preConditions: only runs if the column is still VARCHAR(20) — safe to
+        apply on any environment. If already widened, changeset is marked MARK_RAN and skipped.
+    -->
+    <changeSet id="widen-panel-name-to-60" author="nidan">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="character varying(20)">
+                SELECT data_type || '(' || character_maximum_length || ')'
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims'
+                  AND table_name   = 'panel'
+                  AND column_name  = 'name'
+            </sqlCheck>
+        </preConditions>
+
+        <modifyDataType
+            schemaName="clinlims"
+            tableName="panel"
+            columnName="name"
+            newDataType="VARCHAR(60)" />
+
+    </changeSet>
+
+</databaseChangeLog>

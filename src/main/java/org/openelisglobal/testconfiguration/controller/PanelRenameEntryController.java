@@ -107,7 +107,7 @@ public class PanelRenameEntryController extends BaseController {
 
             // Synchronize base Panel table fields (panelName & description)
             if (!trimmedEnglish.isEmpty()) {
-                String safePanelName = trimmedEnglish.length() > 20 ? trimmedEnglish.substring(0, 20) : trimmedEnglish;
+                String safePanelName = trimmedEnglish.length() > 60 ? trimmedEnglish.substring(0, 60) : trimmedEnglish;
                 String safeDescription = trimmedEnglish.length() > 60 ? trimmedEnglish.substring(0, 60)
                         : trimmedEnglish;
                 panel.setPanelName(safePanelName);

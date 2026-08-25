@@ -28,4 +28,5 @@
   <include relativeToChangelogFile="true" file="backfill-panel-item-sort-order.xml"/>
   <include relativeToChangelogFile="true" file="add-config-import-log.xml"/>
   <include relativeToChangelogFile="true" file="add-config-field-provenance.xml"/>
+  <include relativeToChangelogFile="true" file="widen-panel-name.xml"/>
 </databaseChangeLog>
