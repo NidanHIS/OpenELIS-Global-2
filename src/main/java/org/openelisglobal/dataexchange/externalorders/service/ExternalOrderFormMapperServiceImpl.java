@@ -239,6 +239,38 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
                     throw new IllegalArgumentException("Unable to resolve sample type for tests in sample");
                 }
 
+                // Build a map: sampleTypeId -> panel IDs whose tests land in that group.
+                // A panel is assigned to the sample-type group that contains the majority of
+                // its resolved tests; ties go to the group with the lower iteration index.
+                Map<String, Set<String>> sampleTypeToPanelIds = new LinkedHashMap<>();
+                if (!allPanelIds.isEmpty() && originalSample.getPanels() != null) {
+                    for (ExternalOrderRequest.ExternalOrderPanelRef panelRef : originalSample.getPanels()) {
+                        Panel panel = resolvePanel(panelRef);
+                        if (panel == null) {
+                            continue;
+                        }
+                        // Count how many of this panel's tests fall into each sample-type group.
+                        Map<String, Integer> sampleTypeHits = new LinkedHashMap<>();
+                        List<PanelItem> panelItems = panelItemService.getPanelItemsForPanel(panel.getId());
+                        if (panelItems != null) {
+                            for (PanelItem pi : panelItems) {
+                                if (pi.getTest() != null && pi.getTest().getId() != null) {
+                                    String stId = testToSampleType.get(pi.getTest().getId());
+                                    if (stId != null) {
+                                        sampleTypeHits.merge(stId, 1, Integer::sum);
+                                    }
+                                }
+                            }
+                        }
+                        // Pick the sample-type group with the most hits; fall back to the first
+                        // group in iteration order if no hits were found (edge case).
+                        String bestSampleType = sampleTypeHits.entrySet().stream().max(Map.Entry.comparingByValue())
+                                .map(Map.Entry::getKey).orElse(sampleTypeToTestIds.keySet().iterator().next());
+                        sampleTypeToPanelIds.computeIfAbsent(bestSampleType, k -> new LinkedHashSet<>())
+                                .add(panel.getId());
+                    }
+                }
+
                 // Create a separate sample entry for each sample type
                 for (Map.Entry<String, List<String>> entry : sampleTypeToTestIds.entrySet()) {
                     String sampleTypeId = entry.getKey();
@@ -262,17 +294,14 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
                     splitSample.setQuantity(originalSample.getQuantity());
                     splitSample.setUom(originalSample.getUom());
 
+                    // Assign the panel IDs that belong to this sample-type group.
+                    Set<String> panelsForType = sampleTypeToPanelIds.getOrDefault(sampleTypeId,
+                            java.util.Collections.emptySet());
+
                     expandedSamples.add(splitSample);
                     expandedTestIds.add(testsForType);
-                    // Panels are associated with original sample, not split by type
-                    // For simplicity, panels remain with first sample type group
-                    expandedPanelIds.add(new ArrayList<>());
+                    expandedPanelIds.add(new ArrayList<>(panelsForType));
                     expandedTestSampleTypeMaps.add(testSampleTypeMapBuilder.toString());
-                }
-
-                // Add panels to the first sample type group only
-                if (!allPanelIds.isEmpty() && !expandedPanelIds.isEmpty()) {
-                    expandedPanelIds.set(0, new ArrayList<>(allPanelIds));
                 }
             }
         }

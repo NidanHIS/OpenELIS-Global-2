@@ -500,7 +500,11 @@ const SampleType = (props) => {
     return () => {
       componentMounted.current = false;
     };
-  }, []);
+    // Re-run repopulateUI when props.sample changes so that panel testIds resolved
+    // asynchronously by the parent (resolveIncomingSampleNames in Index.js) are
+    // picked up and triggerPanelCheckBoxChange receives real testIds instead of undefined.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.sample]);
 
   return (
     <>
