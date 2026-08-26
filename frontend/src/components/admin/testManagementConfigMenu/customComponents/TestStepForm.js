@@ -964,11 +964,7 @@ export const StepTwoTestPanelAndUom = ({
               "Please select a valid panel",
             )
             .nullable(),
-          uom: Yup.string().notOneOf(
-            ["0", ""],
-            "Please select a valid unit of measurement",
-          ),
-          // .required("Unit of measurement is required"),
+          uom: Yup.string().nullable().optional(),
         })}
         enableReinitialize={true}
         validateOnChange={true}
@@ -1055,10 +1051,7 @@ export const StepTwoTestPanelAndUom = ({
             );
 
             setFieldValue("uom", e.target.value);
-
-            if (selectedUomObject) {
-              setSelectedUomList(selectedUomObject);
-            }
+            setSelectedUomList(selectedUomObject || {});
           };
 
           return (

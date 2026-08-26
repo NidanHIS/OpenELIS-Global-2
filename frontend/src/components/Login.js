@@ -234,7 +234,9 @@ function Login(props) {
             alt="fullsize logo"
             style={{
               objectFit: "contain",
-              width: "100%",
+              maxWidth: "200px",
+              maxHeight: "200px",
+              width: "auto",
               height: "auto",
               display: "block",
               margin: "0 auto",

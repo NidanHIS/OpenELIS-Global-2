@@ -16,7 +16,7 @@
             type="timestamp" access="field" />
 
         <property name="panelName" type="java.lang.String">
-            <column name="NAME" length="20" />
+            <column name="NAME" length="60" />
         </property>
         <property name="description" type="java.lang.String">
             <column name="DESCRIPTION" length="60" not-null="true" />

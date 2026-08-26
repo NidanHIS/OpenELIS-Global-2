@@ -1,7 +1,9 @@
 package org.openelisglobal.testconfiguration.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.common.services.DisplayListService;
 import org.openelisglobal.configuration.service.FieldProvenanceService;
@@ -78,10 +80,17 @@ public class TestModifyServiceImpl implements TestModifyService {
         }
 
         List<PanelItem> panelItems = panelItemService.getPanelItemByTestId(testAddParams.testId);
-        for (PanelItem item : panelItems) {
-            item.setSysUserId(currentUserId);
+        Map<String, String> existingSortOrderByPanelId = new HashMap<>();
+        if (panelItems != null) {
+            for (PanelItem item : panelItems) {
+                item.setSysUserId(currentUserId);
+                if (item.getPanel() != null && !GenericValidator.isBlankOrNull(item.getPanel().getId())
+                        && !GenericValidator.isBlankOrNull(item.getSortOrder())) {
+                    existingSortOrderByPanelId.put(item.getPanel().getId(), item.getSortOrder());
+                }
+            }
+            panelItemService.deleteAll(panelItems);
         }
-        panelItemService.deleteAll(panelItems);
 
         List<ResultLimit> resultLimitItems = resultLimitService.getAllResultLimitsForTest(testAddParams.testId);
         for (ResultLimit item : resultLimitItems) {
@@ -124,6 +133,15 @@ public class TestModifyServiceImpl implements TestModifyService {
                 item.setSysUserId(currentUserId);
                 Test nonTransiantTest = testService.getTestById(set.test.getId());
                 item.setTest(nonTransiantTest);
+                if (item.getPanel() != null && !GenericValidator.isBlankOrNull(item.getPanel().getId())) {
+                    String panelId = item.getPanel().getId();
+                    String existingSortOrder = existingSortOrderByPanelId.get(panelId);
+                    if (!GenericValidator.isBlankOrNull(existingSortOrder)) {
+                        item.setSortOrder(existingSortOrder);
+                    } else if (GenericValidator.isBlankOrNull(item.getSortOrder())) {
+                        item.setSortOrder(getNextSortOrderForPanel(panelId));
+                    }
+                }
                 panelItemService.insert(item);
                 if (item.getPanel() != null) {
                     TypeOfSample sampleType = typeOfSampleService.get(set.sampleTypeTest.getTypeOfSampleId());
@@ -249,5 +267,29 @@ public class TestModifyServiceImpl implements TestModifyService {
         // Refresh test names
         DisplayListService.getInstance().getFreshList(DisplayListService.ListType.ALL_TESTS);
         DisplayListService.getInstance().getFreshList(DisplayListService.ListType.ORDERABLE_TESTS);
+    }
+
+    private String getNextSortOrderForPanel(String panelId) {
+        try {
+            List<PanelItem> existingPanelItems = panelItemService.getPanelItemsForPanel(panelId);
+            if (existingPanelItems == null || existingPanelItems.isEmpty()) {
+                return "1";
+            }
+            int maxSortOrder = 0;
+            for (PanelItem pi : existingPanelItems) {
+                if (pi != null && !GenericValidator.isBlankOrNull(pi.getSortOrder())) {
+                    try {
+                        int order = Integer.parseInt(pi.getSortOrder().trim());
+                        if (order > maxSortOrder) {
+                            maxSortOrder = order;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            return String.valueOf(maxSortOrder + 1);
+        } catch (Exception e) {
+            return "1";
+        }
     }
 }
