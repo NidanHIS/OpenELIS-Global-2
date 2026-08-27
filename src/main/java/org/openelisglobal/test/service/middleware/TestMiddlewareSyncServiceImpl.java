@@ -122,6 +122,7 @@ public class TestMiddlewareSyncServiceImpl implements TestMiddlewareSyncService 
         payload.description = test.getDescription();
 
         payload.orderable = test.getOrderable();
+        payload.active = "Y".equalsIgnoreCase(test.getIsActive());
         payload.price = test.getPrice();
         payload.defaultPrice = test.getPrice();
 
@@ -279,6 +280,7 @@ public class TestMiddlewareSyncServiceImpl implements TestMiddlewareSyncService 
         public String description;
 
         public Boolean orderable;
+        public Boolean active;
         public BigDecimal price;
 
         // Panel-related metadata to align with LabTestDefinitionEvent

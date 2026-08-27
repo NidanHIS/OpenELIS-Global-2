@@ -105,6 +105,8 @@ public class PanelMiddlewareSyncServiceImpl implements PanelMiddlewareSyncServic
         payload.panel = true;
         payload.componentTestUuids = buildComponentTestUuids(panel);
 
+        payload.active = "Y".equalsIgnoreCase(panel.getIsActive());
+
         payload.defaultPrice = panel.getPrice();
         payload.price = panel.getPrice();
 
@@ -172,6 +174,7 @@ public class PanelMiddlewareSyncServiceImpl implements PanelMiddlewareSyncServic
         public boolean panel;
         public List<String> componentTestUuids;
 
+        public Boolean active;
         public BigDecimal defaultPrice;
         public String currency;
     }
