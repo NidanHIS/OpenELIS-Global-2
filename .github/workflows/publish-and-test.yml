@@ -19,8 +19,45 @@ env:
   DOCKER_NAME: ${{ vars.DOCKERHUB_USERNAME }}/openelis-global-2
 
 jobs:
-  build-and-push-image-backend:
+  changes:
     if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      database: ${{ steps.filter.outputs.database }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'pom.xml'
+              - 'Dockerfile'
+              - 'install/**'
+              - 'tomcat/**'
+              - 'dataexport/**'
+              - 'volume/**'
+              - '.github/workflows/publish-and-test.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/publish-and-test.yml'
+            database:
+              - 'db/**'
+              - 'src/main/resources/liquibase/**'
+              - '.github/workflows/publish-and-test.yml'
+
+  build-and-push-image-backend:
+    needs: changes
+    if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' && (github.event_name != 'push' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -66,7 +103,8 @@ jobs:
           build-args: SKIP_SPOTLESS=true
 
   build-and-push-image-frontend:
-    if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' }}
+    needs: changes
+    if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' && (github.event_name != 'push' || needs.changes.outputs.frontend == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -111,7 +149,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build-and-push-image-database:
-    if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' }}
+    needs: changes
+    if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' && (github.event_name != 'push' || needs.changes.outputs.database == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
