@@ -482,21 +482,33 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       if (!componentMounted.current || seq !== leftFetchSeq.current) return;
 
       const raw: any[] = Array.isArray(res?.items) ? res.items : [];
-      const list = raw.map((item: any) => ({
-        ...item,
-        id: item.externalOrderNumber,
-        received: item.receivedTimestamp
-          ? new Date(item.receivedTimestamp).toLocaleString([], {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "—",
-        tests: item.testCount != null ? String(item.testCount) : "—",
-        source: item.source ?? "—",
-      }));
+      const list = raw.map((item: any) => {
+        const rawName = String(item.patientName ?? "").trim();
+        const formattedPatientName = rawName.includes(",")
+          ? rawName
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .reverse()
+              .join(" ")
+          : rawName;
+        return {
+          ...item,
+          patientName: formattedPatientName,
+          id: item.externalOrderNumber,
+          received: item.receivedTimestamp
+            ? new Date(item.receivedTimestamp).toLocaleString([], {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "—",
+          tests: item.testCount != null ? String(item.testCount) : "—",
+          source: item.source ?? "—",
+        };
+      });
 
       setIncomingOrdersData(list);
       setLeftTotalCount(res?.totalCount ?? 0);
@@ -518,11 +530,11 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
 
   const getGroupedItemKey = (item) => String(item?.labNumber ?? item?.id ?? "");
 
-  const formatPatientName = (last?: string, first?: string) =>
-    [last, first]
+  const formatPatientName = (last?: string, first?: string, middle?: string) =>
+    [first, middle, last]
       .map((v) => String(v ?? "").trim())
       .filter(Boolean)
-      .join(", ");
+      .join(" ");
 
   const getExactPatientSearchResult = (results = [], patientId = "") => {
     if (!Array.isArray(results) || results.length === 0) return null;
@@ -549,7 +561,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         `/rest/patient-search-results?labNumber=${encodeURIComponent(ln)}&suppressExternalSearch=true`,
       );
       const r = getExactPatientSearchResult(res?.patientSearchResults, pid);
-      const name = formatPatientName(r?.lastName, r?.firstName);
+      const name = formatPatientName(r?.lastName, r?.firstName, r?.middleName);
       if (name) return name;
     }
     if (pid) {
@@ -557,7 +569,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         `/rest/patient-search-results?nationalID=${encodeURIComponent(pid)}&suppressExternalSearch=true`,
       );
       const r = getExactPatientSearchResult(res?.patientSearchResults, pid);
-      return formatPatientName(r?.lastName, r?.firstName);
+      return formatPatientName(r?.lastName, r?.firstName, r?.middleName);
     }
     return "";
   };
@@ -1314,11 +1326,16 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
         </TableCell>
       );
     } else if (cell.info.header === "patientName") {
-      return (
-        <TableCell key={cell.id}>
-          {cell.value || rowPatientName || ""}
-        </TableCell>
-      );
+      const rawName = String(cell.value || rowPatientName || "").trim();
+      const displayName = rawName.includes(",")
+        ? rawName
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .reverse()
+            .join(" ")
+        : rawName;
+      return <TableCell key={cell.id}>{displayName}</TableCell>;
     } else if (cell.info.header === "actions") {
       const accessionNumber = row.cells.find(
         (c) => c.info.header === "labNumber",
@@ -1798,6 +1815,20 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                 </TableCell>
                                               );
                                             }
+                                            const cellVal = cell?.value ?? "-";
+                                            const displayVal =
+                                              h.key === "patientName" &&
+                                              typeof cellVal === "string" &&
+                                              cellVal.includes(",")
+                                                ? cellVal
+                                                    .split(",")
+                                                    .map((s: string) =>
+                                                      s.trim(),
+                                                    )
+                                                    .filter(Boolean)
+                                                    .reverse()
+                                                    .join(" ")
+                                                : cellVal;
                                             return (
                                               <TableCell
                                                 key={
@@ -1805,7 +1836,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                   `${row.id}-${h.key}`
                                                 }
                                               >
-                                                {cell?.value ?? "-"}
+                                                {displayVal}
                                               </TableCell>
                                             );
                                           })}
@@ -1955,6 +1986,20 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                             const cell = row.cells.find(
                                               (c) => c.info.header === h.key,
                                             );
+                                            const cellVal = cell?.value ?? "-";
+                                            const displayVal =
+                                              h.key === "patientName" &&
+                                              typeof cellVal === "string" &&
+                                              cellVal.includes(",")
+                                                ? cellVal
+                                                    .split(",")
+                                                    .map((s: string) =>
+                                                      s.trim(),
+                                                    )
+                                                    .filter(Boolean)
+                                                    .reverse()
+                                                    .join(" ")
+                                                : cellVal;
                                             return (
                                               <TableCell
                                                 key={
@@ -1962,7 +2007,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                                                   `${row.id}-${h.key}`
                                                 }
                                               >
-                                                {cell?.value ?? "-"}
+                                                {displayVal}
                                               </TableCell>
                                             );
                                           })}

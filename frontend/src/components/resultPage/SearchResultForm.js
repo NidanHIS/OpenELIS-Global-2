@@ -1151,7 +1151,15 @@ export function SearchResults(props) {
                 row.sequenceNumber}
               {row.isEqaSample && <EQABadge priority={row.eqaPriority} />}
               <br></br>
-              {row.patientName} <br></br>
+              {row.patientName && row.patientName.includes(",")
+                ? row.patientName
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .reverse()
+                    .join(" ")
+                : row.patientName}{" "}
+              <br></br>
               {row.patientInfo}
               <br></br>
               <br></br>
@@ -1160,7 +1168,16 @@ export function SearchResults(props) {
               <AsyncAvatar
                 patientId={row.patientId}
                 hasPhoto={true}
-                patientName={row.patientName || ""}
+                patientName={
+                  row.patientName && row.patientName.includes(",")
+                    ? row.patientName
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                        .reverse()
+                        .join(" ")
+                    : row.patientName || ""
+                }
               />
             </div>
             {row.nonconforming && (
