@@ -24,7 +24,14 @@ const SearchOutput = ({ patientData, className = "patientHead" }) => {
                       <Avatar
                         alt="Patient avatar"
                         color="rgba(0,0,0,0)"
-                        name={`${patient.lastName} ${patient.firstName}`}
+                        name={[
+                          patient.firstName,
+                          patient.middleName,
+                          patient.lastName,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .trim()}
                         src={""}
                         size={patient.referringFacility ? "50" : "40"}
                         textSizeRatio={2}
@@ -38,7 +45,16 @@ const SearchOutput = ({ patientData, className = "patientHead" }) => {
                   <Column lg={14} md={7} sm={3}>
                     <div className="tags">
                       <span className="patient-name-search">
-                        <b>{`${patient.lastName} ${patient.firstName}`}</b>
+                        <b>
+                          {[
+                            patient.firstName,
+                            patient.middleName,
+                            patient.lastName,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                            .trim()}
+                        </b>
                       </span>
                       <span>
                         {" "}

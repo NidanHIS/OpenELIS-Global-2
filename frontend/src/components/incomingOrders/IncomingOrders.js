@@ -108,14 +108,25 @@ export default function IncomingOrders() {
       if (!componentMounted.current || seq !== fetchSeqRef.current) return;
 
       const list = Array.isArray(data?.items) ? data.items : [];
-      const mapped = list.map((item) => ({
-        id: String(item.externalOrderNumber || ""),
-        externalOrderNumber: item.externalOrderNumber || "",
-        patientName: item.patientName || "",
-        receivedTimestamp: formatReceivedTimestamp(item.receivedTimestamp),
-        testCount: item.testCount != null ? String(item.testCount) : "",
-        source: item.source || "",
-      }));
+      const mapped = list.map((item) => {
+        const rawName = String(item.patientName || "").trim();
+        const formattedPatientName = rawName.includes(",")
+          ? rawName
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .reverse()
+              .join(" ")
+          : rawName;
+        return {
+          id: String(item.externalOrderNumber || ""),
+          externalOrderNumber: item.externalOrderNumber || "",
+          patientName: formattedPatientName,
+          receivedTimestamp: formatReceivedTimestamp(item.receivedTimestamp),
+          testCount: item.testCount != null ? String(item.testCount) : "",
+          source: item.source || "",
+        };
+      });
 
       setRows(mapped);
       setTotalCount(data?.totalCount ?? 0);

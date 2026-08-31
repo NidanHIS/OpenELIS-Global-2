@@ -9,6 +9,7 @@ const PatientHeader = (props) => {
     id,
     lastName,
     firstName,
+    middleName = null,
     gender,
     dob,
     age = null,
@@ -27,6 +28,17 @@ const PatientHeader = (props) => {
   const intl = useIntl();
   const { configurationProperties } = useContext(ConfigurationContext);
 
+  const formattedPatientName = patientName
+    ? patientName.includes(",")
+      ? patientName
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .reverse()
+          .join(" ")
+      : patientName
+    : [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
+
   const tagStyle = {
     fontSize: "0.8rem",
   };
@@ -42,9 +54,7 @@ const PatientHeader = (props) => {
                     <AsyncAvatar
                       patientId={String(id)}
                       hasPhoto={true}
-                      patientName={
-                        patientName ? patientName : lastName + " " + firstName
-                      }
+                      patientName={formattedPatientName}
                       size={56}
                       gender={gender}
                     />
@@ -52,7 +62,7 @@ const PatientHeader = (props) => {
                   <Column lg={15} md={5} sm={3}>
                     <div>
                       <span className="patient-name">
-                        {patientName ? patientName : lastName + " " + firstName}
+                        {formattedPatientName}
                       </span>
                       <span className="patient-dob">
                         {" "}
