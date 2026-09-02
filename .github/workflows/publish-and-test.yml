@@ -18,6 +18,10 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   DOCKER_NAME: ${{ vars.DOCKERHUB_USERNAME }}/openelis-global-2
 
+concurrency:
+  group: elis-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     if: ${{ github.repository == 'NidanHIS/OpenELIS-Global-2' }}
@@ -96,6 +100,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
