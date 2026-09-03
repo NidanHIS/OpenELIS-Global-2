@@ -245,6 +245,8 @@ public class TestResultItem implements ResultItem, Serializable {
 
     private ReferralItem referralItem;
     private ResultFileForm resultFile;
+    private String pendingCalculatedValue;
+    private String pendingCalculationName;
 
     public String getConsiderRejectReason() {
         return considerRejectReason;
@@ -1068,6 +1070,22 @@ public class TestResultItem implements ResultItem, Serializable {
 
     public void setResultFile(ResultFileForm resultFile) {
         this.resultFile = resultFile;
+    }
+
+    public String getPendingCalculatedValue() {
+        return pendingCalculatedValue;
+    }
+
+    public void setPendingCalculatedValue(String pendingCalculatedValue) {
+        this.pendingCalculatedValue = pendingCalculatedValue;
+    }
+
+    public String getPendingCalculationName() {
+        return pendingCalculationName;
+    }
+
+    public void setPendingCalculationName(String pendingCalculationName) {
+        this.pendingCalculationName = pendingCalculationName;
     }
 
     public static class ResultFileForm extends ResultFile {

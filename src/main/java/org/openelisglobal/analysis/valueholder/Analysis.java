@@ -77,6 +77,8 @@ public class Analysis extends BaseObject<String> implements NoteObject {
     private ValueHolderInterface panel;
     private Boolean triggeredReflex = false;
     private Boolean resultCalculated = false;
+    private String pendingCalculatedValue;
+    private String pendingCalculationName;
     private String statusId;
     private String assignedSortedTestTreeDisplayValue;
     private boolean referredOut = false;
@@ -517,6 +519,22 @@ public class Analysis extends BaseObject<String> implements NoteObject {
 
     public void setResultFile(ResultFile resultFile) {
         this.resultFile = resultFile;
+    }
+
+    public String getPendingCalculatedValue() {
+        return pendingCalculatedValue;
+    }
+
+    public void setPendingCalculatedValue(String pendingCalculatedValue) {
+        this.pendingCalculatedValue = pendingCalculatedValue;
+    }
+
+    public String getPendingCalculationName() {
+        return pendingCalculationName;
+    }
+
+    public void setPendingCalculationName(String pendingCalculationName) {
+        this.pendingCalculationName = pendingCalculationName;
     }
 
 }

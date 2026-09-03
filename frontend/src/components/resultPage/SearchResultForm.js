@@ -1106,6 +1106,59 @@ export function SearchResults(props) {
         .map(({ width: _w, ...col }) => col) // strip fixed widths so columns flex to container
     : columns;
 
+  const handleCopyCalculatedValue = (row) => {
+    const calcVal = row.pendingCalculatedValue;
+    if (!calcVal) return;
+
+    var form = { ...props.results };
+    var jp = require("jsonpath");
+    var fieldName = "testResult[" + row.id + "].resultValue";
+    jp.value(form, fieldName, calcVal);
+    jp.value(form, "testResult[" + row.id + "].isModified", "true");
+    jp.value(form, "testResult[" + row.id + "].pendingCalculatedValue", null);
+    row.resultValue = calcVal;
+    row.pendingCalculatedValue = null;
+    if (props.setResultForm) {
+      props.setResultForm(form);
+    }
+    setIsDirty(true);
+
+    const payload = {
+      analysisId: String(row.analysisId),
+    };
+    postToOpenElisServerJsonResponse(
+      "/rest/nidanCalcResult/accept",
+      JSON.stringify(payload),
+      () => {
+        addNotification({
+          title: intl.formatMessage({ id: "notification.title" }),
+          message: `Applied calculated value ${calcVal} for ${row.testName}.`,
+          kind: NotificationKinds.success,
+        });
+        setNotificationVisible(true);
+      },
+    );
+  };
+
+  const handleDismissCalculatedValue = (row) => {
+    var form = { ...props.results };
+    var jp = require("jsonpath");
+    jp.value(form, "testResult[" + row.id + "].pendingCalculatedValue", null);
+    row.pendingCalculatedValue = null;
+    if (props.setResultForm) {
+      props.setResultForm(form);
+    }
+
+    const payload = {
+      analysisId: String(row.analysisId),
+    };
+    postToOpenElisServerJsonResponse(
+      "/rest/nidanCalcResult/dismiss",
+      JSON.stringify(payload),
+      () => {},
+    );
+  };
+
   const renderCell = (row, index, column, id) => {
     let formatLabNum = configurationProperties.AccessionFormat === "ALPHANUM";
     const fullTestName = row.testName;
@@ -1286,10 +1339,11 @@ export function SearchResults(props) {
           </>
         );
 
-      case "result":
+      case "result": {
+        let inputComponent = null;
         switch (row.resultType) {
           case "D":
-            return (
+            inputComponent = (
               <Select
                 className="result"
                 id={"resultValue" + row.id}
@@ -1311,6 +1365,7 @@ export function SearchResults(props) {
                 )}
               </Select>
             );
+            break;
 
           case "M": {
             const currentPageDataM =
@@ -1318,7 +1373,7 @@ export function SearchResults(props) {
                 (page - 1) * pageSize,
                 page * pageSize,
               ) || [];
-            return (
+            inputComponent = (
               <ResultMultiSelect
                 id={`multiResultValue${row.id}`}
                 name={`testResult[${row.id}].multiSelectResultValues`}
@@ -1333,6 +1388,7 @@ export function SearchResults(props) {
                 }
               />
             );
+            break;
           }
 
           case "C": {
@@ -1341,7 +1397,7 @@ export function SearchResults(props) {
                 (page - 1) * pageSize,
                 page * pageSize,
               ) || [];
-            return (
+            inputComponent = (
               <CascadingMultiSelect
                 id={`multiResult${row.id}`}
                 name={`testResult[${row.id}].multiSelectResultValues`}
@@ -1356,10 +1412,11 @@ export function SearchResults(props) {
                 }
               />
             );
+            break;
           }
 
           case "N":
-            return (
+            inputComponent = (
               <TextInput
                 id={"ResultValue" + row.id}
                 name={"testResult[" + row.id + "].resultValue"}
@@ -1410,9 +1467,10 @@ export function SearchResults(props) {
                 }}
               />
             );
+            break;
 
           case "R":
-            return (
+            inputComponent = (
               <TextArea
                 id={"ResultValue" + row.id}
                 name={"testResult[" + row.id + "].resultValue"}
@@ -1422,9 +1480,10 @@ export function SearchResults(props) {
                 value={row.resultValue}
               />
             );
+            break;
 
           case "A":
-            return (
+            inputComponent = (
               <TextArea
                 id={"ResultValue" + row.id}
                 name={"testResult[" + row.id + "].resultValue"}
@@ -1434,10 +1493,62 @@ export function SearchResults(props) {
                 value={row.resultValue}
               />
             );
+            break;
 
           default:
-            return row.resultValue;
+            inputComponent = row.resultValue;
+            break;
         }
+
+        return (
+          <div style={{ width: "100%" }}>
+            {inputComponent}
+            {row.pendingCalculatedValue && (
+              <div
+                style={{
+                  marginTop: "6px",
+                  padding: "6px 8px",
+                  background: "#edf5ff",
+                  border: "1px solid #0f62fe",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  lineHeight: "1.4",
+                }}
+              >
+                <div style={{ color: "#0043ce", fontWeight: 600 }}>
+                  ⚡ Calculated Value:{" "}
+                  <span style={{ color: "#161616" }}>{row.pendingCalculatedValue}</span>
+                  {row.pendingCalculationName ? ` (${row.pendingCalculationName})` : ""}
+                </div>
+                <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+                  <Button
+                    size="sm"
+                    kind="primary"
+                    style={{ minHeight: "22px", height: "22px", padding: "0 8px", fontSize: "11px" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleCopyCalculatedValue(row);
+                    }}
+                  >
+                    Copy / Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    kind="ghost"
+                    style={{ minHeight: "22px", height: "22px", padding: "0 8px", fontSize: "11px" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDismissCalculatedValue(row);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
 
       case "currentResult":
         switch (row.resultType) {
