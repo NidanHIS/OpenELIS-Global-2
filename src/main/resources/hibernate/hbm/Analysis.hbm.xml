@@ -99,10 +99,11 @@
             column="reflex_trigger" />
         <property name="resultCalculated" type="boolean"
             column="result_calculated" />
-        <property name="pendingCalculatedValue" type="java.lang.String"
-            column="pending_calculated_value" length="255" />
-        <property name="pendingCalculationName" type="java.lang.String"
-            column="pending_calculation_name" length="64" />
+        <property name="pendingCalculatedValue"
+            type="java.lang.String" column="pending_calculated_value"
+            length="255" />
+        <property name="pendingCalculationName"
+            type="java.lang.String" column="pending_calculation_name" length="64" />
         <property name="statusId"
             type="org.openelisglobal.hibernate.resources.usertype.LIMSStringNumberUserType"
             column="status_id" precision="10" />

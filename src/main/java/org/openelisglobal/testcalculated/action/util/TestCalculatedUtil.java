@@ -11,24 +11,23 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.GenericValidator;
 import org.jfree.util.Log;
 import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
+import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService.AnalysisStatus;
 import org.openelisglobal.common.util.DateUtil;
 import org.openelisglobal.note.service.NoteService;
 import org.openelisglobal.note.service.NoteServiceImpl.NoteType;
 import org.openelisglobal.note.valueholder.Note;
-import org.apache.commons.validator.GenericValidator;
-import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.result.action.util.ResultSet;
-import org.openelisglobal.sample.valueholder.Sample;
-import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.result.service.ResultService;
 import org.openelisglobal.result.valueholder.Result;
 import org.openelisglobal.resultlimit.service.ResultLimitService;
-import org.openelisglobal.resultlimits.valueholder.ResultLimit;
+import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.spring.util.SpringContext;
 import org.openelisglobal.test.service.TestService;
 import org.openelisglobal.test.valueholder.Test;
@@ -100,8 +99,8 @@ public class TestCalculatedUtil {
             }
             Sample currentSample = (resultSet.result.getAnalysis() != null
                     && resultSet.result.getAnalysis().getSampleItem() != null)
-                    ? resultSet.result.getAnalysis().getSampleItem().getSample()
-                    : null;
+                            ? resultSet.result.getAnalysis().getSampleItem().getSample()
+                            : null;
             if (currentSample == null) {
                 continue;
             }
@@ -166,8 +165,7 @@ public class TestCalculatedUtil {
                             Integer currentTestId = Integer.valueOf(resultSet.result.getTestResult().getTest().getId());
                             // Only map results for tests that are part of this calculation's input formula
                             if (resultCalculation.getTestResultMap().containsKey(currentTestId)) {
-                                resultCalculation.getTestResultMap().put(
-                                        currentTestId,
+                                resultCalculation.getTestResultMap().put(currentTestId,
                                         Integer.valueOf(resultSet.result.getId()));
                                 resultcalculationService.update(resultCalculation);
                             }
@@ -183,14 +181,14 @@ public class TestCalculatedUtil {
             }
             Sample currentSample = (resultSet.result.getAnalysis() != null
                     && resultSet.result.getAnalysis().getSampleItem() != null)
-                    ? resultSet.result.getAnalysis().getSampleItem().getSample()
-                    : null;
+                            ? resultSet.result.getAnalysis().getSampleItem().getSample()
+                            : null;
             if (currentSample == null) {
                 continue;
             }
 
-            List<ResultCalculation> patientCalculations = resultcalculationService
-                    .getResultCalculationByPatientAndTest(resultSet.patient, resultSet.result.getTestResult().getTest());
+            List<ResultCalculation> patientCalculations = resultcalculationService.getResultCalculationByPatientAndTest(
+                    resultSet.patient, resultSet.result.getTestResult().getTest());
             List<ResultCalculation> sampleCalculations = new ArrayList<>();
             for (ResultCalculation rc : patientCalculations) {
                 if (isCalculationForSample(rc, currentSample)) {
@@ -212,61 +210,65 @@ public class TestCalculatedUtil {
                         StringBuffer function = new StringBuffer();
                         calculation.getOperations().forEach(operation -> {
                             switch (operation.getType()) {
-                                case TEST_RESULT:
-                                    addNumericOperation(operation, resultCalculation, function,
-                                            Operation.OperationType.TEST_RESULT.toString());
-                                    break;
-                                case INTEGER:
-                                    try {
-                                        if (operation.getValue().contains(".")) {
-                                            double val = Double.parseDouble(operation.getValue());
-                                            function.append(val).append(" ");
-                                        } else {
-                                            int number = Integer.parseInt(operation.getValue());
-                                            function.append(number).append(" ");
-                                        }
-                                    } catch (NumberFormatException e) {
-                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
-                                            "Bad INTEGER operand in calc '" + calculation.getName() + "': [" + operation.getValue() + "]");
-                                    }
-                                    break;
-                                case MATH_FUNCTION:
-                                    if (operation.getValue().equals(Operation.IN_NORMAL_RANGE)) {
-                                        int order = operation.getOrder();
-                                        List<Operation> ops = calculation.getOperations();
-                                        if (order > 0 && (order - 1) < ops.size()) {
-                                            addNumericOperation(ops.get(order - 1), resultCalculation, function,
-                                                    Operation.IN_NORMAL_RANGE);
-                                        } else {
-                                            LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
-                                                "IN_NORMAL_RANGE has invalid order=" + order + " in calc '" + calculation.getName() + "'");
-                                        }
-                                    } else if (operation.getValue().equals(Operation.OUTSIDE_NORMAL_RANGE)) {
-                                        int order = operation.getOrder();
-                                        List<Operation> ops = calculation.getOperations();
-                                        if (order > 0 && (order - 1) < ops.size()) {
-                                            addNumericOperation(ops.get(order - 1), resultCalculation, function,
-                                                    Operation.OUTSIDE_NORMAL_RANGE);
-                                        } else {
-                                            LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
-                                                "OUTSIDE_NORMAL_RANGE has invalid order=" + order + " in calc '" + calculation.getName() + "'");
-                                        }
+                            case TEST_RESULT:
+                                addNumericOperation(operation, resultCalculation, function,
+                                        Operation.OperationType.TEST_RESULT.toString());
+                                break;
+                            case INTEGER:
+                                try {
+                                    if (operation.getValue().contains(".")) {
+                                        double val = Double.parseDouble(operation.getValue());
+                                        function.append(val).append(" ");
                                     } else {
-                                        function.append(operation.getValue()).append(" ");
+                                        int number = Integer.parseInt(operation.getValue());
+                                        function.append(number).append(" ");
                                     }
-                                    break;
-                                case PATIENT_ATTRIBUTE:
-                                    if (operation.getValue().equals(Operation.PatientAttribute.AGE.toString())) {
-                                        if (resultSet.patient != null && resultSet.patient.getBirthDate() != null) {
-                                            int age = DateUtil.getAgeInYears(
-                                                    new Date(resultSet.patient.getBirthDate().getTime()), new Date());
-                                            function.append(age);
-                                        } else {
-                                            LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
-                                                "Patient birthdate missing – age operand skipped in calc '" + calculation.getName() + "'");
-                                        }
+                                } catch (NumberFormatException e) {
+                                    LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                            "Bad INTEGER operand in calc '" + calculation.getName() + "': ["
+                                                    + operation.getValue() + "]");
+                                }
+                                break;
+                            case MATH_FUNCTION:
+                                if (operation.getValue().equals(Operation.IN_NORMAL_RANGE)) {
+                                    int order = operation.getOrder();
+                                    List<Operation> ops = calculation.getOperations();
+                                    if (order > 0 && (order - 1) < ops.size()) {
+                                        addNumericOperation(ops.get(order - 1), resultCalculation, function,
+                                                Operation.IN_NORMAL_RANGE);
+                                    } else {
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "IN_NORMAL_RANGE has invalid order=" + order + " in calc '"
+                                                        + calculation.getName() + "'");
                                     }
-                                    break;
+                                } else if (operation.getValue().equals(Operation.OUTSIDE_NORMAL_RANGE)) {
+                                    int order = operation.getOrder();
+                                    List<Operation> ops = calculation.getOperations();
+                                    if (order > 0 && (order - 1) < ops.size()) {
+                                        addNumericOperation(ops.get(order - 1), resultCalculation, function,
+                                                Operation.OUTSIDE_NORMAL_RANGE);
+                                    } else {
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "OUTSIDE_NORMAL_RANGE has invalid order=" + order + " in calc '"
+                                                        + calculation.getName() + "'");
+                                    }
+                                } else {
+                                    function.append(operation.getValue()).append(" ");
+                                }
+                                break;
+                            case PATIENT_ATTRIBUTE:
+                                if (operation.getValue().equals(Operation.PatientAttribute.AGE.toString())) {
+                                    if (resultSet.patient != null && resultSet.patient.getBirthDate() != null) {
+                                        int age = DateUtil.getAgeInYears(
+                                                new Date(resultSet.patient.getBirthDate().getTime()), new Date());
+                                        function.append(age);
+                                    } else {
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "Patient birthdate missing – age operand skipped in calc '"
+                                                        + calculation.getName() + "'");
+                                    }
+                                }
+                                break;
                             }
                         });
                         ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
@@ -306,11 +308,12 @@ public class TestCalculatedUtil {
             return null;
         }
 
-        // NUMERIC-ONLY GATE: Auto-calculations are only supported for numeric (N) result types.
+        // NUMERIC-ONLY GATE: Auto-calculations are only supported for numeric (N)
+        // result types.
         String resultType = testService.getResultType(test);
         if (!"N".equals(resultType)) {
             LogEvent.logWarn("TestCalculatedUtil", "createCalculatedResult",
-                "Auto-calc skipped: test " + test.getId() + " is not numeric (type=" + resultType + ")");
+                    "Auto-calc skipped: test " + test.getId() + " is not numeric (type=" + resultType + ")");
             return null;
         }
 
@@ -338,7 +341,8 @@ public class TestCalculatedUtil {
 
         if (targetOrderedAnalysis == null) {
             // Target test was NOT ordered on this sample:
-            // HARD SAFEGUARD: DO NOT create analysis. DO NOT touch Result. Return null immediately!
+            // HARD SAFEGUARD: DO NOT create analysis. DO NOT touch Result. Return null
+            // immediately!
             return null;
         }
 
@@ -479,27 +483,27 @@ public class TestCalculatedUtil {
             if (result != null) {
                 if (testService.getResultType(result.getTestResult().getTest()).equals("N")) {
                     switch (inputType) {
-                        case Operation.TEST_RESULT:
-                            function.append(result.getValue()).append(" ");
-                            break;
-                        case Operation.IN_NORMAL_RANGE:
-                            function.append(" >= ")
-                                    .append(result.getMinNormal() != null ? result.getMinNormal()
-                                            : Double.NEGATIVE_INFINITY)
-                                    .append(" && ").append(result.getValue()).append(" <= ")
-                                    .append(result.getMaxNormal() != null ? result.getMaxNormal()
-                                            : Double.POSITIVE_INFINITY)
-                                    .append(" ");
-                            break;
-                        case Operation.OUTSIDE_NORMAL_RANGE:
-                            function.append(" <= ")
-                                    .append(result.getMinNormal() != null ? result.getMinNormal()
-                                            : Double.NEGATIVE_INFINITY)
-                                    .append(" || ").append(result.getValue()).append(" >= ")
-                                    .append(result.getMaxNormal() != null ? result.getMaxNormal()
-                                            : Double.POSITIVE_INFINITY)
-                                    .append(" ");
-                            break;
+                    case Operation.TEST_RESULT:
+                        function.append(result.getValue()).append(" ");
+                        break;
+                    case Operation.IN_NORMAL_RANGE:
+                        function.append(" >= ")
+                                .append(result.getMinNormal() != null ? result.getMinNormal()
+                                        : Double.NEGATIVE_INFINITY)
+                                .append(" && ").append(result.getValue()).append(" <= ")
+                                .append(result.getMaxNormal() != null ? result.getMaxNormal()
+                                        : Double.POSITIVE_INFINITY)
+                                .append(" ");
+                        break;
+                    case Operation.OUTSIDE_NORMAL_RANGE:
+                        function.append(" <= ")
+                                .append(result.getMinNormal() != null ? result.getMinNormal()
+                                        : Double.NEGATIVE_INFINITY)
+                                .append(" || ").append(result.getValue()).append(" >= ")
+                                .append(result.getMaxNormal() != null ? result.getMaxNormal()
+                                        : Double.POSITIVE_INFINITY)
+                                .append(" ");
+                        break;
                     }
                 }
             }
