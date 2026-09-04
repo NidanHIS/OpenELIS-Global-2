@@ -21,6 +21,7 @@ import org.openelisglobal.note.service.NoteService;
 import org.openelisglobal.note.service.NoteServiceImpl.NoteType;
 import org.openelisglobal.note.valueholder.Note;
 import org.apache.commons.validator.GenericValidator;
+import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.result.action.util.ResultSet;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.sampleitem.valueholder.SampleItem;
@@ -225,30 +226,45 @@ public class TestCalculatedUtil {
                                             function.append(number).append(" ");
                                         }
                                     } catch (NumberFormatException e) {
-
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                            "Bad INTEGER operand in calc '" + calculation.getName() + "': [" + operation.getValue() + "]");
                                     }
                                     break;
                                 case MATH_FUNCTION:
                                     if (operation.getValue().equals(Operation.IN_NORMAL_RANGE)) {
                                         int order = operation.getOrder();
-                                        Operation prevOperation = calculation.getOperations().get(order - 1);
-                                        addNumericOperation(prevOperation, resultCalculation, function,
-                                                Operation.IN_NORMAL_RANGE);
-
+                                        List<Operation> ops = calculation.getOperations();
+                                        if (order > 0 && (order - 1) < ops.size()) {
+                                            addNumericOperation(ops.get(order - 1), resultCalculation, function,
+                                                    Operation.IN_NORMAL_RANGE);
+                                        } else {
+                                            LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "IN_NORMAL_RANGE has invalid order=" + order + " in calc '" + calculation.getName() + "'");
+                                        }
                                     } else if (operation.getValue().equals(Operation.OUTSIDE_NORMAL_RANGE)) {
                                         int order = operation.getOrder();
-                                        Operation prevOperation = calculation.getOperations().get(order - 1);
-                                        addNumericOperation(prevOperation, resultCalculation, function,
-                                                Operation.OUTSIDE_NORMAL_RANGE);
+                                        List<Operation> ops = calculation.getOperations();
+                                        if (order > 0 && (order - 1) < ops.size()) {
+                                            addNumericOperation(ops.get(order - 1), resultCalculation, function,
+                                                    Operation.OUTSIDE_NORMAL_RANGE);
+                                        } else {
+                                            LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "OUTSIDE_NORMAL_RANGE has invalid order=" + order + " in calc '" + calculation.getName() + "'");
+                                        }
                                     } else {
                                         function.append(operation.getValue()).append(" ");
                                     }
                                     break;
                                 case PATIENT_ATTRIBUTE:
                                     if (operation.getValue().equals(Operation.PatientAttribute.AGE.toString())) {
-                                        int age = DateUtil.getAgeInYears(
-                                                new Date(resultSet.patient.getBirthDate().getTime()), new Date());
-                                        function.append(age);
+                                        if (resultSet.patient != null && resultSet.patient.getBirthDate() != null) {
+                                            int age = DateUtil.getAgeInYears(
+                                                    new Date(resultSet.patient.getBirthDate().getTime()), new Date());
+                                            function.append(age);
+                                        } else {
+                                            LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "Patient birthdate missing – age operand skipped in calc '" + calculation.getName() + "'");
+                                        }
                                     }
                                     break;
                             }
@@ -287,6 +303,14 @@ public class TestCalculatedUtil {
             Calculation calculation, String value, String systemUserId) {
         Test test = testService.get(calculation.getTestId().toString());
         if (test == null) {
+            return null;
+        }
+
+        // NUMERIC-ONLY GATE: Auto-calculations are only supported for numeric (N) result types.
+        String resultType = testService.getResultType(test);
+        if (!"N".equals(resultType)) {
+            LogEvent.logWarn("TestCalculatedUtil", "createCalculatedResult",
+                "Auto-calc skipped: test " + test.getId() + " is not numeric (type=" + resultType + ")");
             return null;
         }
 
@@ -332,29 +356,20 @@ public class TestCalculatedUtil {
             return targetOrderedAnalysis;
         }
 
-        String resultType = testService.getResultType(test);
         TestResult testResult = getTestResultForCalculation(calculation);
         Boolean resultCalculated = false;
 
+        // Numeric type only — round to significant digits if configured
         if (value != null) {
-            if ("D".equals(resultType) || "R".equals(resultType) || "A".equals(resultType)) {
-                if (Boolean.valueOf(value)) {
-                    value = calculation.getResult();
-                    resultCalculated = true;
-                } else {
-                    value = "";
+            if (testResult != null && testResult.getSignificantDigits() != null) {
+                try {
+                    double factor = Math.pow(10, Double.valueOf(testResult.getSignificantDigits()));
+                    value = String.valueOf(Math.round(Double.valueOf(value) * factor) / factor);
+                } catch (NumberFormatException e) {
+                    // keep unformatted value
                 }
-            } else if ("N".equals(resultType)) {
-                if (testResult != null && testResult.getSignificantDigits() != null) {
-                    try {
-                        double factor = Math.pow(10, Double.valueOf(testResult.getSignificantDigits()));
-                        value = String.valueOf(Math.round(Double.valueOf(value) * factor) / factor);
-                    } catch (NumberFormatException e) {
-                        // keep unformatted value
-                    }
-                }
-                resultCalculated = true;
             }
+            resultCalculated = true;
         }
 
         // HARD SAFEGUARD 2: Zero background Result mutation.
@@ -362,7 +377,9 @@ public class TestCalculatedUtil {
         // Never insert or update clinlims.result!
         // Never alter analysis.status_id!
         if (resultCalculated && !GenericValidator.isBlankOrNull(value)) {
-            targetOrderedAnalysis.setPendingCalculatedValue(value);
+            // Defensive truncation — keep within DB column constraint (VARCHAR 255)
+            String safeValue = value.length() > 250 ? value.substring(0, 250) : value;
+            targetOrderedAnalysis.setPendingCalculatedValue(safeValue);
             targetOrderedAnalysis.setPendingCalculationName(calculation.getName());
         } else {
             targetOrderedAnalysis.setPendingCalculatedValue(null);
