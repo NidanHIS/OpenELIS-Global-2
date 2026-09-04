@@ -11,9 +11,11 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.GenericValidator;
 import org.jfree.util.Log;
 import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
+import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService.AnalysisStatus;
 import org.openelisglobal.common.util.DateUtil;
@@ -24,7 +26,8 @@ import org.openelisglobal.result.action.util.ResultSet;
 import org.openelisglobal.result.service.ResultService;
 import org.openelisglobal.result.valueholder.Result;
 import org.openelisglobal.resultlimit.service.ResultLimitService;
-import org.openelisglobal.resultlimits.valueholder.ResultLimit;
+import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.spring.util.SpringContext;
 import org.openelisglobal.test.service.TestService;
 import org.openelisglobal.test.valueholder.Test;
@@ -60,25 +63,63 @@ public class TestCalculatedUtil {
 
     private String CALCULATION_SUBJECT = "Calculated Result Note";
 
+    private boolean isCalculationForSample(ResultCalculation rc, Sample currentSample) {
+        if (rc == null || currentSample == null) {
+            return false;
+        }
+        if (rc.getResult() != null && rc.getResult().getAnalysis() != null
+                && rc.getResult().getAnalysis().getSampleItem() != null) {
+            Sample s = rc.getResult().getAnalysis().getSampleItem().getSample();
+            if (s != null && s.getId() != null) {
+                return s.getId().equals(currentSample.getId());
+            }
+        }
+        if (rc.getTestResultMap() != null && !rc.getTestResultMap().isEmpty()) {
+            for (Integer resId : rc.getTestResultMap().values()) {
+                if (resId != null) {
+                    Result r = resultService.get(resId.toString());
+                    if (r != null && r.getAnalysis() != null && r.getAnalysis().getSampleItem() != null) {
+                        Sample s = r.getAnalysis().getSampleItem().getSample();
+                        if (s != null && s.getId() != null) {
+                            return s.getId().equals(currentSample.getId());
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public List<Analysis> addNewTestsToDBForCalculatedTests(List<ResultSet> resultSetList, String sysUserId)
             throws IllegalStateException {
         List<Analysis> analyses = new ArrayList<>();
         for (ResultSet resultSet : resultSetList) {
-            if (resultSet.result == null) {
+            if (resultSet.result == null || resultSet.result.getTestResult() == null) {
                 continue;
             }
-            if (resultSet.result.getTestResult() == null) {
+            Sample currentSample = (resultSet.result.getAnalysis() != null
+                    && resultSet.result.getAnalysis().getSampleItem() != null)
+                            ? resultSet.result.getAnalysis().getSampleItem().getSample()
+                            : null;
+            if (currentSample == null) {
                 continue;
             }
+
             List<Calculation> calculations = calculationService.getAll();
             for (Calculation calculation : calculations) {
                 if (!calculation.getActive()) {
                     continue;
                 }
-                List<ResultCalculation> resultCalculations = resultcalculationService
+                List<ResultCalculation> patientCalculations = resultcalculationService
                         .getResultCalculationByPatientAndCalculation(resultSet.patient, calculation);
+                List<ResultCalculation> sampleCalculations = new ArrayList<>();
+                for (ResultCalculation rc : patientCalculations) {
+                    if (isCalculationForSample(rc, currentSample)) {
+                        sampleCalculations.add(rc);
+                    }
+                }
 
-                if (resultCalculations.isEmpty()) {
+                if (sampleCalculations.isEmpty()) {
                     Boolean createResultCalculation = false;
                     for (Operation oper : calculation.getOperations()) {
                         if (oper.getType().equals(Operation.OperationType.TEST_RESULT)) {
@@ -105,45 +146,58 @@ public class TestCalculatedUtil {
                         tests.forEach(test -> {
                             map.put(Integer.valueOf(test.getId()), null);
                         });
-                        // insert innitial result value
+                        // Insert initial result value only if it is an input test for this calculation
                         if (resultSet.result.getTestResult().getTest().getId() != null
                                 && resultSet.result.getId() != null) {
-                            map.put(Integer.valueOf(resultSet.result.getTestResult().getTest().getId()),
-                                    Integer.valueOf(resultSet.result.getId()));
+                            Integer currentTestId = Integer.valueOf(resultSet.result.getTestResult().getTest().getId());
+                            if (map.containsKey(currentTestId)) {
+                                map.put(currentTestId, Integer.valueOf(resultSet.result.getId()));
+                            }
                         }
                         calc.setTestResultMap(map);
                         resultcalculationService.insert(calc);
                     }
 
                 } else {
-                    for (ResultCalculation resultCalculation : resultCalculations) {
+                    for (ResultCalculation resultCalculation : sampleCalculations) {
                         if (resultSet.result.getTestResult().getTest().getId() != null
                                 && resultSet.result.getId() != null) {
-                            resultCalculation.getTestResultMap().put(
-                                    Integer.valueOf(resultSet.result.getTestResult().getTest().getId()),
-                                    Integer.valueOf(resultSet.result.getId()));
+                            Integer currentTestId = Integer.valueOf(resultSet.result.getTestResult().getTest().getId());
+                            // Only map results for tests that are part of this calculation's input formula
+                            if (resultCalculation.getTestResultMap().containsKey(currentTestId)) {
+                                resultCalculation.getTestResultMap().put(currentTestId,
+                                        Integer.valueOf(resultSet.result.getId()));
+                                resultcalculationService.update(resultCalculation);
+                            }
                         }
-
-                        resultcalculationService.update(resultCalculation);
                     }
                 }
             }
         }
 
         for (ResultSet resultSet : resultSetList) {
-            if (resultSet.result == null) {
+            if (resultSet.result == null || resultSet.result.getTestResult() == null) {
                 continue;
             }
-            List<ResultCalculation> resultCalculations = new ArrayList<>();
-            if (resultSet.result.getTestResult() == null) {
+            Sample currentSample = (resultSet.result.getAnalysis() != null
+                    && resultSet.result.getAnalysis().getSampleItem() != null)
+                            ? resultSet.result.getAnalysis().getSampleItem().getSample()
+                            : null;
+            if (currentSample == null) {
                 continue;
-            } else {
-                resultCalculations = resultcalculationService.getResultCalculationByPatientAndTest(resultSet.patient,
-                        resultSet.result.getTestResult().getTest());
             }
 
-            if (!resultCalculations.isEmpty()) {
-                for (ResultCalculation resultCalculation : resultCalculations) {
+            List<ResultCalculation> patientCalculations = resultcalculationService.getResultCalculationByPatientAndTest(
+                    resultSet.patient, resultSet.result.getTestResult().getTest());
+            List<ResultCalculation> sampleCalculations = new ArrayList<>();
+            for (ResultCalculation rc : patientCalculations) {
+                if (isCalculationForSample(rc, currentSample)) {
+                    sampleCalculations.add(rc);
+                }
+            }
+
+            if (!sampleCalculations.isEmpty()) {
+                for (ResultCalculation resultCalculation : sampleCalculations) {
                     Boolean isMissingParams = false;
                     for (Map.Entry<Integer, Integer> entry : resultCalculation.getTestResultMap().entrySet()) {
                         if (entry.getValue() == null) {
@@ -170,30 +224,49 @@ public class TestCalculatedUtil {
                                         function.append(number).append(" ");
                                     }
                                 } catch (NumberFormatException e) {
-
+                                    LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                            "Bad INTEGER operand in calc '" + calculation.getName() + "': ["
+                                                    + operation.getValue() + "]");
                                 }
                                 break;
                             case MATH_FUNCTION:
                                 if (operation.getValue().equals(Operation.IN_NORMAL_RANGE)) {
                                     int order = operation.getOrder();
-                                    Operation prevOperation = calculation.getOperations().get(order - 1);
-                                    addNumericOperation(prevOperation, resultCalculation, function,
-                                            Operation.IN_NORMAL_RANGE);
-
+                                    List<Operation> ops = calculation.getOperations();
+                                    if (order > 0 && (order - 1) < ops.size()) {
+                                        addNumericOperation(ops.get(order - 1), resultCalculation, function,
+                                                Operation.IN_NORMAL_RANGE);
+                                    } else {
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "IN_NORMAL_RANGE has invalid order=" + order + " in calc '"
+                                                        + calculation.getName() + "'");
+                                    }
                                 } else if (operation.getValue().equals(Operation.OUTSIDE_NORMAL_RANGE)) {
                                     int order = operation.getOrder();
-                                    Operation prevOperation = calculation.getOperations().get(order - 1);
-                                    addNumericOperation(prevOperation, resultCalculation, function,
-                                            Operation.OUTSIDE_NORMAL_RANGE);
+                                    List<Operation> ops = calculation.getOperations();
+                                    if (order > 0 && (order - 1) < ops.size()) {
+                                        addNumericOperation(ops.get(order - 1), resultCalculation, function,
+                                                Operation.OUTSIDE_NORMAL_RANGE);
+                                    } else {
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "OUTSIDE_NORMAL_RANGE has invalid order=" + order + " in calc '"
+                                                        + calculation.getName() + "'");
+                                    }
                                 } else {
                                     function.append(operation.getValue()).append(" ");
                                 }
                                 break;
                             case PATIENT_ATTRIBUTE:
                                 if (operation.getValue().equals(Operation.PatientAttribute.AGE.toString())) {
-                                    int age = DateUtil.getAgeInYears(
-                                            new Date(resultSet.patient.getBirthDate().getTime()), new Date());
-                                    function.append(age);
+                                    if (resultSet.patient != null && resultSet.patient.getBirthDate() != null) {
+                                        int age = DateUtil.getAgeInYears(
+                                                new Date(resultSet.patient.getBirthDate().getTime()), new Date());
+                                        function.append(age);
+                                    } else {
+                                        LogEvent.logWarn("TestCalculatedUtil", "buildFunction",
+                                                "Patient birthdate missing – age operand skipped in calc '"
+                                                        + calculation.getName() + "'");
+                                    }
                                 }
                                 break;
                             }
@@ -231,82 +304,101 @@ public class TestCalculatedUtil {
     private Analysis createCalculatedResult(ResultCalculation resultCalculation, ResultSet resultSet,
             Calculation calculation, String value, String systemUserId) {
         Test test = testService.get(calculation.getTestId().toString());
+        if (test == null) {
+            return null;
+        }
+
+        // NUMERIC-ONLY GATE: Auto-calculations are only supported for numeric (N)
+        // result types.
         String resultType = testService.getResultType(test);
-        Analysis analysis = null;
-        if (test != null) {
-            if (resultCalculation.getTestResultMap().containsKey(Integer.valueOf(test.getId()))) {
-                if (Boolean.valueOf(value)) {
-                    if (StringUtils.isNotBlank(calculation.getNote())) {
-                        Note note = noteService.createSavableNote(resultSet.result.getAnalysis(), NoteType.EXTERNAL,
-                                calculation.getNote(), CALCULATION_SUBJECT, systemUserId);
-                        if (!noteService.duplicateNoteExists(note)) {
-                            noteService.save(note);
-                        }
-                    }
+        if (!"N".equals(resultType)) {
+            LogEvent.logWarn("TestCalculatedUtil", "createCalculatedResult",
+                    "Auto-calc skipped: test " + test.getId() + " is not numeric (type=" + resultType + ")");
+            return null;
+        }
+
+        SampleItem currentSampleItem = (resultSet.result != null && resultSet.result.getAnalysis() != null)
+                ? resultSet.result.getAnalysis().getSampleItem()
+                : null;
+        Sample currentSample = (currentSampleItem != null) ? currentSampleItem.getSample() : null;
+        if (currentSample == null || currentSample.getId() == null) {
+            return null;
+        }
+
+        // HARD SAFEGUARD 1: Check across the ENTIRE sample order (all tubes)
+        // Auto-calculation ONLY executes if the target test was explicitly ordered!
+        Analysis targetOrderedAnalysis = null;
+        List<Analysis> analysesOnSample = analysisService.getAnalysesBySampleId(currentSample.getId());
+        if (analysesOnSample != null) {
+            for (Analysis a : analysesOnSample) {
+                if (a.getTest() != null && a.getTest().getId().equals(test.getId())
+                        && !Boolean.TRUE.equals(a.getResultCalculated())) {
+                    targetOrderedAnalysis = a;
+                    break;
                 }
-                return analysis;
             }
-            TestResult testResult = getTestResultForCalculation(calculation);
-            Result result = null;
-            if (resultCalculation.getResult() != null) {
-                result = resultCalculation.getResult();
-            } else {
-                result = new Result();
-            }
-            result.setTestResult(testResult);
-            ResultLimit resultLimit = resultLimitService.getResultLimitForTestAndPatient(test.getId(),
-                    resultCalculation.getPatient());
-            if (resultLimit != null) {
-                result.setMaxNormal(resultLimit.getHighNormal());
-                result.setMinNormal(resultLimit.getLowNormal());
-            }
-            if (testResult.getSignificantDigits() != null) {
-                result.setSignificantDigits(Integer.valueOf(testResult.getSignificantDigits()));
-            }
-            result.setResultType(testService.getResultType(test));
-            result.setSysUserId(systemUserId);
-            Boolean resultCalculated = false;
-            if (value != null) {
-                if ("D".equals(resultType)) {
-                    if (Boolean.valueOf(value)) {
-                        result.setValue(calculation.getResult());
-                        resultCalculated = true;
-                    } else {
-                        result.setValue("");
-                    }
-                } else if ("R".equals(resultType) || "A".equals(resultType)) {
-                    if (Boolean.valueOf(value)) {
-                        result.setValue(calculation.getResult());
-                        resultCalculated = true;
-                    } else {
-                        result.setValue("");
-                    }
-                } else if ("N".equals(resultType)) {
-                    if (testResult.getSignificantDigits() != null) {
-                        double factor = Math.pow(10, Double.valueOf(testResult.getSignificantDigits()));
-                        value = String.valueOf(Math.round(Double.valueOf(value) * factor) / factor);
-                    }
-                    result.setValue(value);
-                    resultCalculated = true;
+        }
+
+        if (targetOrderedAnalysis == null) {
+            // Target test was NOT ordered on this sample:
+            // HARD SAFEGUARD: DO NOT create analysis. DO NOT touch Result. Return null
+            // immediately!
+            return null;
+        }
+
+        String validSysUserId = !GenericValidator.isBlankOrNull(systemUserId) ? systemUserId : "1";
+
+        // Check if this calculation rule triggers external note only
+        if (Boolean.valueOf(value)) {
+            if (StringUtils.isNotBlank(calculation.getNote())) {
+                Note note = noteService.createSavableNote(targetOrderedAnalysis, NoteType.EXTERNAL,
+                        calculation.getNote(), CALCULATION_SUBJECT, validSysUserId);
+                if (!noteService.duplicateNoteExists(note)) {
+                    noteService.save(note);
                 }
-            } else {
-                result.setValue("");
             }
-            if (resultCalculation.getResult() != null) {
-                analysis = createCalculatedAnalysis(resultCalculation.getResult().getAnalysis(), test, resultSet.result,
-                        value, calculation.getName(), systemUserId, resultCalculated, calculation.getNote());
-                result.setAnalysis(analysis);
-                resultService.update(result);
-            } else {
-                analysis = createCalculatedAnalysis(null, test, resultSet.result, value, calculation.getName(),
-                        systemUserId, resultCalculated, calculation.getNote());
-                result.setAnalysis(analysis);
-                resultService.insert(result);
+            return targetOrderedAnalysis;
+        }
+
+        TestResult testResult = getTestResultForCalculation(calculation);
+        Boolean resultCalculated = false;
+
+        // Numeric type only — round to significant digits if configured
+        if (value != null) {
+            if (testResult != null && testResult.getSignificantDigits() != null) {
+                try {
+                    double factor = Math.pow(10, Double.valueOf(testResult.getSignificantDigits()));
+                    value = String.valueOf(Math.round(Double.valueOf(value) * factor) / factor);
+                } catch (NumberFormatException e) {
+                    // keep unformatted value
+                }
             }
-            resultCalculation.setResult(result);
+            resultCalculated = true;
+        }
+
+        // HARD SAFEGUARD 2: Zero background Result mutation.
+        // Idempotently park the calculated value on the ordered Analysis.
+        // Never insert or update clinlims.result!
+        // Never alter analysis.status_id!
+        if (resultCalculated && !GenericValidator.isBlankOrNull(value)) {
+            // Defensive truncation — keep within DB column constraint (VARCHAR 255)
+            String safeValue = value.length() > 250 ? value.substring(0, 250) : value;
+            targetOrderedAnalysis.setPendingCalculatedValue(safeValue);
+            targetOrderedAnalysis.setPendingCalculationName(calculation.getName());
+        } else {
+            targetOrderedAnalysis.setPendingCalculatedValue(null);
+            targetOrderedAnalysis.setPendingCalculationName(null);
+        }
+        targetOrderedAnalysis.setSysUserId(validSysUserId);
+        analysisService.update(targetOrderedAnalysis);
+
+        List<Result> existingResults = resultService.getResultsByAnalysis(targetOrderedAnalysis);
+        if (existingResults != null && !existingResults.isEmpty()) {
+            resultCalculation.setResult(existingResults.get(0));
             resultcalculationService.update(resultCalculation);
         }
-        return analysis;
+
+        return targetOrderedAnalysis;
     }
 
     private void createInternalNote(Analysis newAnalysis, Analysis currentAnalysis, String calculatioName,
@@ -441,9 +533,16 @@ public class TestCalculatedUtil {
         }
         generatedAnalysis.setParentAnalysis(currentAnalysis);
         generatedAnalysis.setParentResult(result);
-        generatedAnalysis.setSampleItem(currentAnalysis.getSampleItem());
-        generatedAnalysis.setTestSection(currentAnalysis.getTestSection());
-        generatedAnalysis.setSampleTypeName(currentAnalysis.getSampleTypeName());
+        // When reusing an existing manually-ordered analysis (existingAnalysis !=
+        // null),
+        // preserve its own testSection and sampleItem — do NOT overwrite them with the
+        // triggering input test's section/sample, which would move D into A's
+        // department.
+        if (existingAnalysis == null) {
+            generatedAnalysis.setSampleItem(currentAnalysis.getSampleItem());
+            generatedAnalysis.setTestSection(currentAnalysis.getTestSection());
+            generatedAnalysis.setSampleTypeName(currentAnalysis.getSampleTypeName());
+        }
         generatedAnalysis.setSysUserId(systemUserId);
         generatedAnalysis.setResultCalculated(resultCalculated);
         if (existingAnalysis != null) {

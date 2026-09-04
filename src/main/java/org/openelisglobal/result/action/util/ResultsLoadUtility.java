@@ -803,6 +803,8 @@ public class ResultsLoadUtility {
         testItem.setResultValue(getFormattedResultValue(result));
         testItem.setMultiSelectResultValues(analysisService.getJSONMultiSelectResults(analysis));
         testItem.setAnalysisStatusId(analysisService.getStatusId(analysis));
+        testItem.setPendingCalculatedValue(analysis.getPendingCalculatedValue());
+        testItem.setPendingCalculationName(analysis.getPendingCalculationName());
         // setDictionaryResults must come after setResultType, it may override it
         testItem.setResultType(testService.getResultType(test));
         setDictionaryResults(testItem, isConclusion, result, testResults);

@@ -1,5 +1,8 @@
 # build env
-FROM node:20.20-alpine AS build
+# --platform=$BUILDPLATFORM pins this stage to the runner's native platform (linux/amd64 on GHA).
+# npm ci + npm run build run at full native speed instead of under arm64 QEMU emulation.
+# The output (HTML/CSS/JS) is platform-agnostic and gets COPY'd into both amd64+arm64 nginx stages.
+FROM --platform=$BUILDPLATFORM node:20.20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev

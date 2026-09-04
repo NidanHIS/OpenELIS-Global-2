@@ -1,14 +1,17 @@
 ##
 # Build Stage
 #
-FROM maven:3-eclipse-temurin-21 AS build
+# --platform=$BUILDPLATFORM pins Maven compile to the runner's native platform (linux/amd64 on GHA).
+# Maven produces JVM bytecode (.class/WAR) which is platform-agnostic — runs on any JVM.
+# QEMU arm64 emulation only hits the lightweight Tomcat runtime stage (file copies, no compilation).
+FROM --platform=$BUILDPLATFORM maven:3-eclipse-temurin-21 AS build
 
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean \
     && apt-get -y update \
     && apt-get -y --no-install-recommends install \
-    git apache2-utils nodejs npm
+    apache2-utils
 
 
 # OE Default Password
