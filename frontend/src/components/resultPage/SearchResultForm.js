@@ -8,6 +8,7 @@ import {
   Roles,
 } from "../utils/Utils";
 import { stripBasePath, getFullPath } from "../utils/Navigation";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import {
   Form,
   TextInput,
@@ -1202,6 +1203,18 @@ export function SearchResults(props) {
                 : row.accessionNumber) +
                 "-" +
                 row.sequenceNumber}
+              {row.sampleNumber && (
+                <div
+                  style={{
+                    marginTop: "4px",
+                    fontSize: "0.85rem",
+                    fontWeight: "bold",
+                    color: "#0f62fe",
+                  }}
+                >
+                  Sample Number: {displaySampleNumber(row.sampleNumber)}
+                </div>
+              )}
               {row.isEqaSample && <EQABadge priority={row.eqaPriority} />}
               <br></br>
               {row.patientName && row.patientName.includes(",")

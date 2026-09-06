@@ -114,6 +114,7 @@ public class SamplePatientEntryOrderPlacementService {
         }
 
         updateData.setAccessionNumber(sampleOrder.getLabNo());
+        updateData.setSampleNumber(sampleOrder.getSampleNumber());
         LogEvent.logInfo(this.getClass().getSimpleName(), "placeOrder",
                 "labNo=" + sampleOrder.getLabNo() + ", externalOrderNumber=" + sampleOrder.getExternalOrderNumber()
                         + ", requesterSampleID=" + sampleOrder.getRequesterSampleID());

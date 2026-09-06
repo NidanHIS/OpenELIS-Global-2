@@ -430,6 +430,10 @@ public class ResultsValidationUtility {
         ResultValidationItem testItem = new ResultValidationItem();
 
         testItem.setAccessionNumber(accessionNumber);
+        if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
+            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
+                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
+        }
         testItem.setAnalysis(analysis);
         testItem.setSequenceNumber(sequenceNumber);
         testItem.setTestName(displayTestName);
@@ -642,6 +646,7 @@ public class ResultsValidationUtility {
         testUnits = augmentUOMWithRange(testUnits, testResultItem.getResult());
 
         analysisResultItem.setAccessionNumber(testResultItem.getAccessionNumber());
+        analysisResultItem.setSampleNumber(testResultItem.getSampleNumber());
         analysisResultItem.setLowerCritical(
                 testResultItem.getLowerCritical() == Double.NEGATIVE_INFINITY ? 0 : testResultItem.getLowerCritical());
         analysisResultItem.setHigherCritical(testResultItem.getHigherCritical() == Double.POSITIVE_INFINITY ? 0

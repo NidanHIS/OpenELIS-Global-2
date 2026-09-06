@@ -584,6 +584,7 @@ public class ResultsLoadUtility {
                 TestResultItem separatorItem = new TestResultItem();
                 separatorItem.setIsGroupSeparator(true);
                 separatorItem.setAccessionNumber(testItem.getAccessionNumber());
+                separatorItem.setSampleNumber(testItem.getSampleNumber());
                 separatorItem.setReceivedDate(testItem.getReceivedDate());
                 testList.add(separatorItem);
 
@@ -779,6 +780,10 @@ public class ResultsLoadUtility {
         TestResultItem testItem = new TestResultItem();
 
         testItem.setAccessionNumber(accessionNumber);
+        if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
+            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
+                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
+        }
         testItem.setAnalysisId(analysis.getId());
         // Set SampleItem ID for storage location lookup
         if (analysis.getSampleItem() != null && analysis.getSampleItem().getId() != null) {

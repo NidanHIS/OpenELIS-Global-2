@@ -19,6 +19,7 @@ public class SampleItemDTO {
 
     private String sampleItemId; // PK of SampleItem
     private String accessionNumber; // From Sample
+    private String sampleNumber; // Daily sample number (DDMM-XXXX) from Sample
     private String typeOfSample; // TypeOfSample.description (e.g., "Sérum", "Urines")
     private String typeOfSampleId; // TypeOfSample PK
     private List<ReferralTestDTO> referralTests = new ArrayList<>(); // Grouped tests for this SampleItem
@@ -55,6 +56,14 @@ public class SampleItemDTO {
 
     public void setAccessionNumber(String accessionNumber) {
         this.accessionNumber = accessionNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     public String getTypeOfSample() {

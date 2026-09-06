@@ -72,6 +72,7 @@ public class SamplePatientUpdateData {
     private Provider provider;
     private String patientId;
     private String accessionNumber;
+    private String sampleNumber;
     private String referringId;
     private OrderPriority priority;
 
@@ -158,6 +159,14 @@ public class SamplePatientUpdateData {
 
     public void setAccessionNumber(String accessionNumber) {
         this.accessionNumber = accessionNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     public String getReferringId() {
@@ -297,6 +306,17 @@ public class SamplePatientUpdateData {
             errors.reject(message);
         }
 
+        if (!GenericValidator.isBlankOrNull(sampleNumber)) {
+            org.openelisglobal.common.provider.validation.DailySampleNumberValidator sampleValidator = SpringContext
+                    .getBean(org.openelisglobal.common.provider.validation.DailySampleNumberValidator.class);
+            org.openelisglobal.common.provider.validation.IAccessionNumberValidator.ValidationResults sampleNumResult = sampleValidator
+                    .checkAccessionNumberValidity(sampleNumber, null, null, null);
+            if (sampleNumResult != org.openelisglobal.common.provider.validation.IAccessionNumberValidator.ValidationResults.SUCCESS) {
+                String sampleNumMsg = sampleValidator.getInvalidMessage(sampleNumResult);
+                errors.reject(sampleNumMsg);
+            }
+        }
+
         // assure that there is at least 1 sample
         if (sampleItemsTests.isEmpty()) {
             errors.reject("errors.no.sample");
@@ -361,6 +381,9 @@ public class SamplePatientUpdateData {
         //   blank  — nothing entered/generated → auto-generate now (reserve sequence slot).
         String incomingSampleNumber = sampleOrder.getSampleNumber();
         String incomingType = sampleOrder.getSampleNumberType();
+        if (GenericValidator.isBlankOrNull(incomingSampleNumber)) {
+            incomingSampleNumber = this.sampleNumber;
+        }
         if (!GenericValidator.isBlankOrNull(incomingSampleNumber)) {
             if ("AUTO".equalsIgnoreCase(incomingType)) {
                 // Convert from display DDxxxx → stored YYMMDDxxxx

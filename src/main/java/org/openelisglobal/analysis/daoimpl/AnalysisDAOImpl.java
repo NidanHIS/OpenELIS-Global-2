@@ -1902,7 +1902,8 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
                     + " WHERE a.status_id IN (:statusIds)");
 
             if (hasSearch) {
-                sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR p.national_id   ILIKE :search"
+                sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR s.sample_number   ILIKE :search"
+                        + " OR p.national_id   ILIKE :search"
                         + " OR per.last_name   ILIKE :search" + " OR per.first_name  ILIKE :search"
                         + " OR EXISTS (SELECT 1 FROM patient_identity pi2"
                         + " JOIN patient_identity_type pit2 ON pi2.identity_type_id = pit2.id"
@@ -1965,7 +1966,8 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
                     + " WHERE a.status_id IN (:statusIds)");
 
             if (hasSearch) {
-                sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR p.national_id   ILIKE :search"
+                sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR s.sample_number   ILIKE :search"
+                        + " OR p.national_id   ILIKE :search"
                         + " OR per.last_name   ILIKE :search" + " OR per.first_name  ILIKE :search"
                         + " OR EXISTS (SELECT 1 FROM patient_identity pi2"
                         + " JOIN patient_identity_type pit2 ON pi2.identity_type_id = pit2.id"

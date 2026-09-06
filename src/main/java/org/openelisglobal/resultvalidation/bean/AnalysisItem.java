@@ -36,6 +36,8 @@ public class AnalysisItem implements Serializable {
     @ValidAccessionNumber(groups = { ResultValidationForm.ResultValidation.class })
     private String accessionNumber;
 
+    private String sampleNumber;
+
     private String patientName;
 
     private String patientInfo;
@@ -234,6 +236,14 @@ public class AnalysisItem implements Serializable {
 
     public String getAccessionNumber() {
         return accessionNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
     }
 
     public void setResult(String result) {

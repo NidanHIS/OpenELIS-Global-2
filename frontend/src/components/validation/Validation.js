@@ -18,6 +18,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import ValidationSearchFormValues from "../formModel/innitialValues/ValidationSearchFormValues";
 import { NotificationKinds } from "../common/CustomNotification";
 import { postToOpenElisServer } from "../utils/Utils";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import { NotificationContext } from "../layout/Layout";
 import { getFromOpenElisServer } from "../utils/Utils";
 import { ConfigurationContext } from "../layout/Layout";
@@ -224,6 +225,18 @@ const Validation = (props) => {
               {formatLabNum
                 ? convertAlphaNumLabNumForDisplay(row.accessionNumber)
                 : row.accessionNumber}
+              {row.sampleNumber && (
+                <div
+                  style={{
+                    marginTop: "4px",
+                    fontSize: "0.85rem",
+                    fontWeight: "bold",
+                    color: "#0f62fe",
+                  }}
+                >
+                  Sample Number: {displaySampleNumber(row.sampleNumber)}
+                </div>
+              )}
               <br></br>
               <br></br>
             </div>

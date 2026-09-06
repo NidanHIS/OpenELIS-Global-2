@@ -17,6 +17,7 @@ import {
 } from "@carbon/react";
 import { Copy } from "@carbon/icons-react";
 import PageBreadCrumb from "../common/PageBreadCrumb";
+import { displaySampleNumber } from "../../utils/SampleNumberUtil";
 import CustomLabNumberInput from "../common/CustomLabNumberInput";
 import {
   getFromOpenElisServer,
@@ -323,6 +324,18 @@ function GenericSampleResults({
                 : row.accessionNumber) +
                 "-" +
                 row.sequenceNumber}
+            {row.sampleNumber && (
+              <div
+                style={{
+                  marginTop: "4px",
+                  fontSize: "0.85rem",
+                  fontWeight: "bold",
+                  color: "#0f62fe",
+                }}
+              >
+                Sample Number: {displaySampleNumber(row.sampleNumber)}
+              </div>
+            )}
             <br />
             {row.patientName}
             <br />

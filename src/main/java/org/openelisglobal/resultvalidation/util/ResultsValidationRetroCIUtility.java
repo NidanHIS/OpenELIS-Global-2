@@ -483,6 +483,10 @@ public class ResultsValidationRetroCIUtility {
         ResultValidationItem testItem = new ResultValidationItem();
 
         testItem.setAccessionNumber(accessionNumber);
+        if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
+            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
+                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
+        }
         testItem.setAnalysis(analysis);
         testItem.setSequenceNumber(sequenceNumber);
         testItem.setTestName(displayTestName);

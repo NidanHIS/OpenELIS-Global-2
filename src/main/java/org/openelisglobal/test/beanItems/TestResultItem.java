@@ -48,6 +48,7 @@ public class TestResultItem implements ResultItem, Serializable {
     @ValidAccessionNumber(format = AccessionFormat.UNFORMATTED, groups = { WorkplanForm.PrintWorkplan.class,
             LogbookResultsForm.LogbookResults.class })
     private String accessionNumber;
+    private String sampleNumber;
 
     private String sequenceNumber;
     private boolean showSampleDetails = true;
@@ -280,6 +281,14 @@ public class TestResultItem implements ResultItem, Serializable {
     @Override
     public void setAccessionNumber(String accessionNumber) {
         this.accessionNumber = accessionNumber;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
     }
 
     @Override
