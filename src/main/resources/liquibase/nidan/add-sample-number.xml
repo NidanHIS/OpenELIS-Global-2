@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        ChangeSet 001: Add sample_number column to clinlims.sample.
+        Format stored: YYMMDDxxxx (10 digits, no separator), e.g. 2609060001.
+        Nullable intentionally — all existing rows get NULL, zero breakage.
+    -->
+    <changeSet id="nidan-sample-number-col-001" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists schemaName="clinlims" tableName="sample" columnName="sample_number"/>
+            </not>
+        </preConditions>
+        <addColumn schemaName="clinlims" tableName="sample">
+            <column name="sample_number" type="VARCHAR(20)"/>
+        </addColumn>
+    </changeSet>
+
+    <!--
+        ChangeSet 002: Add sample_number_type column.
+        Values: 'AUTO' (system-generated daily counter) or 'MANUAL' (user-typed).
+        Nullable — existing rows and samples without a number get NULL.
+    -->
+    <changeSet id="nidan-sample-number-type-col-002" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists schemaName="clinlims" tableName="sample" columnName="sample_number_type"/>
+            </not>
+        </preConditions>
+        <addColumn schemaName="clinlims" tableName="sample">
+            <column name="sample_number_type" type="VARCHAR(6)"/>
+        </addColumn>
+    </changeSet>
+
+    <!--
+        ChangeSet 003: Partial unique index on sample_number WHERE NOT NULL.
+        This allows unlimited NULL values (samples without a number)
+        while enforcing uniqueness for all real values.
+        Raw SQL used because Liquibase <addUniqueConstraint> cannot express
+        a WHERE clause partial index.
+    -->
+    <changeSet id="nidan-sample-number-unique-idx-003" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="clinlims" tableName="sample" indexName="uq_sample_number_notnull"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE UNIQUE INDEX uq_sample_number_notnull
+            ON clinlims.sample(sample_number)
+            WHERE sample_number IS NOT NULL;
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS clinlims.uq_sample_number_notnull;
+        </rollback>
+    </changeSet>
+
+    <!--
+        ChangeSet 004: Composite index for lookup performance.
+        DAO queries filter by entered_date + sample_number, so covering
+        both columns avoids a seq scan on large sample tables.
+    -->
+    <changeSet id="nidan-sample-number-composite-idx-004" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="clinlims" tableName="sample" indexName="idx_sample_entered_date_sample_number"/>
+            </not>
+        </preConditions>
+        <createIndex schemaName="clinlims" tableName="sample"
+                     indexName="idx_sample_entered_date_sample_number">
+            <column name="entered_date"/>
+            <column name="sample_number"/>
+        </createIndex>
+        <rollback>
+            <dropIndex schemaName="clinlims" tableName="sample"
+                       indexName="idx_sample_entered_date_sample_number"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

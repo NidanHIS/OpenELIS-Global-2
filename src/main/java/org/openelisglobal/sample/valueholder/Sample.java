@@ -76,6 +76,22 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
      */
     private String nidanVisitType;
 
+    /**
+     * NIDAN daily sample identifier.
+     * Stored internally as YYMMDDxxxx (10 digits, no separator), e.g. "2609060001".
+     * Displayed to users/UI/analyzers as DDxxxx (6 digits), e.g. "060001".
+     * Null for all samples created before this feature was introduced.
+     */
+    private String sampleNumber;
+
+    /**
+     * Indicates how sampleNumber was assigned.
+     * "AUTO" = system-generated daily counter via DailySampleNumberValidator.
+     * "MANUAL" = typed by the user; stored verbatim (no prefix transformation).
+     * Null when sampleNumber is null.
+     */
+    private String sampleNumberType;
+
     // testing one-to-many
     // this is for HSE I and II - ability to enter up to two projects
     private List sampleProjects;
@@ -488,5 +504,21 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
 
     public void setNidanVisitType(String nidanVisitType) {
         this.nidanVisitType = nidanVisitType;
+    }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
+    }
+
+    public String getSampleNumberType() {
+        return sampleNumberType;
+    }
+
+    public void setSampleNumberType(String sampleNumberType) {
+        this.sampleNumberType = sampleNumberType;
     }
 }

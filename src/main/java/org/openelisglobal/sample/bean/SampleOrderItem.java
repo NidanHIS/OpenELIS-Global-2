@@ -676,6 +676,15 @@ public class SampleOrderItem implements Serializable {
      */
     private String nidanVisitType;
 
+    /** NIDAN sample number as entered by user/UI (DDxxxx display format or manual alphanumeric). */
+    private String sampleNumber;
+
+    /**
+     * How sampleNumber was assigned: "AUTO" (generate button clicked) or "MANUAL" (typed).
+     * Sent from the UI alongside sampleNumber so the backend knows which path to take on save.
+     */
+    private String sampleNumberType;
+
     public String getNidanVisitType() {
         return nidanVisitType;
     }
@@ -683,4 +692,21 @@ public class SampleOrderItem implements Serializable {
     public void setNidanVisitType(String nidanVisitType) {
         this.nidanVisitType = nidanVisitType;
     }
+
+    public String getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(String sampleNumber) {
+        this.sampleNumber = sampleNumber;
+    }
+
+    public String getSampleNumberType() {
+        return sampleNumberType;
+    }
+
+    public void setSampleNumberType(String sampleNumberType) {
+        this.sampleNumberType = sampleNumberType;
+    }
 }
+

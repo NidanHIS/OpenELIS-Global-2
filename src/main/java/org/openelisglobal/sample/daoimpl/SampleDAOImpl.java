@@ -749,4 +749,49 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
 
         return null;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Sample getSampleBySampleNumber(String sampleNumber) throws LIMSRuntimeException {
+        if (sampleNumber == null || sampleNumber.trim().isEmpty()) {
+            return null;
+        }
+        String input = sampleNumber.trim();
+        try {
+            // ── Path A: 6-digit display format DDxxxx → expand to stored YYMMDDxxxx ──────
+            // Only execute if input is exactly 6 digits (display format).
+            // Query only AUTO rows to avoid false matches against 6-digit manual entries.
+            if (org.openelisglobal.sample.util.SampleNumberUtil.isDisplayFormat(input)) {
+                String storedKey = org.openelisglobal.sample.util.SampleNumberUtil.toStorage(input);
+                String sqlA = "from Sample s where s.sampleNumber = :param"
+                        + " and s.sampleNumberType = 'AUTO'"
+                        + " order by s.enteredDate desc";
+                Query<Sample> queryA = entityManager.unwrap(Session.class).createQuery(sqlA, Sample.class);
+                queryA.setParameter("param", storedKey);
+                queryA.setMaxResults(1);
+                List<Sample> listA = queryA.list();
+                if (listA != null && !listA.isEmpty()) {
+                    return listA.get(0);
+                }
+            }
+
+            // ── Path B: exact match on sample_number ─────────────────────────────────────
+            // Catches: MANUAL entries (stored verbatim), 10-digit stored AUTO entered directly,
+            // and any non-6-digit input (alphanumeric manual like "LAB01").
+            String sqlB = "from Sample s where s.sampleNumber = :param order by s.enteredDate desc";
+            Query<Sample> queryB = entityManager.unwrap(Session.class).createQuery(sqlB, Sample.class);
+            queryB.setParameter("param", input);
+            queryB.setMaxResults(1);
+            List<Sample> listB = queryB.list();
+            if (listB != null && !listB.isEmpty()) {
+                return listB.get(0);
+            }
+
+        } catch (HibernateException e) {
+            LogEvent.logError(e);
+            throw new LIMSRuntimeException("Exception in getSampleBySampleNumber", e);
+        }
+        return null;
+    }
 }
+

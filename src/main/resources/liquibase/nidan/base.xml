@@ -30,4 +30,5 @@
   <include relativeToChangelogFile="true" file="add-config-field-provenance.xml"/>
   <include relativeToChangelogFile="true" file="widen-panel-name.xml"/>
   <include relativeToChangelogFile="true" file="add-pending-calculated-result.xml"/>
+  <include relativeToChangelogFile="true" file="add-sample-number.xml"/>
 </databaseChangeLog>

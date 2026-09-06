@@ -45,6 +45,77 @@ const AddOrder = (props) => {
   const [siteNames, setSiteNames] = useState([]);
   const [innitialized, setInnitialized] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [sampleNumberError, setSampleNumberError] = useState("");
+  // Stale-response guard: tracks what value is currently in the field
+  const sampleNumberRef = useRef("");
+
+  // ── Sample Number handlers ──────────────────────────────────────────────
+  const handleSampleNoGeneration = (e) => {
+    if (e) e.preventDefault();
+    getFromOpenElisServer(
+      "/rest/SampleEntryGenerateScanProvider?format=DAILY_SAMPLE_NUMBER",
+      (res) => {
+        if (res.status) {
+          // res.body is already in display format (DDxxxx) — REST endpoint applies toDisplay()
+          const generated = res.body;
+          sampleNumberRef.current = generated;
+          setOrderFormValues((prev) => ({
+            ...prev,
+            sampleOrderItems: {
+              ...prev.sampleOrderItems,
+              sampleNumber: generated,
+              sampleNumberType: "AUTO",
+            },
+          }));
+          setSampleNumberError("");
+        }
+      },
+    );
+  };
+
+  const handleSampleNoValidationOnChange = (value) => {
+    if (!value) {
+      setSampleNumberError("");
+      return;
+    }
+    getFromOpenElisServer(
+      "/rest/SampleEntryAccessionNumberValidation?ignoreYear=false&ignoreUsage=false" +
+        "&field=sampleNumber&format=DAILY_SAMPLE_NUMBER" +
+        "&accessionNumber=" + encodeURIComponent(value),
+      (res) => {
+        // Discard stale response if field value has changed since this request was sent
+        if (value !== sampleNumberRef.current) return;
+        if (res.status === false) {
+          setSampleNumberError(res.body);
+          addNotification({
+            kind: NotificationKinds.error,
+            title: intl.formatMessage({ id: "notification.title" }),
+            message: res.body,
+          });
+          setNotificationVisible(true);
+        } else {
+          setSampleNumberError("");
+        }
+      },
+    );
+  };
+
+  const handleSampleNo = (e) => {
+    const value = e?.target?.value;
+    sampleNumberRef.current = value ?? "";
+    setChanged({ ...changed, "sampleOrderItems.sampleNumber": true });
+    setOrderFormValues((prev) => ({
+      ...prev,
+      sampleOrderItems: {
+        ...prev.sampleOrderItems,
+        sampleNumber: value,
+        // User typed manually → mark as MANUAL
+        sampleNumberType: "MANUAL",
+      },
+    }));
+    handleSampleNoValidationOnChange(value);
+  };
+
 
   useEffect(() => {
     componentMounted.current = true;
@@ -531,6 +602,29 @@ const AddOrder = (props) => {
               </div>
             </Column>
             <Column lg={8} md={4} sm={4}>
+              <div>
+                <TextInput
+                  id="sampleNumber"
+                  name="sampleNumber"
+                  labelText="Sample No."
+                  placeholder="e.g. 060001 or LAB01"
+                  value={orderFormValues.sampleOrderItems.sampleNumber || ""}
+                  onChange={handleSampleNo}
+                  invalid={!!sampleNumberError}
+                  invalidText={sampleNumberError}
+                />
+                <div>
+                  <Link
+                    data-cy="generate-sampleNumber"
+                    href="#"
+                    onClick={handleSampleNoGeneration}
+                  >
+                    Generate Sample No.
+                  </Link>
+                </div>
+              </div>
+            </Column>
+
               <Select
                 id="priorityId"
                 name="priority"

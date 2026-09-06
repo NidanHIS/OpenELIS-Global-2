@@ -354,8 +354,31 @@ public class SamplePatientUpdateData {
             sample.setNidanVisitType(sampleOrder.getNidanVisitType().trim());
         }
 
+        // Persist NIDAN sample number.
+        // Three cases:
+        //   AUTO  — UI sent display format (DDxxxx) + type=AUTO → convert to storage (YYMMDDxxxx).
+        //   MANUAL — UI sent user-typed value + type=MANUAL → store verbatim, no transformation.
+        //   blank  — nothing entered/generated → auto-generate now (reserve sequence slot).
+        String incomingSampleNumber = sampleOrder.getSampleNumber();
+        String incomingType = sampleOrder.getSampleNumberType();
+        if (!GenericValidator.isBlankOrNull(incomingSampleNumber)) {
+            if ("AUTO".equalsIgnoreCase(incomingType)) {
+                // Convert from display DDxxxx → stored YYMMDDxxxx
+                sample.setSampleNumber(
+                        org.openelisglobal.sample.util.SampleNumberUtil.toStorage(incomingSampleNumber.trim()));
+                sample.setSampleNumberType("AUTO");
+            } else {
+                // MANUAL — store verbatim, never expand
+                sample.setSampleNumber(incomingSampleNumber.trim());
+                sample.setSampleNumberType("MANUAL");
+            }
+        }
+        // Note: if blank, sample number remains null — no auto-generation at this layer.
+        // Auto-generation happens only when the user explicitly clicks "Generate" in the UI.
+
         setElectronicOrderIfNeeded(sampleOrder);
     }
+
 
     private void setElectronicOrderIfNeeded(SampleOrderItem sampleOrder) {
         electronicOrder = null;

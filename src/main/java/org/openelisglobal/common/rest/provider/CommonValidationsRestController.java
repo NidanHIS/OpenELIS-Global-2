@@ -17,6 +17,7 @@ import org.openelisglobal.internationalization.MessageUtil;
 import org.openelisglobal.project.service.ProjectService;
 import org.openelisglobal.project.valueholder.Project;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.util.CI.ProjectForm;
 import org.openelisglobal.search.service.SearchResultsService;
 import org.openelisglobal.spring.util.SpringContext;
@@ -162,7 +163,12 @@ public class CommonValidationsRestController {
         if (success) {
             responseObject.setStatus(true);
         }
-        String result = GenericValidator.isBlankOrNull(error) ? nextNumber : error;
+        // For DAILY_SAMPLE_NUMBER format: generator returns stored YYMMDDxxxx.
+        // Strip YYMM prefix before sending to UI so user sees DDxxxx (e.g. 060001).
+        String displayNumber = (AccessionFormat.DAILY_SAMPLE_NUMBER.equals(format))
+                ? SampleNumberUtil.toDisplay(nextNumber)
+                : nextNumber;
+        String result = GenericValidator.isBlankOrNull(error) ? displayNumber : error;
         responseObject.setBody(result);
         return responseObject;
     }

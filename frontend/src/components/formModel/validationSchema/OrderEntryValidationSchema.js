@@ -16,6 +16,16 @@ const OrderEntryValidationSchema = Yup.object().shape({
         "Requester First Name is required",
       ),
       providerEmail: Yup.string().email("Invalid Email"),
+      // Optional. Accepts 6-digit display (DDxxxx), 10-digit stored (YYMMDDxxxx),
+      // or alphanumeric manual entry. Max 20 chars. No special chars.
+      sampleNumber: Yup.string()
+        .nullable()
+        .max(20, "Sample number max 20 characters")
+        .matches(
+          /^[A-Za-z0-9]{0,20}$/,
+          "Sample number: letters and digits only, no spaces or special characters",
+        ),
+      sampleNumberType: Yup.string().nullable().oneOf(["AUTO", "MANUAL", null, ""]),
     })
     .test("referringSiteName", "Referring Site is required", function (value) {
       const { referringSiteName, referringSiteId } = value || {};

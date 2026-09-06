@@ -45,6 +45,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.openelisglobal.common.log.LogEvent;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 
 @Service
 @DependsOn({ "springContext" })
@@ -613,4 +615,28 @@ public class SampleServiceImpl extends AuditableBaseObjectServiceImpl<Sample, St
     public List<Sample> getSamplesByPriority(OrderPriority priority) {
         return sampleDAO.getSamplesByPriority(priority);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Sample getSampleBySampleNumber(String sampleNumber) {
+        if (sampleNumber == null || sampleNumber.trim().isEmpty()) {
+            return null;
+        }
+        return sampleDAO.getSampleBySampleNumber(sampleNumber.trim());
+    }
+
+    @Override
+    public String generateSampleNumber(Sample sample) {
+        try {
+            org.openelisglobal.common.provider.validation.DailySampleNumberValidator validator =
+                    SpringContext.getBean(
+                            org.openelisglobal.common.provider.validation.DailySampleNumberValidator.class);
+            // Returns stored format: YYMMDDxxxx (e.g. 2609060001)
+            return validator.getNextAccessionNumber(null, true);
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "generateSampleNumber", e.toString());
+            return null;
+        }
+    }
 }
+

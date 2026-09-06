@@ -119,5 +119,29 @@ public interface SampleService extends BaseObjectService<Sample, String> {
     List<Sample> getStudySamplesForSiteBetweenOrderDates(String referringSiteId, LocalDate lowerDate,
             LocalDate upperDate);
 
+
     List<Sample> getSamplesByPriority(OrderPriority priority);
+
+    /**
+     * Looks up a sample by its NIDAN sample number using two-path resolution:
+     * Path A: if input is 6-digit display format (DDxxxx), expand to YYMMDDxxxx and
+     *         query WHERE sample_number = expanded AND sample_number_type = 'AUTO'.
+     * Path B: exact match on sample_number (catches manual entries and direct stored lookups).
+     * AUTO path takes precedence. Returns null if not found.
+     *
+     * @param sampleNumber the sample number as entered by user/analyzer (DDxxxx or manual)
+     * @return the matching Sample, or null
+     */
+    Sample getSampleBySampleNumber(String sampleNumber);
+
+    /**
+     * Generates the next AUTO sample number via DailySampleNumberValidator.
+     * Returns the number in stored format (YYMMDDxxxx).
+     * Caller is responsible for setting sampleNumberType = "AUTO" on the entity.
+     *
+     * @param sample the Sample entity being created (used for context if needed)
+     * @return stored-format sample number string, or null on error
+     */
+    String generateSampleNumber(Sample sample);
 }
+
