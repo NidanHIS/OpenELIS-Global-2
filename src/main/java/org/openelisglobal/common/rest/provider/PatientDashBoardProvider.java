@@ -203,9 +203,9 @@ public class PatientDashBoardProvider {
                         Patient patient = sampleHumanService.getPatientForSample(sample);
                         orderBean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                         orderBean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                        orderBean.setSampleNumber(sample.getSampleNumber() != null
-                                ? SampleNumberUtil.toDisplay(sample.getSampleNumber())
-                                : "");
+                        orderBean.setSampleNumber(
+                                sample.getSampleNumber() != null ? SampleNumberUtil.toDisplay(sample.getSampleNumber())
+                                        : "");
                         orderBean.setPatientId(getPatientDisplayId(patient));
                         orderBean.setPatientName(getPatientName(patient));
                         orderBean.setPatientGuid(
@@ -259,9 +259,9 @@ public class PatientDashBoardProvider {
                     Patient patient = sampleHumanService.getPatientForSample(sample);
                     bean.setPriority(sample.getPriority() != null ? sample.getPriority().toString() : "");
                     bean.setLabNumber(sample.getAccessionNumber() != null ? sample.getAccessionNumber() : "");
-                    bean.setSampleNumber(sample.getSampleNumber() != null
-                            ? SampleNumberUtil.toDisplay(sample.getSampleNumber())
-                            : "");
+                    bean.setSampleNumber(
+                            sample.getSampleNumber() != null ? SampleNumberUtil.toDisplay(sample.getSampleNumber())
+                                    : "");
                     bean.setPatientId(patient != null ? getPatientDisplayId(patient) : "");
                     bean.setPatientName(getPatientName(patient));
                     bean.setPatientGuid(
@@ -370,9 +370,8 @@ public class PatientDashBoardProvider {
             Sample sample = sampleService.getSampleByReferringId(eOrder.getExternalId());
             if (sample != null) {
                 orderBean.setLabNumber(sample.getAccessionNumber());
-                orderBean.setSampleNumber(sample.getSampleNumber() != null
-                        ? SampleNumberUtil.toDisplay(sample.getSampleNumber())
-                        : "");
+                orderBean.setSampleNumber(
+                        sample.getSampleNumber() != null ? SampleNumberUtil.toDisplay(sample.getSampleNumber()) : "");
             }
 
             Test test = null;

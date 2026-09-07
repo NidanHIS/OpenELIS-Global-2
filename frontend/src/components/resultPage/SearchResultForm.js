@@ -1530,14 +1530,23 @@ export function SearchResults(props) {
               >
                 <div style={{ color: "#0043ce", fontWeight: 600 }}>
                   ⚡ Calculated Value:{" "}
-                  <span style={{ color: "#161616" }}>{row.pendingCalculatedValue}</span>
-                  {row.pendingCalculationName ? ` (${row.pendingCalculationName})` : ""}
+                  <span style={{ color: "#161616" }}>
+                    {row.pendingCalculatedValue}
+                  </span>
+                  {row.pendingCalculationName
+                    ? ` (${row.pendingCalculationName})`
+                    : ""}
                 </div>
                 <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
                   <Button
                     size="sm"
                     kind="primary"
-                    style={{ minHeight: "22px", height: "22px", padding: "0 8px", fontSize: "11px" }}
+                    style={{
+                      minHeight: "22px",
+                      height: "22px",
+                      padding: "0 8px",
+                      fontSize: "11px",
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       handleCopyCalculatedValue(row);
@@ -1548,7 +1557,12 @@ export function SearchResults(props) {
                   <Button
                     size="sm"
                     kind="ghost"
-                    style={{ minHeight: "22px", height: "22px", padding: "0 8px", fontSize: "11px" }}
+                    style={{
+                      minHeight: "22px",
+                      height: "22px",
+                      padding: "0 8px",
+                      fontSize: "11px",
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       handleDismissCalculatedValue(row);

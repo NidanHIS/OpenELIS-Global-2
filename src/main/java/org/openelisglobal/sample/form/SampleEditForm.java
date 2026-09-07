@@ -49,6 +49,7 @@ public class SampleEditForm extends BaseForm {
     private String accessionNumber;
 
     private String sampleNumber;
+    private String sampleNumberType;
 
     @ValidAccessionNumber(groups = { SampleEdit.class })
     private String newAccessionNumber = "";
@@ -249,6 +250,14 @@ public class SampleEditForm extends BaseForm {
 
     public void setSampleNumber(String sampleNumber) {
         this.sampleNumber = sampleNumber;
+    }
+
+    public String getSampleNumberType() {
+        return sampleNumberType;
+    }
+
+    public void setSampleNumberType(String sampleNumberType) {
+        this.sampleNumberType = sampleNumberType;
     }
 
     public List<IdValuePair> getInitialSampleConditionList() {

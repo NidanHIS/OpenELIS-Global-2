@@ -58,6 +58,7 @@ import org.openelisglobal.result.valueholder.Result;
 import org.openelisglobal.resultvalidation.action.util.ResultValidationItem;
 import org.openelisglobal.resultvalidation.bean.AnalysisItem;
 import org.openelisglobal.sample.service.SampleService;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.sampleqaevent.service.SampleQaEventService;
 import org.openelisglobal.sampleqaevent.valueholder.SampleQaEvent;
@@ -484,8 +485,8 @@ public class ResultsValidationRetroCIUtility {
 
         testItem.setAccessionNumber(accessionNumber);
         if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
-            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
-                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
+            testItem.setSampleNumber(
+                    SampleNumberUtil.toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
         }
         testItem.setAnalysis(analysis);
         testItem.setSequenceNumber(sequenceNumber);
@@ -679,6 +680,7 @@ public class ResultsValidationRetroCIUtility {
         AnalysisItem elisaResultItem = new AnalysisItem();
 
         elisaResultItem.setAccessionNumber(testResultItem.getAccessionNumber());
+        elisaResultItem.setSampleNumber(testResultItem.getSampleNumber());
         elisaResultItem.setTestName(testResultItem.getTestName());
         elisaResultItem.setResult(testResultItem.getResultValue());
         elisaResultItem.setSampleGroupingNumber(testResultItem.getSampleGroupingNumber());
@@ -832,6 +834,7 @@ public class ResultsValidationRetroCIUtility {
         testUnits = augmentUOMWithRange(testUnits, testResultItem.getResult());
 
         analysisResultItem.setAccessionNumber(testResultItem.getAccessionNumber());
+        analysisResultItem.setSampleNumber(testResultItem.getSampleNumber());
         analysisResultItem.setTestName(testName);
         analysisResultItem.setUnits(testUnits);
         if (!(testResultItem.getAnalysis() == null)) {

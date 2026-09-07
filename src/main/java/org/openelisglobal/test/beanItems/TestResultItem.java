@@ -283,10 +283,12 @@ public class TestResultItem implements ResultItem, Serializable {
         this.accessionNumber = accessionNumber;
     }
 
+    @Override
     public String getSampleNumber() {
         return sampleNumber;
     }
 
+    @Override
     public void setSampleNumber(String sampleNumber) {
         this.sampleNumber = sampleNumber;
     }

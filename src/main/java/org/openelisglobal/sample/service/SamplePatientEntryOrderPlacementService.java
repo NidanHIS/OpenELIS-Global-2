@@ -113,6 +113,14 @@ public class SamplePatientEntryOrderPlacementService {
             updateData.setPatientErrors(new BaseErrors());
         }
 
+        if (GenericValidator.isBlankOrNull(sampleOrder.getSampleNumber())
+                && !GenericValidator.isBlankOrNull(form.getSampleNumber())) {
+            sampleOrder.setSampleNumber(form.getSampleNumber());
+        }
+        if (GenericValidator.isBlankOrNull(sampleOrder.getSampleNumberType())
+                && !GenericValidator.isBlankOrNull(form.getSampleNumberType())) {
+            sampleOrder.setSampleNumberType(form.getSampleNumberType());
+        }
         updateData.setAccessionNumber(sampleOrder.getLabNo());
         updateData.setSampleNumber(sampleOrder.getSampleNumber());
         LogEvent.logInfo(this.getClass().getSimpleName(), "placeOrder",

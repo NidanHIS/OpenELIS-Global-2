@@ -77,18 +77,17 @@ public class Sample extends EnumValueItemImpl implements NoteObject {
     private String nidanVisitType;
 
     /**
-     * NIDAN daily sample identifier.
-     * Stored internally as YYMMDDxxxx (10 digits, no separator), e.g. "2609060001".
-     * Displayed to users/UI/analyzers as DDxxxx (6 digits), e.g. "060001".
-     * Null for all samples created before this feature was introduced.
+     * NIDAN daily sample identifier. Stored internally as YYMMDDxxxx (10 digits, no
+     * separator), e.g. "2609060001". Displayed to users/UI/analyzers as DDxxxx (6
+     * digits), e.g. "060001". Null for all samples created before this feature was
+     * introduced.
      */
     private String sampleNumber;
 
     /**
-     * Indicates how sampleNumber was assigned.
-     * "AUTO" = system-generated daily counter via DailySampleNumberValidator.
-     * "MANUAL" = typed by the user; stored verbatim (no prefix transformation).
-     * Null when sampleNumber is null.
+     * Indicates how sampleNumber was assigned. "AUTO" = system-generated daily
+     * counter via DailySampleNumberValidator. "MANUAL" = typed by the user; stored
+     * verbatim (no prefix transformation). Null when sampleNumber is null.
      */
     private String sampleNumberType;
 

@@ -1903,9 +1903,8 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
 
             if (hasSearch) {
                 sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR s.sample_number   ILIKE :search"
-                        + " OR p.national_id   ILIKE :search"
-                        + " OR per.last_name   ILIKE :search" + " OR per.first_name  ILIKE :search"
-                        + " OR EXISTS (SELECT 1 FROM patient_identity pi2"
+                        + " OR p.national_id   ILIKE :search" + " OR per.last_name   ILIKE :search"
+                        + " OR per.first_name  ILIKE :search" + " OR EXISTS (SELECT 1 FROM patient_identity pi2"
                         + " JOIN patient_identity_type pit2 ON pi2.identity_type_id = pit2.id"
                         + " WHERE pi2.patient_id = p.id AND pit2.identity_type = 'SUBJECT'"
                         + " AND pi2.identity_data ILIKE :search)" + ")");
@@ -1967,9 +1966,8 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
 
             if (hasSearch) {
                 sql.append(" AND (" + "s.accession_number ILIKE :search" + " OR s.sample_number   ILIKE :search"
-                        + " OR p.national_id   ILIKE :search"
-                        + " OR per.last_name   ILIKE :search" + " OR per.first_name  ILIKE :search"
-                        + " OR EXISTS (SELECT 1 FROM patient_identity pi2"
+                        + " OR p.national_id   ILIKE :search" + " OR per.last_name   ILIKE :search"
+                        + " OR per.first_name  ILIKE :search" + " OR EXISTS (SELECT 1 FROM patient_identity pi2"
                         + " JOIN patient_identity_type pit2 ON pi2.identity_type_id = pit2.id"
                         + " WHERE pi2.patient_id = p.id AND pit2.identity_type = 'SUBJECT'"
                         + " AND pi2.identity_data ILIKE :search)" + ")");

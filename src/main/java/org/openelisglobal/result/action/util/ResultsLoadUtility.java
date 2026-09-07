@@ -78,6 +78,7 @@ import org.openelisglobal.result.valueholder.ResultSignature;
 import org.openelisglobal.resultlimit.service.ResultLimitService;
 import org.openelisglobal.resultlimits.valueholder.ResultLimit;
 import org.openelisglobal.sample.service.SampleService;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.samplehuman.service.SampleHumanService;
 import org.openelisglobal.sampleitem.service.SampleItemService;
@@ -780,9 +781,11 @@ public class ResultsLoadUtility {
         TestResultItem testItem = new TestResultItem();
 
         testItem.setAccessionNumber(accessionNumber);
-        if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
-            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
-                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
+        Sample s = (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null)
+                ? analysis.getSampleItem().getSample()
+                : currSample;
+        if (s != null && s.getSampleNumber() != null) {
+            testItem.setSampleNumber(SampleNumberUtil.toDisplay(s.getSampleNumber()));
         }
         testItem.setAnalysisId(analysis.getId());
         // Set SampleItem ID for storage location lookup

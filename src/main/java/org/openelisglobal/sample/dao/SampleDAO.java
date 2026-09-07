@@ -90,11 +90,10 @@ public interface SampleDAO extends BaseDAO<Sample, String> {
     List<Sample> getSamplesByPriority(OrderPriority priority) throws LIMSRuntimeException;
 
     /**
-     * Two-path lookup by NIDAN sample number.
-     * Path A: 6-digit display input → expand to YYMMDDxxxx, query AUTO rows.
-     * Path B: exact match on sample_number (manual or already stored form).
-     * AUTO takes precedence. Returns null if not found.
+     * Two-path lookup by NIDAN sample number. Path A: 6-digit display input →
+     * expand to YYMMDDxxxx, query AUTO rows. Path B: exact match on sample_number
+     * (manual or already stored form). AUTO takes precedence. Returns null if not
+     * found.
      */
     Sample getSampleBySampleNumber(String sampleNumber) throws LIMSRuntimeException;
 }
-

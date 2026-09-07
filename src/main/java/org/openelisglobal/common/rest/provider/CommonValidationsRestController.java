@@ -17,8 +17,8 @@ import org.openelisglobal.internationalization.MessageUtil;
 import org.openelisglobal.project.service.ProjectService;
 import org.openelisglobal.project.valueholder.Project;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
-import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.util.CI.ProjectForm;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.search.service.SearchResultsService;
 import org.openelisglobal.spring.util.SpringContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,20 +33,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping(value = "/rest/")
 public class CommonValidationsRestController {
 
-    private ResponseObject responseObject;
-
     @Autowired
     protected ProjectService projectService;
 
     protected SearchResultsService searchResultsService = SpringContext.getBean(SearchResultsService.class);
 
-    public CommonValidationsRestController() {
-        this.responseObject = new ResponseObject();
-    }
-
     @GetMapping(value = "SampleEntryAccessionNumberValidation", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseObject getAccessionNumberValidation(HttpServletRequest request) {
+        ResponseObject responseObject = new ResponseObject();
         String accessionNumber = request.getParameter("accessionNumber");
         String field = request.getParameter("field");
         String recordType = request.getParameter("recordType");
@@ -56,6 +51,18 @@ public class CommonValidationsRestController {
         boolean parseForProjectFormName = "true".equalsIgnoreCase(request.getParameter("parseForProjectFormName"));
         boolean ignoreYear = "true".equals(request.getParameter("ignoreYear"));
         boolean ignoreUsage = "true".equals(request.getParameter("ignoreUsage"));
+        String formatStr = request.getParameter("format");
+        AccessionFormat formatParam = null;
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(formatStr)) {
+            try {
+                formatParam = AccessionFormat.valueOf(formatStr);
+            } catch (Exception e) {
+                // fallback to default
+            }
+        }
+        if (formatParam == null && "sampleNumber".equalsIgnoreCase(field)) {
+            formatParam = AccessionFormat.DAILY_SAMPLE_NUMBER;
+        }
 
         IAccessionNumberValidator.ValidationResults result;
 
@@ -64,7 +71,10 @@ public class CommonValidationsRestController {
         }
         boolean projectFormNameUsed = ProjectForm.findProjectFormByFormId(projectFormName) != null;
 
-        if (ignoreYear || ignoreUsage) {
+        if (formatParam != null) {
+            IAccessionNumberValidator validator = AccessionNumberUtil.getAccessionNumberValidator(formatParam);
+            result = validator.checkAccessionNumberValidity(accessionNumber, recordType, isRequired, projectFormName);
+        } else if (ignoreYear || ignoreUsage) {
             result = projectFormNameUsed ? new ProgramAccessionValidator().validFormat(accessionNumber, !ignoreYear)
                     : AccessionNumberUtil.getGeneralAccessionNumberValidator().validFormat(accessionNumber,
                             !ignoreYear);
@@ -90,16 +100,28 @@ public class CommonValidationsRestController {
         switch (result) {
         case SUCCESS:
             responseObject.setStatus(true);
-            responseObject.setBody("Valid accession number");
+            responseObject.setBody(formatParam != null ? "Valid sample number" : "Valid accession number");
             break;
         case SAMPLE_FOUND:
         case SAMPLE_NOT_FOUND:
+            if (formatParam != null) {
+                IAccessionNumberValidator fmtValidator = AccessionNumberUtil.getAccessionNumberValidator(formatParam);
+                responseObject.setBody(result == IAccessionNumberValidator.ValidationResults.SAMPLE_FOUND
+                        ? fmtValidator.getInvalidMessage(result)
+                        : "Sample number not found.");
+            } else {
+                responseObject.setBody(result.name());
+            }
             responseObject.setStatus(false);
-            responseObject.setBody(result.name());
             break;
         default:
             String message;
-            if (projectFormNameUsed) {
+            if (formatParam != null) {
+                IAccessionNumberValidator validator = AccessionNumberUtil.getAccessionNumberValidator(formatParam);
+                message = (result == IAccessionNumberValidator.ValidationResults.FORMAT_FAIL)
+                        ? validator.getInvalidFormatMessage(result)
+                        : validator.getInvalidMessage(result);
+            } else if (projectFormNameUsed) {
                 message = !ignoreUsage ? new ProgramAccessionValidator().getInvalidMessage(result)
                         : new ProgramAccessionValidator().getInvalidFormatMessage(result);
             } else {
@@ -123,6 +145,7 @@ public class CommonValidationsRestController {
             @RequestParam(defaultValue = "false") Boolean noIncrement,
             @RequestParam(required = false) AccessionFormat format) {
 
+        ResponseObject response = new ResponseObject();
         String nextNumber = null;
         String error = null;
         try {
@@ -154,29 +177,32 @@ public class CommonValidationsRestController {
                     error = MessageUtil.getMessage("errors.invalid", "program.code");
                 }
             }
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (Exception e) {
             error = MessageUtil.getMessage("error.accession.no.error");
-            LogEvent.logError(this.getClass().getSimpleName(), "processRequest", e.toString());
+            LogEvent.logError(this.getClass().getSimpleName(), "accessionNumberGenerator", e.toString());
         }
 
         boolean success = !GenericValidator.isBlankOrNull(nextNumber);
-        if (success) {
-            responseObject.setStatus(true);
-        }
+        response.setStatus(success);
+
         // For DAILY_SAMPLE_NUMBER format: generator returns stored YYMMDDxxxx.
         // Strip YYMM prefix before sending to UI so user sees DDxxxx (e.g. 060001).
         String displayNumber = (AccessionFormat.DAILY_SAMPLE_NUMBER.equals(format))
                 ? SampleNumberUtil.toDisplay(nextNumber)
                 : nextNumber;
+        if (!success && GenericValidator.isBlankOrNull(error)) {
+            error = MessageUtil.getMessage("error.accession.no.next");
+        }
         String result = GenericValidator.isBlankOrNull(error) ? displayNumber : error;
-        responseObject.setBody(result);
-        return responseObject;
+        response.setBody(result);
+        return response;
     }
 
     @GetMapping(value = "PhoneNumberValidationProvider", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseObject getPhoneNumberValidation(HttpServletRequest request) {
 
+        ResponseObject responseObject = new ResponseObject();
         String field = request.getParameter("fieldId");
         String phoneNumber = request.getParameter("value");
 
@@ -199,6 +225,7 @@ public class CommonValidationsRestController {
     public ResponseObject validateSubjectNumberAndNationalId(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        ResponseObject responseObject = new ResponseObject();
         String fieldId = request.getParameter("fieldId");
         String number = request.getParameter("subjectNumber");
         String numberType = request.getParameter("numberType");

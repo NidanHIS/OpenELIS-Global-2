@@ -249,6 +249,14 @@ public class SamplePatientEntryController extends BaseSampleEntryController {
         patientUpdate.setSysUserIdFromRequest(request);
         testAndInitializePatientForSaving(request, patientInfo, patientUpdate, updateData);
 
+        if (GenericValidator.isBlankOrNull(sampleOrder.getSampleNumber())
+                && !GenericValidator.isBlankOrNull(form.getSampleNumber())) {
+            sampleOrder.setSampleNumber(form.getSampleNumber());
+        }
+        if (GenericValidator.isBlankOrNull(sampleOrder.getSampleNumberType())
+                && !GenericValidator.isBlankOrNull(form.getSampleNumberType())) {
+            sampleOrder.setSampleNumberType(form.getSampleNumberType());
+        }
         updateData.setAccessionNumber(sampleOrder.getLabNo());
         updateData.setSampleNumber(sampleOrder.getSampleNumber());
         updateData.setReferringId(sampleOrder.getExternalOrderNumber());

@@ -42,6 +42,7 @@ import org.openelisglobal.provider.valueholder.Provider;
 import org.openelisglobal.requester.valueholder.SampleRequester;
 import org.openelisglobal.sample.bean.SampleOrderItem;
 import org.openelisglobal.sample.service.SampleService;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.samplehuman.service.SampleHumanService;
 import org.openelisglobal.spring.util.SpringContext;
@@ -146,6 +147,10 @@ public class SampleOrderService {
             sampleOrder.setPriority(sample.getPriority());
             sampleOrder.setReceivedDateForDisplay(sampleService.getReceivedDateForDisplay(sample));
             sampleOrder.setReceivedTime(sampleService.getReceived24HourTimeForDisplay(sample));
+            if (sample.getSampleNumber() != null) {
+                sampleOrder.setSampleNumber(SampleNumberUtil.toDisplay(sample.getSampleNumber()));
+                sampleOrder.setSampleNumberType(sample.getSampleNumberType());
+            }
 
             sampleOrder.setRequestDate(
                     observationHistoryService.getValueForSample(ObservationType.REQUEST_DATE, sample.getId()));
@@ -242,6 +247,22 @@ public class SampleOrderService {
         // }
 
         sample.setReceivedTimestamp(DateUtil.convertStringDateToTimestamp(receivedDate));
+
+        String incomingNum = sampleOrder.getSampleNumber();
+        if (!GenericValidator.isBlankOrNull(incomingNum)) {
+            String trimmed = incomingNum.trim();
+            boolean isAuto = "AUTO".equalsIgnoreCase(sampleOrder.getSampleNumberType()) || (GenericValidator
+                    .isBlankOrNull(sampleOrder.getSampleNumberType())
+                    && (SampleNumberUtil.isDisplayFormat(trimmed) || SampleNumberUtil.isStoredAutoFormat(trimmed)));
+            if (isAuto) {
+                sample.setSampleNumber(SampleNumberUtil.toStorage(trimmed));
+                sample.setSampleNumberType("AUTO");
+            } else {
+                sample.setSampleNumber(trimmed);
+                sample.setSampleNumberType("MANUAL");
+            }
+        }
+
         artifacts.setSample(sample);
     }
 

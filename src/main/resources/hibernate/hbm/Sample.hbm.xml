@@ -100,8 +100,8 @@
         <property name="nidanVisitType" column="nidan_visit_type"
             type="java.lang.String" length="100" />
 
-        <!-- NIDAN Sample Number: stored as YYMMDDxxxx (10 digits) for AUTO,
-             or verbatim user input for MANUAL. Display format is DDxxxx (6 digits). -->
+        <!-- NIDAN Sample Number: stored as YYMMDDxxxx (10 digits) for AUTO, or
+            verbatim user input for MANUAL. Display format is DDxxxx (6 digits). -->
         <property name="sampleNumber" column="sample_number"
             type="java.lang.String" length="20" />
         <!-- 'AUTO' = system-generated daily counter | 'MANUAL' = user-typed -->

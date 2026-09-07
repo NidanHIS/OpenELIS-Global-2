@@ -80,6 +80,7 @@ public class SamplePatientEntryForm extends BaseForm {
     private SampleOrderItem sampleOrderItems;
 
     private String sampleNumber;
+    private String sampleNumberType;
 
     // for display
     private List<IdValuePair> initialSampleConditionList;
@@ -326,5 +327,13 @@ public class SamplePatientEntryForm extends BaseForm {
 
     public void setSampleNumber(String sampleNumber) {
         this.sampleNumber = sampleNumber;
+    }
+
+    public String getSampleNumberType() {
+        return sampleNumberType;
+    }
+
+    public void setSampleNumberType(String sampleNumberType) {
+        this.sampleNumberType = sampleNumberType;
     }
 }

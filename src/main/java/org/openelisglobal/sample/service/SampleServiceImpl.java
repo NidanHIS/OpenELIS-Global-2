@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.UUID;
 import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
+import org.openelisglobal.common.log.LogEvent;
+import org.openelisglobal.common.provider.validation.DailySampleNumberValidator;
 import org.openelisglobal.common.service.AuditableBaseObjectServiceImpl;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService;
@@ -45,8 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.openelisglobal.common.log.LogEvent;
-import org.openelisglobal.sample.util.SampleNumberUtil;
 
 @Service
 @DependsOn({ "springContext" })
@@ -628,9 +628,12 @@ public class SampleServiceImpl extends AuditableBaseObjectServiceImpl<Sample, St
     @Override
     public String generateSampleNumber(Sample sample) {
         try {
-            org.openelisglobal.common.provider.validation.DailySampleNumberValidator validator =
-                    SpringContext.getBean(
-                            org.openelisglobal.common.provider.validation.DailySampleNumberValidator.class);
+            DailySampleNumberValidator validator;
+            try {
+                validator = SpringContext.getBean(DailySampleNumberValidator.class);
+            } catch (Exception be) {
+                validator = new DailySampleNumberValidator();
+            }
             // Returns stored format: YYMMDDxxxx (e.g. 2609060001)
             return validator.getNextAccessionNumber(null, true);
         } catch (Exception e) {
@@ -639,4 +642,3 @@ public class SampleServiceImpl extends AuditableBaseObjectServiceImpl<Sample, St
         }
     }
 }
-

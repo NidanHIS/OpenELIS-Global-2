@@ -59,10 +59,16 @@ const AddOrder = (props) => {
           // res.body is already in display format (DDxxxx) — REST endpoint applies toDisplay()
           const generated = res.body;
           sampleNumberRef.current = generated;
+          if (setChanged) {
+            setChanged((prev) => ({
+              ...prev,
+              "sampleOrderItems.sampleNumber": true,
+            }));
+          }
           setOrderFormValues((prev) => ({
             ...prev,
             sampleOrderItems: {
-              ...prev.sampleOrderItems,
+              ...prev?.sampleOrderItems,
               sampleNumber: generated,
               sampleNumberType: "AUTO",
             },
@@ -81,7 +87,8 @@ const AddOrder = (props) => {
     getFromOpenElisServer(
       "/rest/SampleEntryAccessionNumberValidation?ignoreYear=false&ignoreUsage=false" +
         "&field=sampleNumber&format=DAILY_SAMPLE_NUMBER" +
-        "&accessionNumber=" + encodeURIComponent(value),
+        "&accessionNumber=" +
+        encodeURIComponent(value),
       (res) => {
         // Discard stale response if field value has changed since this request was sent
         if (value !== sampleNumberRef.current) return;
@@ -103,11 +110,16 @@ const AddOrder = (props) => {
   const handleSampleNo = (e) => {
     const value = e?.target?.value;
     sampleNumberRef.current = value ?? "";
-    setChanged({ ...changed, "sampleOrderItems.sampleNumber": true });
+    if (setChanged) {
+      setChanged((prev) => ({
+        ...prev,
+        "sampleOrderItems.sampleNumber": true,
+      }));
+    }
     setOrderFormValues((prev) => ({
       ...prev,
       sampleOrderItems: {
-        ...prev.sampleOrderItems,
+        ...prev?.sampleOrderItems,
         sampleNumber: value,
         // User typed manually → mark as MANUAL
         sampleNumberType: "MANUAL",
@@ -115,7 +127,6 @@ const AddOrder = (props) => {
     }));
     handleSampleNoValidationOnChange(value);
   };
-
 
   useEffect(() => {
     componentMounted.current = true;
@@ -606,12 +617,24 @@ const AddOrder = (props) => {
                 <TextInput
                   id="sampleNumber"
                   name="sampleNumber"
-                  labelText="Sample No."
+                  labelText={
+                    <>
+                      Sample No. <span className="requiredlabel">*</span>
+                    </>
+                  }
                   placeholder="e.g. 060001 or LAB01"
-                  value={orderFormValues.sampleOrderItems.sampleNumber || ""}
+                  value={orderFormValues?.sampleOrderItems?.sampleNumber || ""}
                   onChange={handleSampleNo}
-                  invalid={!!sampleNumberError}
-                  invalidText={sampleNumberError}
+                  invalid={
+                    !!sampleNumberError ||
+                    Boolean(
+                      changed["sampleOrderItems.sampleNumber"] &&
+                      error("sampleOrderItems.sampleNumber"),
+                    )
+                  }
+                  invalidText={
+                    sampleNumberError || error("sampleOrderItems.sampleNumber")
+                  }
                 />
                 <div>
                   <Link
@@ -624,7 +647,7 @@ const AddOrder = (props) => {
                 </div>
               </div>
             </Column>
-
+            <Column lg={8} md={4} sm={4}>
               <Select
                 id="priorityId"
                 name="priority"

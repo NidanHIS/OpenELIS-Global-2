@@ -19,6 +19,7 @@ import org.openelisglobal.common.exception.LIMSInvalidConfigurationException;
 import org.openelisglobal.common.util.ConfigurationListener;
 import org.openelisglobal.common.util.ConfigurationProperties;
 import org.openelisglobal.common.util.ConfigurationProperties.Property;
+import org.openelisglobal.spring.util.SpringContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,43 +35,39 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
 
     private IAccessionNumberGenerator getConfiguredMainGenerator() throws LIMSInvalidConfigurationException {
 
-        String accessionFormat = ConfigurationProperties.getInstance()
-                .getPropertyValueUpperCase(Property.AccessionFormat);
-        boolean mainGeneratorSet = mainGenerator != null;
-        if (mainGeneratorSet) {
+        if (mainGenerator != null) {
             return mainGenerator;
         }
+
+        String accessionFormat = ConfigurationProperties.getInstance()
+                .getPropertyValueUpperCase(Property.AccessionFormat);
+        if (accessionFormat == null) {
+            throw new LIMSInvalidConfigurationException(
+                    "AccessionNumberValidatorFactory: Property.AccessionFormat is not configured");
+        }
+
         synchronized (this) {
+            if (mainGenerator != null) {
+                return mainGenerator;
+            }
             if (accessionFormat.equals(AccessionFormat.ALPHANUM.name())) {
-                if (!mainGeneratorSet) {
-                    mainGenerator = getAlphanumValidator();
-                    mainAccessionFormat = AccessionFormat.ALPHANUM;
-                }
+                mainGenerator = getAlphanumValidator();
+                mainAccessionFormat = AccessionFormat.ALPHANUM;
             } else if (accessionFormat.equals(AccessionFormat.SITEYEARNUM.name())) {
-                if (!mainGeneratorSet) {
-                    mainGenerator = getSiteYearValidator();
-                    mainAccessionFormat = AccessionFormat.SITEYEARNUM;
-                }
+                mainGenerator = getSiteYearValidator();
+                mainAccessionFormat = AccessionFormat.SITEYEARNUM;
             } else if (accessionFormat.equals(AccessionFormat.PROGRAMNUM.name())) {
-                if (!mainGeneratorSet) {
-                    mainGenerator = getProgramValidator();
-                    mainAccessionFormat = AccessionFormat.PROGRAMNUM;
-                }
+                mainGenerator = getProgramValidator();
+                mainAccessionFormat = AccessionFormat.PROGRAMNUM;
             } else if (accessionFormat.equals(AccessionFormat.YEARNUM_SIX.name())) {
-                if (!mainGeneratorSet) {
-                    mainGenerator = getYearNumValidator(6, null);
-                    mainAccessionFormat = AccessionFormat.YEARNUM_SIX;
-                }
+                mainGenerator = getYearNumValidator(6, null);
+                mainAccessionFormat = AccessionFormat.YEARNUM_SIX;
             } else if (accessionFormat.equals(AccessionFormat.YEARNUM_DASH_SEVEN.name())) {
-                if (!mainGeneratorSet) {
-                    mainGenerator = getYearNumValidator(7, '-');
-                    mainAccessionFormat = AccessionFormat.YEARNUM_DASH_SEVEN;
-                }
+                mainGenerator = getYearNumValidator(7, '-');
+                mainAccessionFormat = AccessionFormat.YEARNUM_DASH_SEVEN;
             } else if (accessionFormat.equals(AccessionFormat.YEARNUM_SEVEN.name())) {
-                if (!mainGeneratorSet) {
-                    mainGenerator = getYearNumValidator(7, null);
-                    mainAccessionFormat = AccessionFormat.YEARNUM_SEVEN;
-                }
+                mainGenerator = getYearNumValidator(7, null);
+                mainAccessionFormat = AccessionFormat.YEARNUM_SEVEN;
             }
 
             if (mainGenerator == null) {
@@ -84,6 +81,11 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
 
     public IAccessionNumberValidator getValidator(AccessionFormat accessionFormat)
             throws LIMSInvalidConfigurationException {
+
+        if (accessionFormat == null) {
+            throw new LIMSInvalidConfigurationException(
+                    "AccessionNumberValidatorFactory: AccessionFormat cannot be null");
+        }
 
         if (accessionFormat.equals(mainAccessionFormat)) {
             return mainGenerator;
@@ -117,6 +119,11 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
 
     public IAccessionNumberGenerator getGenerator(AccessionFormat accessionFormat)
             throws LIMSInvalidConfigurationException {
+
+        if (accessionFormat == null) {
+            throw new LIMSInvalidConfigurationException(
+                    "AccessionNumberValidatorFactory: AccessionFormat cannot be null");
+        }
 
         if (accessionFormat.equals(mainAccessionFormat)) {
             return mainGenerator;
@@ -178,8 +185,12 @@ public class AccessionNumberValidatorFactory implements ConfigurationListener {
         return new ProgramAccessionValidator();
     }
 
-    private DailySampleNumberValidator getDailySampleNumberValidator() {
-        return org.openelisglobal.spring.util.SpringContext.getBean(DailySampleNumberValidator.class);
+    public DailySampleNumberValidator getDailySampleNumberValidator() {
+        try {
+            return SpringContext.getBean(DailySampleNumberValidator.class);
+        } catch (Exception e) {
+            return new DailySampleNumberValidator();
+        }
     }
 
     @Override

@@ -38,6 +38,7 @@ import org.openelisglobal.sample.form.SampleEditForm.SampleEdit;
 import org.openelisglobal.sample.service.SampleEditService;
 import org.openelisglobal.sample.service.SampleService;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.validator.SampleEditFormValidator;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.samplehuman.service.SampleHumanService;
@@ -278,6 +279,10 @@ public class SampleEditRestController extends BaseSampleEntryController {
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         SampleOrderService sampleOrderService = new SampleOrderService(sample);
         form.setSampleOrderItems(sampleOrderService.getSampleOrderItem());
+        if (sample.getSampleNumber() != null) {
+            form.setSampleNumber(SampleNumberUtil.toDisplay(sample.getSampleNumber()));
+            form.setSampleNumberType(sample.getSampleNumberType());
+        }
     }
 
     private String getMostRecentAccessionNumberForPaitient(String patientID) {

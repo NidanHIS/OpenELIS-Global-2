@@ -25,7 +25,9 @@ import org.openelisglobal.address.valueholder.OrganizationAddress;
 import org.openelisglobal.common.formfields.FormFields;
 import org.openelisglobal.common.formfields.FormFields.Field;
 import org.openelisglobal.common.log.LogEvent;
+import org.openelisglobal.common.provider.validation.AccessionNumberValidatorFactory.AccessionFormat;
 import org.openelisglobal.common.provider.validation.IAccessionNumberValidator;
+import org.openelisglobal.common.provider.validation.IAccessionNumberValidator.ValidationResults;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.SampleAddService;
 import org.openelisglobal.common.services.SampleAddService.SampleTestCollection;
@@ -58,6 +60,7 @@ import org.openelisglobal.provider.valueholder.Provider;
 import org.openelisglobal.requester.valueholder.SampleRequester;
 import org.openelisglobal.sample.bean.SampleOrderItem;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.OrderPriority;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.sample.valueholder.SampleAdditionalField;
@@ -307,13 +310,15 @@ public class SamplePatientUpdateData {
         }
 
         if (!GenericValidator.isBlankOrNull(sampleNumber)) {
-            org.openelisglobal.common.provider.validation.DailySampleNumberValidator sampleValidator = SpringContext
-                    .getBean(org.openelisglobal.common.provider.validation.DailySampleNumberValidator.class);
-            org.openelisglobal.common.provider.validation.IAccessionNumberValidator.ValidationResults sampleNumResult = sampleValidator
-                    .checkAccessionNumberValidity(sampleNumber, null, null, null);
-            if (sampleNumResult != org.openelisglobal.common.provider.validation.IAccessionNumberValidator.ValidationResults.SUCCESS) {
-                String sampleNumMsg = sampleValidator.getInvalidMessage(sampleNumResult);
-                errors.reject(sampleNumMsg);
+            IAccessionNumberValidator sampleValidator = AccessionNumberUtil
+                    .getAccessionNumberValidator(AccessionFormat.DAILY_SAMPLE_NUMBER);
+            if (sampleValidator != null) {
+                ValidationResults sampleNumResult = sampleValidator.checkAccessionNumberValidity(sampleNumber, null,
+                        null, null);
+                if (sampleNumResult != ValidationResults.SUCCESS) {
+                    String sampleNumMsg = sampleValidator.getInvalidMessage(sampleNumResult);
+                    errors.reject(sampleNumMsg);
+                }
             }
         }
 
@@ -376,32 +381,40 @@ public class SamplePatientUpdateData {
 
         // Persist NIDAN sample number.
         // Three cases:
-        //   AUTO  — UI sent display format (DDxxxx) + type=AUTO → convert to storage (YYMMDDxxxx).
-        //   MANUAL — UI sent user-typed value + type=MANUAL → store verbatim, no transformation.
-        //   blank  — nothing entered/generated → auto-generate now (reserve sequence slot).
+        // AUTO — UI sent display format (DDxxxx) + type=AUTO → convert to storage
+        // (YYMMDDxxxx).
+        // MANUAL — user entered any alphanumeric string (1–20 chars) → store verbatim,
+        // no transformation.
+        // blank — nothing entered/generated → remains null.
         String incomingSampleNumber = sampleOrder.getSampleNumber();
         String incomingType = sampleOrder.getSampleNumberType();
         if (GenericValidator.isBlankOrNull(incomingSampleNumber)) {
             incomingSampleNumber = this.sampleNumber;
         }
         if (!GenericValidator.isBlankOrNull(incomingSampleNumber)) {
-            if ("AUTO".equalsIgnoreCase(incomingType)) {
-                // Convert from display DDxxxx → stored YYMMDDxxxx
-                sample.setSampleNumber(
-                        org.openelisglobal.sample.util.SampleNumberUtil.toStorage(incomingSampleNumber.trim()));
+            String trimmedNumber = incomingSampleNumber.trim();
+            boolean isAuto = "AUTO".equalsIgnoreCase(incomingType)
+                    || (GenericValidator.isBlankOrNull(incomingType) && (SampleNumberUtil.isDisplayFormat(trimmedNumber)
+                            || SampleNumberUtil.isStoredAutoFormat(trimmedNumber)));
+
+            if (isAuto) {
+                // Convert from display DDxxxx → stored YYMMDDxxxx (or pass through if already
+                // 10-digit)
+                sample.setSampleNumber(SampleNumberUtil.toStorage(trimmedNumber));
                 sample.setSampleNumberType("AUTO");
             } else {
-                // MANUAL — store verbatim, never expand
-                sample.setSampleNumber(incomingSampleNumber.trim());
+                // MANUAL — store verbatim, never expand (can be abcd, 1221sdd, etc.)
+                sample.setSampleNumber(trimmedNumber);
                 sample.setSampleNumberType("MANUAL");
             }
         }
-        // Note: if blank, sample number remains null — no auto-generation at this layer.
-        // Auto-generation happens only when the user explicitly clicks "Generate" in the UI.
+        // Note: if blank, sample number remains null — no auto-generation at this
+        // layer.
+        // Auto-generation happens only when the user explicitly clicks "Generate" in
+        // the UI.
 
         setElectronicOrderIfNeeded(sampleOrder);
     }
-
 
     private void setElectronicOrderIfNeeded(SampleOrderItem sampleOrder) {
         electronicOrder = null;

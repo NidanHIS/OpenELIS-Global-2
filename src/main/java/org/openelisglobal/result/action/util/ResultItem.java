@@ -21,6 +21,10 @@ public interface ResultItem {
 
     public void setAccessionNumber(String accessionNumber);
 
+    public String getSampleNumber();
+
+    public void setSampleNumber(String sampleNumber);
+
     public String getSequenceNumber();
 
     public void setSequenceNumber(String sequenceNumber);

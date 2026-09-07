@@ -6,6 +6,7 @@ import java.util.List;
 import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.referral.dao.ReferralDAO;
 import org.openelisglobal.referral.valueholder.Referral;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.shipment.dao.BoxSampleItemDAO;
 import org.openelisglobal.shipment.dto.ReferralTestDTO;
 import org.openelisglobal.shipment.dto.SampleItemDTO;
@@ -111,6 +112,9 @@ public class UnassignedSampleItemServiceImpl implements UnassignedSampleItemServ
             dto.setTypeOfSample(typeOfSample != null ? typeOfSample.getDescription() : "");
             dto.setTypeOfSampleId(typeOfSample != null ? typeOfSample.getId() : "");
             dto.setCollectionDate(sample != null ? sample.getCollectionDate() : null);
+            if (sample != null && sample.getSampleNumber() != null) {
+                dto.setSampleNumber(SampleNumberUtil.toDisplay(sample.getSampleNumber()));
+            }
 
             // Check if already assigned
             if (isAlreadyAssigned(sampleItemId)) {

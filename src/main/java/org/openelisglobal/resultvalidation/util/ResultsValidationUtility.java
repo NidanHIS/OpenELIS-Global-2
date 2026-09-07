@@ -66,6 +66,7 @@ import org.openelisglobal.resultlimits.valueholder.ResultLimit;
 import org.openelisglobal.resultvalidation.action.util.ResultValidationItem;
 import org.openelisglobal.resultvalidation.bean.AnalysisItem;
 import org.openelisglobal.sample.service.SampleService;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.spring.util.SpringContext;
 import org.openelisglobal.statusofsample.util.StatusRules;
@@ -431,8 +432,8 @@ public class ResultsValidationUtility {
 
         testItem.setAccessionNumber(accessionNumber);
         if (analysis.getSampleItem() != null && analysis.getSampleItem().getSample() != null) {
-            testItem.setSampleNumber(org.openelisglobal.sample.util.SampleNumberUtil
-                    .toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
+            testItem.setSampleNumber(
+                    SampleNumberUtil.toDisplay(analysis.getSampleItem().getSample().getSampleNumber()));
         }
         testItem.setAnalysis(analysis);
         testItem.setSequenceNumber(sequenceNumber);

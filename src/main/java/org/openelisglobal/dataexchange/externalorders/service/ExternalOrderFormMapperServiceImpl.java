@@ -7,6 +7,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.openelisglobal.common.log.LogEvent;
+import org.openelisglobal.common.provider.validation.DailySampleNumberValidator;
 import org.openelisglobal.dataexchange.externalorders.ExternalOrderXmlBuilder;
 import org.openelisglobal.dataexchange.externalorders.dto.ExternalOrderRequest;
 import org.openelisglobal.organization.service.OrganizationService;
@@ -24,7 +26,9 @@ import org.openelisglobal.person.valueholder.Person;
 import org.openelisglobal.sample.bean.SampleOrderItem;
 import org.openelisglobal.sample.form.SamplePatientEntryForm;
 import org.openelisglobal.sample.util.AccessionNumberUtil;
+import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.OrderPriority;
+import org.openelisglobal.spring.util.SpringContext;
 import org.openelisglobal.test.service.TestService;
 import org.openelisglobal.test.valueholder.Test;
 import org.openelisglobal.typeofsample.service.TypeOfSampleTestService;
@@ -148,6 +152,17 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
         if (form.getSampleOrderItems().getLabNo() == null || form.getSampleOrderItems().getLabNo().trim().isEmpty()) {
             form.getSampleOrderItems().setLabNo(generateAccessionNumber());
         }
+
+        if (form.getSampleOrderItems().getSampleNumber() == null
+                || form.getSampleOrderItems().getSampleNumber().trim().isEmpty()) {
+            form.getSampleOrderItems().setSampleNumber(generateSampleNumber());
+        }
+        if (form.getSampleOrderItems().getSampleNumberType() == null
+                || form.getSampleOrderItems().getSampleNumberType().trim().isEmpty()) {
+            form.getSampleOrderItems().setSampleNumberType("AUTO");
+        }
+        form.setSampleNumber(form.getSampleOrderItems().getSampleNumber());
+        form.setSampleNumberType(form.getSampleOrderItems().getSampleNumberType());
 
         ExternalOrderXmlBuilder xmlBuilder = new ExternalOrderXmlBuilder();
         List<ExternalOrderRequest.ExternalOrderSample> originalSamples = externalOrderRequest.getSamples();
@@ -458,6 +473,17 @@ public class ExternalOrderFormMapperServiceImpl implements ExternalOrderFormMapp
             attempts++;
         }
         throw new IllegalStateException("Unable to generate accession number");
+    }
+
+    private String generateSampleNumber() {
+        try {
+            DailySampleNumberValidator validator = SpringContext.getBean(DailySampleNumberValidator.class);
+            String next = validator.getNextAccessionNumber(null, true);
+            return SampleNumberUtil.toDisplay(next);
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "generateSampleNumber", e.toString());
+            return null;
+        }
     }
 
     private String toUiDate(String date) {
