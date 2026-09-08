@@ -1,60 +1,56 @@
-# Analyzer Testing Setup - Docker Compose Override
+# Analyzer Setup - Docker Compose Override
 #
-# Purpose: Bring up ASTM mock server and HTTP bridge for analyzer testing
+# Purpose: Bring up the HTTP/ASTM bridge so the physical Sysmex (or any ASTM analyzer)
+#          can talk to OpenELIS. No mock server — real analyzer only.
 #
 # Usage:
-#   # Start analyzer testing environment
 #   docker compose -f dev.docker-compose.yml -f analyzer-setup.docker-compose.yml up -d
-#
-#   # Stop analyzer testing environment
 #   docker compose -f dev.docker-compose.yml -f analyzer-setup.docker-compose.yml down
-#
-#   # View logs
 #   docker compose -f dev.docker-compose.yml -f analyzer-setup.docker-compose.yml logs -f
 #
-# Services:
-#   - astm-simulator: Mock ASTM analyzer (HEMATOLOGY) at 172.20.1.100:5000
-#   - openelis-analyzer-bridge: HTTP/ASTM protocol bridge at 172.20.1.101:12001
-#
-# Test Analyzers in Database:
-#   - ID 1000: Mock Hematology Analyzer -> 172.20.1.100:5000 (direct ASTM)
+# What this does:
+#   - openelis-analyzer-bridge: listens on port 12001 for ASTM from the physical analyzer,
+#     forwards to OpenELIS at https://oe.openelis.org:8443/OpenELIS-Global/analyzer/astm
+#   - virtual-serial: creates virtual RS232 port pairs via socat (needed if analyzer
+#     connects over serial rather than TCP)
 
 services:
   # ============================================================================
-  # ASTM LIS2-A2 Mock Server
-  # Simulates a laboratory analyzer for connection testing and field queries
+  # ASTM Mock Server — NOT needed for real analyzer testing
+  # Uncomment only if you need a software Sysmex stand-in (no physical machine).
   # ============================================================================
-  astm-simulator:
-    build:
-      context: ./tools/analyzer-mock-server
-      dockerfile: Dockerfile
-    container_name: openelis-astm-simulator
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./tools/analyzer-mock-server/server.py:/app/server.py:ro
-      - ./tools/analyzer-mock-server/fields.json:/app/fields.json:ro
-    environment:
-      - ASTM_PORT=5000
-      - ANALYZER_TYPE=HEMATOLOGY
-      - RESPONSE_DELAY_MS=100
-    networks:
-      default:
-        ipv4_address: 172.20.1.100
-    healthcheck:
-      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost', 5000)); s.close()"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-    labels:
-      - "com.openelis.service=astm-simulator"
-      - "com.openelis.purpose=testing"
+  # astm-simulator:
+  #   build:
+  #     context: ./tools/analyzer-mock-server
+  #     dockerfile: Dockerfile
+  #   container_name: openelis-astm-simulator
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./tools/analyzer-mock-server/server.py:/app/server.py:ro
+  #     - ./tools/analyzer-mock-server/fields.json:/app/fields.json:ro
+  #   environment:
+  #     - ASTM_PORT=5000
+  #     - ANALYZER_TYPE=HEMATOLOGY
+  #     - RESPONSE_DELAY_MS=100
+  #   networks:
+  #     default:
+  #       ipv4_address: 172.20.1.100
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost', 5000)); s.close()"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   restart: unless-stopped
+  #   labels:
+  #     - "com.openelis.service=astm-simulator"
+  #     - "com.openelis.purpose=testing"
 
   # ============================================================================
-  # Virtual Serial Ports (for RS232 analyzer testing without physical hardware)
-  # Creates virtual serial port pairs using socat
+  # Virtual Serial Ports
+  # Only needed if the physical analyzer connects via RS232/USB serial.
+  # For TCP-connected analyzers this service is irrelevant but harmless.
   # ============================================================================
   virtual-serial:
     image: alpine/socat
@@ -79,32 +75,40 @@ services:
 
   # ============================================================================
   # OpenELIS Analyzer Bridge
-  # Bridges HTTP requests from OpenELIS to ASTM protocol for analyzers
+  # The only required service. Listens for ASTM from the physical analyzer on
+  # port 12001, translates to HTTP, forwards to OpenELIS.
+  # For bidirectional Q/A (analyzer queries patient/order info), this also
+  # handles the response path back to the analyzer.
+  #
+  # Point ORG_ITECH_AHB_FORWARD_ASTM_SERVER_HOST_NAME at the physical analyzer IP.
   # ============================================================================
   openelis-analyzer-bridge:
     image: itechuw/openelis-analyzer-bridge:latest
     container_name: openelis-analyzer-bridge
     ports:
-      - "8442:8443"   # HTTPS API port
-      - "12000:12001" # ASTM listen port
+      - "8442:8443"   # HTTPS API port (bridge management)
+      - "12000:12001" # ASTM LIS1-A (ENQ/ACK) — matches real Sysmex XN-350 protocol
     volumes:
       - ./volume/openelis-analyzer-bridge/configuration.yml:/app/configuration.yml:ro
+      - key_trust-store-volume:/etc/openelis-global
     environment:
       - SPRING_PROFILES_ACTIVE=dev
-      - LOGGING_LEVEL_ORG_ITECH=INFO
-      # Forward ASTM messages to OpenELIS
-      - ORG_ITECH_AHB_FORWARD_HTTP_SERVER_URI=https://oe.openelis.org:8443/api/OpenELIS-Global/analyzer/astm
-      # Listen for ASTM connections from analyzers
+      - LOGGING_LEVEL_ORG_ITECH=DEBUG
+      # Where OpenELIS receives ASTM messages
+      - ORG_ITECH_AHB_FORWARD_HTTP_SERVER_URI=https://oe.openelis.org:8443/OpenELIS-Global/analyzer
+      - ORG_ITECH_AHB_FORWARD_HTTP_SERVER_USERNAME=admin
+      - ORG_ITECH_AHB_FORWARD_HTTP_SERVER_PASSWORD=adminADMIN!
+      - ORG_ITECH_AHB_FORWARD_HTTP_SERVER_INSECURE_TLS=true
+      - JDK_JAVA_OPTIONS=-Djdk.internal.httpclient.disableHostnameVerification=true
+      # Port this bridge listens on for incoming ASTM from the analyzer
       - ORG_ITECH_AHB_LISTEN_ASTM_SERVER_PORT=12001
-      # Forward HTTP requests to ASTM mock server
+      # Physical analyzer IP and port — update this to match the real machine
       - ORG_ITECH_AHB_FORWARD_ASTM_SERVER_HOST_NAME=172.20.1.100
       - ORG_ITECH_AHB_FORWARD_ASTM_SERVER_PORT=5000
     networks:
       default:
-        ipv4_address: 172.20.1.101
-    depends_on:
-      astm-simulator:
-        condition: service_healthy
+        ipv4_address: 172.22.1.101
+    # depends_on removed — no mock to wait for, bridge starts immediately
     healthcheck:
       test: ["CMD", "/app/healthcheck.sh"]
       interval: 30s
@@ -114,24 +118,24 @@ services:
     restart: unless-stopped
     labels:
       - "com.openelis.service=openelis-analyzer-bridge"
-      - "com.openelis.purpose=testing"
+      - "com.openelis.purpose=production"
 
   # ============================================================================
-  # OpenELIS Override - Mount virtual serial ports
+  # OpenELIS Override - Mount virtual serial ports into the webapp container
   # ============================================================================
   oe.openelis.org:
     volumes:
       - serial-vol:/dev/serial
 
-# Network - uses same network as dev.docker-compose.yml
+# Network - must match dev.docker-compose.yml
 networks:
   default:
     name: openelis-global-2_default
 
-# Volumes
 volumes:
   serial-vol:
     driver: local
+  key_trust-store-volume:
 
 
 

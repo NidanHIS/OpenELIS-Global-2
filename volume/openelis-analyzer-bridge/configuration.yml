@@ -9,6 +9,19 @@ openelis:
   ssl:
     verify: false  # Development only - uses self-signed certs
 
+# Bridge HTTP forwarding config — maps to HTTPForwardServerConfigurationProperties
+org:
+  itech:
+    ahb:
+      forward-http-server:
+        uri: https://oe.openelis.org:8443/OpenELIS-Global/analyzer
+        insecure-tls: true
+        username: admin
+        password: adminADMIN!
+bridge:
+  routing:
+    use-fhir: false  # Use legacy raw ASTM forwarding — OE plugin handles parsing
+
 astm:
   port: 5001
   bind: 0.0.0.0
