@@ -176,6 +176,15 @@ public class AnalyzerResultsController extends BaseController {
         if (!result.hasFieldErrors("type")) {
             requestAnalyzerType = oldForm.getType();
         }
+        if (GenericValidator.isBlankOrNull(requestAnalyzerType)) {
+            String analyzerId = getAnalyzerIdFromRequest();
+            if (analyzerId != null) {
+                Analyzer analyzer = analyzerService.get(analyzerId);
+                if (analyzer != null) {
+                    requestAnalyzerType = analyzer.getName();
+                }
+            }
+        }
 
         form.setType(requestAnalyzerType);
 
@@ -208,21 +217,31 @@ public class AnalyzerResultsController extends BaseController {
 
     @RequestMapping(value = "/rest/AnalyzerResults", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
     @ResponseBody
-    public AnalyzerResultsForm showRestAnalyzerResults(@RequestParam(required = false) String type,
+    public AnalyzerResultsForm showRestAnalyzerResults(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String id,
             HttpServletRequest request)
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         AnalyzerResultsForm form = new AnalyzerResultsForm();
 
         request.getSession().setAttribute(SAVE_DISABLED, TRUE);
 
-        form.setType(type);
-        if (GenericValidator.isBlankOrNull(type)) {
+        String analyzerId = getAnalyzerIdFromRequest();
+        if (GenericValidator.isBlankOrNull(analyzerId)) {
             return form;
         }
+
+        if (GenericValidator.isBlankOrNull(type)) {
+            Analyzer analyzer = analyzerService.get(analyzerId);
+            if (analyzer != null) {
+                type = analyzer.getName();
+            }
+        }
+        form.setType(type);
+
         List<AnalyzerResults> analyzerResultsList = new ArrayList<>();
         try {
-            AnalyzerImporterPlugin analyzerPlugin = pluginAnalyzerService.getPluginByAnalyzerId(
-                    AnalyzerTestNameCache.getInstance().getAnalyzerIdForName(getAnalyzerIdFromRequest()));
+            AnalyzerImporterPlugin analyzerPlugin = pluginAnalyzerService.getPluginByAnalyzerId(analyzerId);
             if (analyzerPlugin instanceof BidirectionalAnalyzer) {
                 BidirectionalAnalyzer bidirectionalAnalyzer = (BidirectionalAnalyzer) analyzerPlugin;
                 form.setSupportedLISActions(bidirectionalAnalyzer.getSupportedLISActions());
@@ -660,16 +679,29 @@ public class AnalyzerResultsController extends BaseController {
     }
 
     protected String getAnalyzerTypeNameFromRequest() {
-        Analyzer analyzer = analyzerService.get(getAnalyzerIdFromRequest());
-        if (analyzer.getAnalyzerType() != null) {
-            return analyzer.getAnalyzerType().getName();
+        String analyzerId = getAnalyzerIdFromRequest();
+        if (analyzerId != null) {
+            Analyzer analyzer = analyzerService.get(analyzerId);
+            if (analyzer != null && analyzer.getAnalyzerType() != null) {
+                return analyzer.getAnalyzerType().getName();
+            }
         }
         return "";
     }
 
     protected String getActualAnalyzerNameFromRequest() {
         String requestType = request.getParameter("type");
-        return requestType;
+        if (requestType != null && !requestType.isBlank()) {
+            return requestType;
+        }
+        String analyzerId = getAnalyzerIdFromRequest();
+        if (analyzerId != null) {
+            Analyzer analyzer = analyzerService.get(analyzerId);
+            if (analyzer != null) {
+                return analyzer.getName();
+            }
+        }
+        return "";
     }
 
     protected String getAnalyzerIdFromRequest() {
@@ -679,9 +711,34 @@ public class AnalyzerResultsController extends BaseController {
             return idParam;
         }
         String requestType = request.getParameter("type");
-        if (requestType != null) {
+        if (requestType != null && !requestType.isBlank()) {
             Analyzer analyzer = analyzerService.getAnalyzerByName(requestType);
-            return analyzer != null ? analyzer.getId() : null;
+            if (analyzer != null) {
+                return analyzer.getId();
+            }
+            String dbName = AnalyzerTestNameCache.getInstance().getDBNameForActionName(requestType);
+            if (dbName != null) {
+                analyzer = analyzerService.getAnalyzerByName(dbName);
+                if (analyzer != null) {
+                    return analyzer.getId();
+                }
+            }
+            String idFromName = AnalyzerTestNameCache.getInstance().getAnalyzerIdForName(requestType);
+            if (idFromName != null) {
+                return idFromName;
+            }
+            List<Analyzer> allAnalyzers = analyzerService.getAll();
+            if (allAnalyzers != null) {
+                String normalizedRequest = requestType.replace("Analyzer", "").replaceAll("[\\s_-]", "");
+                for (Analyzer a : allAnalyzers) {
+                    if (a.getName() != null) {
+                        String normalizedDbName = a.getName().replace("Analyzer", "").replaceAll("[\\s_-]", "");
+                        if (normalizedRequest.equalsIgnoreCase(normalizedDbName)) {
+                            return a.getId();
+                        }
+                    }
+                }
+            }
         }
         return null;
     }
