@@ -217,10 +217,8 @@ public class AnalyzerResultsController extends BaseController {
 
     @RequestMapping(value = "/rest/AnalyzerResults", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
     @ResponseBody
-    public AnalyzerResultsForm showRestAnalyzerResults(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String id,
-            HttpServletRequest request)
+    public AnalyzerResultsForm showRestAnalyzerResults(@RequestParam(required = false) String type,
+            @RequestParam(required = false) String id, HttpServletRequest request)
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         AnalyzerResultsForm form = new AnalyzerResultsForm();
 

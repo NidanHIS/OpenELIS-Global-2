@@ -145,7 +145,8 @@ public class PluginAnalyzerService {
         String analyzerTypeId = resolveAnalyzerTypeId(name);
         if (analyzerTypeId == null) {
             LogEvent.logDebug(this.getClass().getSimpleName(), "addAnalyzerDatabaseParts",
-                    "AnalyzerType not yet registered for plugin '" + name + "' — mappings held for PluginRegistryService");
+                    "AnalyzerType not yet registered for plugin '" + name
+                            + "' — mappings held for PluginRegistryService");
             return null;
         }
 
@@ -172,8 +173,8 @@ public class PluginAnalyzerService {
 
         try {
             analyzerService.persistTestMappings(analyzerId, testMappings, existingMappings);
-            LogEvent.logInfo(this.getClass().getSimpleName(), "seedAnalyzerAndMappings",
-                    "Persisted " + testMappings.size() + " test mapping(s) for analyzer '" + name + "' (id=" + analyzerId + ")");
+            LogEvent.logInfo(this.getClass().getSimpleName(), "seedAnalyzerAndMappings", "Persisted "
+                    + testMappings.size() + " test mapping(s) for analyzer '" + name + "' (id=" + analyzerId + ")");
         } catch (RuntimeException e) {
             LogEvent.logError(e);
         }
