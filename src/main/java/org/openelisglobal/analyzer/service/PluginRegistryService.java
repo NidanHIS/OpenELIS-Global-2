@@ -105,23 +105,29 @@ public class PluginRegistryService {
             String className = plugin.getClass().getName();
 
             Optional<AnalyzerType> existing = analyzerTypeService.getByPluginClassName(className);
+            AnalyzerType analyzerType;
             if (existing.isPresent()) {
                 LogEvent.logDebug(this.getClass().getName(), "registerLoadedPlugins",
                         "Plugin already registered: " + className);
+                analyzerType = existing.get();
                 skipped++;
-                continue;
+            } else {
+                analyzerType = createAnalyzerTypeFromPlugin(plugin);
+                try {
+                    analyzerTypeService.insert(analyzerType);
+                    LogEvent.logInfo(this.getClass().getName(), "registerLoadedPlugins",
+                            "Registered analyzer type: " + analyzerType.getName() + " (plugin: " + className + ")");
+                    registered++;
+                } catch (Exception e) {
+                    LogEvent.logError(this.getClass().getName(), "registerLoadedPlugins",
+                            "Failed to register analyzer type for plugin: " + className);
+                    LogEvent.logError(e);
+                    analyzerType = null;
+                }
             }
 
-            AnalyzerType analyzerType = createAnalyzerTypeFromPlugin(plugin);
-            try {
-                analyzerTypeService.insert(analyzerType);
-                LogEvent.logInfo(this.getClass().getName(), "registerLoadedPlugins",
-                        "Registered analyzer type: " + analyzerType.getName() + " (plugin: " + className + ")");
-                registered++;
-            } catch (Exception e) {
-                LogEvent.logError(this.getClass().getName(), "registerLoadedPlugins",
-                        "Failed to register analyzer type for plugin: " + className);
-                LogEvent.logError(e);
+            if (analyzerType != null && !plugin.isGenericPlugin()) {
+                pluginAnalyzerService.syncLegacyAnalyzerParts(plugin, analyzerType.getId());
             }
         }
 

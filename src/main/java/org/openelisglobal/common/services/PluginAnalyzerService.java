@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -63,6 +64,7 @@ public class PluginAnalyzerService {
     private Map<String, AnalyzerImporterPlugin> pluginByAnalyzerId = new HashMap<>();
 
     private List<AnalyzerImporterPlugin> analyzerPlugins = new ArrayList<>();
+    private final Map<String, List<TestMapping>> pendingMappings = new ConcurrentHashMap<>();
 
     public void registerAnalyzerPlugin(AnalyzerImporterPlugin plugin) {
         analyzerPlugins.add(plugin);
@@ -127,12 +129,14 @@ public class PluginAnalyzerService {
      */
     public String addAnalyzerDatabaseParts(String name, String description, List<TestMapping> nameMappings) {
         loadNamingMappingsFromCSV(nameMappings, name);
+        pendingMappings.put(name, new ArrayList<>(nameMappings));
         return addAnalyzerDatabasePartsInternal(name, nameMappings);
     }
 
     public String addAnalyzerDatabaseParts(String name, String description, List<TestMapping> nameMappings,
             boolean hasSetupPage) {
         loadNamingMappingsFromCSV(nameMappings, name);
+        pendingMappings.put(name, new ArrayList<>(nameMappings));
         return addAnalyzerDatabasePartsInternal(name, nameMappings);
     }
 
@@ -140,16 +144,23 @@ public class PluginAnalyzerService {
         // Look up AnalyzerType by name (registered by PluginRegistryService)
         String analyzerTypeId = resolveAnalyzerTypeId(name);
         if (analyzerTypeId == null) {
-            LogEvent.logWarn(this.getClass().getSimpleName(), "addAnalyzerDatabaseParts",
-                    "No AnalyzerType found for plugin '" + name + "' — test mappings not persisted");
+            LogEvent.logDebug(this.getClass().getSimpleName(), "addAnalyzerDatabaseParts",
+                    "AnalyzerType not yet registered for plugin '" + name + "' — mappings held for PluginRegistryService");
             return null;
         }
 
+        return seedAnalyzerAndMappings(name, analyzerTypeId, nameMappings);
+    }
+
+    public String seedAnalyzerAndMappings(String name, String analyzerTypeId, List<TestMapping> nameMappings) {
+        if (analyzerTypeId == null) {
+            return null;
+        }
         // Find or create an Analyzer row for this legacy plugin.
         // Each legacy plugin IS a specific analyzer config (OGC-492).
         String analyzerId = findOrCreateAnalyzerForType(name, analyzerTypeId);
         if (analyzerId == null) {
-            LogEvent.logWarn(this.getClass().getSimpleName(), "addAnalyzerDatabaseParts",
+            LogEvent.logWarn(this.getClass().getSimpleName(), "seedAnalyzerAndMappings",
                     "Could not find or create Analyzer for plugin '" + name + "' — test mappings not persisted");
             return null;
         }
@@ -161,10 +172,36 @@ public class PluginAnalyzerService {
 
         try {
             analyzerService.persistTestMappings(analyzerId, testMappings, existingMappings);
+            LogEvent.logInfo(this.getClass().getSimpleName(), "seedAnalyzerAndMappings",
+                    "Persisted " + testMappings.size() + " test mapping(s) for analyzer '" + name + "' (id=" + analyzerId + ")");
         } catch (RuntimeException e) {
             LogEvent.logError(e);
         }
         return analyzerTypeId;
+    }
+
+    public void syncLegacyAnalyzerParts(AnalyzerImporterPlugin plugin, String analyzerTypeId) {
+        if (plugin == null || plugin.isGenericPlugin() || analyzerTypeId == null) {
+            return;
+        }
+        String className = plugin.getClass().getName();
+        String simpleName = className.substring(className.lastIndexOf('.') + 1);
+
+        List<TestMapping> mappings = pendingMappings.remove(simpleName);
+        if (mappings == null) {
+            String stripped = simpleName.replaceAll("Analyzer$", "");
+            mappings = pendingMappings.remove(stripped);
+        }
+        if (mappings == null) {
+            mappings = new ArrayList<>();
+        }
+
+        try {
+            seedAnalyzerAndMappings(simpleName, analyzerTypeId, mappings);
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "syncLegacyAnalyzerParts",
+                    "Error syncing analyzer parts for " + simpleName + ": " + e.getMessage());
+        }
     }
 
     /**

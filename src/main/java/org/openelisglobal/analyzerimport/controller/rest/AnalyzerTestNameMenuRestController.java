@@ -6,8 +6,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.openelisglobal.analyzer.service.AnalyzerService;
 import org.openelisglobal.analyzer.service.AnalyzerTypeService;
+import org.openelisglobal.analyzer.valueholder.Analyzer;
 import org.openelisglobal.analyzer.valueholder.AnalyzerType;
 import org.openelisglobal.analyzerimport.action.beans.NamedAnalyzerTestMapping;
 import org.openelisglobal.analyzerimport.form.AnalyzerTestNameMenuForm;
@@ -46,7 +49,9 @@ public class AnalyzerTestNameMenuRestController extends BaseMenuController<Named
     @Autowired
     private AnalyzerTestMappingService analyzerTestMappingService;
     @Autowired
-    AnalyzerTypeService analyzerTypeService;
+    private AnalyzerTypeService analyzerTypeService;
+    @Autowired
+    private AnalyzerService analyzerService;
 
     private static final int ANALYZER_NAME = 0;
     private static final int ANALYZER_TEST = 1;
@@ -80,11 +85,15 @@ public class AnalyzerTestNameMenuRestController extends BaseMenuController<Named
         request.setAttribute("menuDefinition", "AnalyzerTestNameMenuDefinition");
 
         String stringStartingRecNo = (String) request.getAttribute("startingRecNo");
-        int startingRecNo = 0;
+        int startingRecNo = 1;
         if (stringStartingRecNo != null) {
-            startingRecNo = Integer.parseInt(stringStartingRecNo);
-            if (startingRecNo < 0) {
-                startingRecNo = 0;
+            try {
+                startingRecNo = Integer.parseInt(stringStartingRecNo);
+                if (startingRecNo <= 0) {
+                    startingRecNo = 1;
+                }
+            } catch (NumberFormatException e) {
+                startingRecNo = 1;
             }
         }
 
@@ -92,30 +101,34 @@ public class AnalyzerTestNameMenuRestController extends BaseMenuController<Named
         List<NamedAnalyzerTestMapping> mappedTestNameList = new ArrayList<>();
         List<String> analyzerList = new ArrayList<>();
         if (StringUtils.isNotBlank(analyzerId)) {
-            AnalyzerType analyzer = analyzerTypeService.get(analyzerId);
-            if (analyzer != null) {
-                analyzerList.add(analyzer.getName());
+            AnalyzerType analyzerType = analyzerTypeService.get(analyzerId);
+            if (analyzerType != null) {
+                analyzerList.add(analyzerType.getName());
+            } else if (analyzerService != null) {
+                Analyzer analyzer = analyzerService.get(analyzerId);
+                if (analyzer != null) {
+                    analyzerList.add(analyzer.getName());
+                }
             }
         } else {
             analyzerList = AnalyzerTestNameCache.getInstance().getAnalyzerNames();
         }
 
-        AnalyzerType analyzer = new AnalyzerType();
-
         for (String analyzerName : analyzerList) {
-            Collection<MappedTestName> mappedTestNames = AnalyzerTestNameCache.getInstance()
-                    .getMappedTestsForAnalyzer(analyzerName).values();
-            if (mappedTestNames.size() > 0) {
-                analyzer.setId(((MappedTestName) mappedTestNames.toArray()[0]).getAnalyzerId());
-                analyzer = analyzerTypeService.get(analyzer.getId());
-                mappedTestNameList.addAll(convertedToNamedList(mappedTestNames, analyzer.getName()));
+            Map<String, MappedTestName> mappedTestMap = AnalyzerTestNameCache.getInstance()
+                    .getMappedTestsForAnalyzer(analyzerName);
+            if (mappedTestMap != null && !mappedTestMap.isEmpty()) {
+                mappedTestNameList.addAll(convertedToNamedList(mappedTestMap.values(), analyzerName));
             }
         }
 
         setDisplayPageBounds(request, mappedTestNameList.size(), startingRecNo, form);
 
-        return mappedTestNameList.subList(Math.min(mappedTestNameList.size(), startingRecNo - 1),
-                Math.min(mappedTestNameList.size(), startingRecNo + getPageSize()));
+        int fromIndex = Math.max(0, startingRecNo - 1);
+        int toIndex = Math.min(mappedTestNameList.size(), fromIndex + getPageSize());
+        fromIndex = Math.min(fromIndex, toIndex);
+
+        return mappedTestNameList.subList(fromIndex, toIndex);
 
         // return mappedTestNameList;
     }
