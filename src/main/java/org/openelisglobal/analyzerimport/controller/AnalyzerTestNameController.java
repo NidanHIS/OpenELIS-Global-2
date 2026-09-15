@@ -3,8 +3,12 @@ package org.openelisglobal.analyzerimport.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
+import org.openelisglobal.analyzer.service.AnalyzerService;
 import org.openelisglobal.analyzer.service.AnalyzerTypeService;
+import org.openelisglobal.analyzer.valueholder.Analyzer;
 import org.openelisglobal.analyzer.valueholder.AnalyzerType;
 import org.openelisglobal.analyzerimport.form.AnalyzerTestNameForm;
 import org.openelisglobal.analyzerimport.service.AnalyzerTestMappingService;
@@ -43,6 +47,8 @@ public class AnalyzerTestNameController extends BaseController {
     private AnalyzerTestMappingService analyzerTestMappingService;
     @Autowired
     private AnalyzerTypeService analyzerTypeService;
+    @Autowired
+    private AnalyzerService analyzerService;
     @Autowired
     private TestService testService;
 
@@ -94,6 +100,19 @@ public class AnalyzerTestNameController extends BaseController {
     }
 
     private List<AnalyzerType> getAllAnalyzers() {
+        List<AnalyzerType> result = new ArrayList<>();
+        if (analyzerService != null) {
+            List<Analyzer> analyzers = analyzerService.getAll();
+            if (analyzers != null && !analyzers.isEmpty()) {
+                for (Analyzer analyzer : analyzers) {
+                    AnalyzerType type = new AnalyzerType();
+                    type.setId(analyzer.getId());
+                    type.setName(analyzer.getName());
+                    result.add(type);
+                }
+                return result;
+            }
+        }
         return analyzerTypeService.getAll();
     }
 
@@ -131,6 +150,19 @@ public class AnalyzerTestNameController extends BaseController {
         String analyzerTestName = form.getAnalyzerTestName();
         String testId = form.getTestId();
         boolean newMapping = form.isNewMapping();
+
+        if (analyzerService != null && StringUtils.isNotBlank(analyzerId)) {
+            Analyzer analyzer = analyzerService.get(analyzerId);
+            if (analyzer == null) {
+                AnalyzerType type = analyzerTypeService.get(analyzerId);
+                if (type != null) {
+                    Analyzer found = analyzerService.getAnalyzerByName(type.getName());
+                    if (found != null) {
+                        analyzerId = found.getId();
+                    }
+                }
+            }
+        }
 
         AnalyzerTestMapping analyzerTestNameMapping;
         if (newMapping) {
