@@ -807,8 +807,8 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
             return new ArrayList<>();
         }
         try {
-            List<String> keys = storedNumbers.stream().filter(k -> k != null && !k.trim().isEmpty())
-                    .map(String::trim).collect(Collectors.toList());
+            List<String> keys = storedNumbers.stream().filter(k -> k != null && !k.trim().isEmpty()).map(String::trim)
+                    .collect(Collectors.toList());
             if (keys.isEmpty()) {
                 return new ArrayList<>();
             }

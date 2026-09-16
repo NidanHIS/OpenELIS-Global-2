@@ -171,13 +171,13 @@ const AnalyzerSampleAmbiguityQueue = () => {
         <h2 style={{ marginBottom: "0.5rem" }}>
           <FormattedMessage
             id="ambiguityQueue.title"
-            defaultMessage="Analyzer Sample Ambiguity Queue"
+            defaultMessage="Machine Results"
           />
         </h2>
         <p style={{ color: "#525252", marginBottom: "1.5rem" }}>
           <FormattedMessage
             id="ambiguityQueue.subtitle"
-            defaultMessage="The following analyzer results could not be automatically linked because multiple samples share the same 4-digit number. Please choose the correct sample or discard."
+            defaultMessage="Review and resolve incoming machine results that require manual matching or disambiguation."
           />
         </p>
       </Column>

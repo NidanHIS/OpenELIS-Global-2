@@ -203,6 +203,10 @@
           "elementId": "menu_results_analyzer",
           "childMenus": [
             {
+              "elementId": "menu_analyzer_machine_results",
+              "childMenus": []
+            },
+            {
               "elementId": "PocH100iAnalyzer_plugin",
               "childMenus": []
             },

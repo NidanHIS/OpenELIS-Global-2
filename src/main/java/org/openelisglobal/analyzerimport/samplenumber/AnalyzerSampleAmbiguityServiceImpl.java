@@ -24,12 +24,15 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Governing queue for 4-digit sample number ambiguity.
  *
- * <p>When the analyzer resolver finds ≥2 candidates for a 4-digit identifier it calls
- * {@link #parkIncoming} instead of writing to {@code analyzer_results}. A user then resolves
- * via the governing UI (calls {@link #promoteToHolding} or {@link #discard}).
+ * <p>
+ * When the analyzer resolver finds ≥2 candidates for a 4-digit identifier it
+ * calls {@link #parkIncoming} instead of writing to {@code analyzer_results}. A
+ * user then resolves via the governing UI (calls {@link #promoteToHolding} or
+ * {@link #discard}).
  *
- * <p>All methods are fail-closed: any exception → log + return safe default. Never throws
- * to callers.
+ * <p>
+ * All methods are fail-closed: any exception → log + return safe default. Never
+ * throws to callers.
  */
 @Service
 @Transactional
@@ -55,23 +58,13 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     // ── Park ──────────────────────────────────────────────────────────────────
 
     @Override
-    public void parkIncoming(
-            String incomingIdentifier,
-            String analyzerId,
-            String analyzerTestCode,
-            String testId,
-            String testName,
-            String resultValue,
-            String resultUnits,
-            String resultType,
-            Timestamp completeDate,
+    public void parkIncoming(String incomingIdentifier, String analyzerId, String analyzerTestCode, String testId,
+            String testName, String resultValue, String resultUnits, String resultType, Timestamp completeDate,
             List<Sample> candidates) {
         try {
-            if (GenericValidator.isBlankOrNull(incomingIdentifier)
-                    || candidates == null || candidates.size() < 2) {
-                LogEvent.logWarn(this.getClass().getSimpleName(), "parkIncoming",
-                        "invalid args — identifier=" + incomingIdentifier
-                        + " candidates=" + (candidates == null ? "null" : candidates.size()));
+            if (GenericValidator.isBlankOrNull(incomingIdentifier) || candidates == null || candidates.size() < 2) {
+                LogEvent.logWarn(this.getClass().getSimpleName(), "parkIncoming", "invalid args — identifier="
+                        + incomingIdentifier + " candidates=" + (candidates == null ? "null" : candidates.size()));
                 return;
             }
             AnalyzerSampleAmbiguity row = new AnalyzerSampleAmbiguity();
@@ -90,7 +83,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             StringBuilder ids = new StringBuilder();
             for (Sample s : candidates) {
                 if (s != null && !GenericValidator.isBlankOrNull(s.getId())) {
-                    if (ids.length() > 0) ids.append(",");
+                    if (ids.length() > 0)
+                        ids.append(",");
                     ids.append(s.getId());
                 }
             }
@@ -98,9 +92,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             row.setCandidateJson(buildCandidateJson(candidates));
 
             ambiguityDAO.insert(row);
-            LogEvent.logInfo(this.getClass().getSimpleName(), "parkIncoming",
-                    "Parked ambiguous result identifier=" + incomingIdentifier
-                    + " candidates=" + candidates.size() + " rowId=" + row.getId());
+            LogEvent.logInfo(this.getClass().getSimpleName(), "parkIncoming", "Parked ambiguous result identifier="
+                    + incomingIdentifier + " candidates=" + candidates.size() + " rowId=" + row.getId());
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "parkIncoming", e.toString());
             // Fail-closed: drop — never write holding with a guessed accession.
@@ -113,12 +106,12 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     @Transactional(readOnly = true)
     public List<AnalyzerSampleAmbiguityCard> listPending() {
         try {
-            List<AnalyzerSampleAmbiguity> rows =
-                    ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
+            List<AnalyzerSampleAmbiguity> rows = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
             List<AnalyzerSampleAmbiguityCard> cards = new ArrayList<>();
             for (AnalyzerSampleAmbiguity row : rows) {
                 AnalyzerSampleAmbiguityCard card = toCard(row);
-                if (card != null) cards.add(card);
+                if (card != null)
+                    cards.add(card);
             }
             return cards;
         } catch (Exception e) {
@@ -141,9 +134,10 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     // ── Promote to holding ────────────────────────────────────────────────────
 
     /**
-     * User chose {@code sampleId} for pending row {@code pendingId}. Validates the sampleId is in
-     * the original candidate list, inserts one {@link AnalyzerResults} holding row, marks RESOLVED.
-     * Returns false on any failure — never writes with a guessed accession.
+     * User chose {@code sampleId} for pending row {@code pendingId}. Validates the
+     * sampleId is in the original candidate list, inserts one
+     * {@link AnalyzerResults} holding row, marks RESOLVED. Returns false on any
+     * failure — never writes with a guessed accession.
      */
     @Override
     public boolean promoteToHolding(Integer pendingId, String sampleId, String sysUserId) {
@@ -197,9 +191,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             row.setChosenSampleId(sampleId);
             ambiguityDAO.update(row);
 
-            LogEvent.logInfo(this.getClass().getSimpleName(), "promoteToHolding",
-                    "Promoted pendingId=" + pendingId + " sampleId=" + sampleId
-                    + " accession=" + sample.getAccessionNumber());
+            LogEvent.logInfo(this.getClass().getSimpleName(), "promoteToHolding", "Promoted pendingId=" + pendingId
+                    + " sampleId=" + sampleId + " accession=" + sample.getAccessionNumber());
             return true;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "promoteToHolding", e.toString());
@@ -212,11 +205,11 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     @Override
     public boolean discard(Integer pendingId, String sysUserId) {
         try {
-            if (pendingId == null) return false;
+            if (pendingId == null)
+                return false;
             AnalyzerSampleAmbiguity row = ambiguityDAO.get(pendingId).orElse(null);
             if (row == null) {
-                LogEvent.logWarn(this.getClass().getSimpleName(), "discard",
-                        "no row for pendingId=" + pendingId);
+                LogEvent.logWarn(this.getClass().getSimpleName(), "discard", "no row for pendingId=" + pendingId);
                 return false;
             }
             if (!AnalyzerSampleAmbiguity.STATUS_PENDING.equals(row.getStatus())) {
@@ -226,8 +219,7 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             }
             row.setStatus(AnalyzerSampleAmbiguity.STATUS_DISCARDED);
             ambiguityDAO.update(row);
-            LogEvent.logInfo(this.getClass().getSimpleName(), "discard",
-                    "Discarded pendingId=" + pendingId);
+            LogEvent.logInfo(this.getClass().getSimpleName(), "discard", "Discarded pendingId=" + pendingId);
             return true;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "discard", e.toString());
@@ -258,13 +250,16 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
 
     private List<AnalyzerSampleAmbiguityCandidate> buildCandidateList(String ids) {
         List<AnalyzerSampleAmbiguityCandidate> list = new ArrayList<>();
-        if (GenericValidator.isBlankOrNull(ids)) return list;
+        if (GenericValidator.isBlankOrNull(ids))
+            return list;
         for (String id : ids.split(",")) {
             String trimmed = id.trim();
-            if (trimmed.isEmpty()) continue;
+            if (trimmed.isEmpty())
+                continue;
             try {
                 Sample sample = sampleService.get(trimmed);
-                if (sample == null) continue;
+                if (sample == null)
+                    continue;
                 AnalyzerSampleAmbiguityCandidate c = new AnalyzerSampleAmbiguityCandidate();
                 c.setSampleId(sample.getId());
                 c.setAccessionNumber(sample.getAccessionNumber());
@@ -275,8 +270,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                     if (patient != null) {
                         c.setPatientId(patient.getNationalId());
                         if (patient.getPerson() != null) {
-                            String name = (nvl(patient.getPerson().getFirstName())
-                                    + " " + nvl(patient.getPerson().getLastName())).trim();
+                            String name = (nvl(patient.getPerson().getFirstName()) + " "
+                                    + nvl(patient.getPerson().getLastName())).trim();
                             c.setPatientName(name);
                         }
                     }
@@ -314,7 +309,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
         try {
             List<AnalyzerSampleAmbiguityCandidate> list = new ArrayList<>();
             for (Sample s : candidates) {
-                if (s == null || GenericValidator.isBlankOrNull(s.getId())) continue;
+                if (s == null || GenericValidator.isBlankOrNull(s.getId()))
+                    continue;
                 AnalyzerSampleAmbiguityCandidate c = new AnalyzerSampleAmbiguityCandidate();
                 c.setSampleId(s.getId());
                 c.setAccessionNumber(s.getAccessionNumber());
@@ -329,18 +325,22 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     }
 
     private boolean isCandidateId(String candidateSampleIds, String sampleId) {
-        if (GenericValidator.isBlankOrNull(candidateSampleIds)
-                || GenericValidator.isBlankOrNull(sampleId)) return false;
+        if (GenericValidator.isBlankOrNull(candidateSampleIds) || GenericValidator.isBlankOrNull(sampleId))
+            return false;
         for (String id : candidateSampleIds.split(",")) {
-            if (sampleId.trim().equals(id.trim())) return true;
+            if (sampleId.trim().equals(id.trim()))
+                return true;
         }
         return false;
     }
 
-    private String nvl(String s) { return s != null ? s : ""; }
+    private String nvl(String s) {
+        return s != null ? s : "";
+    }
 
     private String truncate(String s, int max) {
-        if (s == null) return null;
+        if (s == null)
+            return null;
         return s.length() <= max ? s : s.substring(0, max);
     }
 }

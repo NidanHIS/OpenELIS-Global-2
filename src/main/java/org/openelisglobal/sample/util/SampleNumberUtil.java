@@ -13,7 +13,8 @@ import org.openelisglobal.common.log.LogEvent;
  * NIDAN daily sample number conversions.
  *
  * <ul>
- * <li>Stored AUTO: {@code YYMMDDxxxx} — 10 digits (e.g. {@code 2609160001}).</li>
+ * <li>Stored AUTO: {@code YYMMDDxxxx} — 10 digits (e.g.
+ * {@code 2609160001}).</li>
  * <li>Display AUTO: {@code xxxx} — 4 digits (e.g. {@code 0001}).</li>
  * <li>Manual: any other string, never transformed.</li>
  * </ul>

@@ -198,11 +198,46 @@ public class PluginMenuService {
     }
 
     /**
+     * Register the general Machine Results menu entry under Results > Analyzer.
+     */
+    public void registerMachineResultsMenu() {
+        String actionURL = "/Analyzer/MachineResults";
+        if (actionToKeyMap.containsKey(actionURL)) {
+            logger.debug("Menu already registered for Machine Results");
+            return;
+        }
+
+        Menu menu = new Menu();
+        menu.setParent(getKnownMenu(KnownMenu.ANALYZER, "menu_results"));
+        menu.setPresentationOrder(1);
+        menu.setElementId("menu_analyzer_machine_results");
+        menu.setActionURL(actionURL);
+        menu.setDisplayKey("banner.menu.analyzer.machineResults");
+        menu.setOpenInNewWindow(false);
+
+        addMenu(menu);
+        MenuUtil.forceRebuild();
+
+        insertLanguageKeyValue("banner.menu.analyzer.machineResults", "Machine Results",
+                Locale.ENGLISH.toLanguageTag());
+        insertLanguageKeyValue("banner.menu.analyzer.machineResults", "Résultats Machine",
+                Locale.FRENCH.toLanguageTag());
+
+        SystemModule module = pluginPermissionService.getOrCreateSystemModule("MachineResults", "Machine Results",
+                "Results->Analyzer->Machine Results");
+        Role role = pluginPermissionService.getSystemRole("Results");
+        pluginPermissionService.bindRoleToModule(role, module);
+
+        logger.info("Registered menu and permission for Machine Results");
+    }
+
+    /**
      * Initialize menus for all existing analyzers on application startup. Called
      * after the Spring context is fully ready.
      */
     public void initializeAnalyzerMenus() {
         try {
+            registerMachineResultsMenu();
             List<Analyzer> analyzers = analyzerService.getAll();
             int count = 0;
             for (Analyzer analyzer : analyzers) {

@@ -872,7 +872,7 @@ export default function App() {
                   role={Roles.ANALYSER_IMPORT}
                 />
                 <SecureRoute
-                  path="/AnalyzerSampleAmbiguity"
+                  path="/Analyzer/MachineResults"
                   exact
                   component={() => <AnalyzerSampleAmbiguityQueue />}
                   role={Roles.ANALYSER_IMPORT}

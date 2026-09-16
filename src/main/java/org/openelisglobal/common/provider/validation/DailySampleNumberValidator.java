@@ -43,8 +43,8 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
 
     /**
      * Returns the next available sample number. Stored format (YYMMDDxxxx). REST
-     * applies {@link org.openelisglobal.sample.util.SampleNumberUtil#toDisplay}
-     * so the UI sees 4 digits.
+     * applies {@link org.openelisglobal.sample.util.SampleNumberUtil#toDisplay} so
+     * the UI sees 4 digits.
      */
     @Override
     public String getNextAvailableAccessionNumber(String programCode, boolean reserve) {

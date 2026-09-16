@@ -90,9 +90,9 @@ public interface SampleDAO extends BaseDAO<Sample, String> {
     List<Sample> getSamplesByPriority(OrderPriority priority) throws LIMSRuntimeException;
 
     /**
-     * Today-only uniqueness lookup (NOT analyzer lookback). Path A: 4-digit
-     * display → expand to today's YYMMDDxxxx AUTO. Path B: exact sample_number.
-     * Returns at most one row. Never searches prior days.
+     * Today-only uniqueness lookup (NOT analyzer lookback). Path A: 4-digit display
+     * → expand to today's YYMMDDxxxx AUTO. Path B: exact sample_number. Returns at
+     * most one row. Never searches prior days.
      */
     Sample getSampleBySampleNumber(String sampleNumber) throws LIMSRuntimeException;
 

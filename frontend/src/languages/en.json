@@ -613,6 +613,7 @@
   "banner.menu.results.SysmexXPanalyzer": "SysmexXP Analyzer",
   "banner.menu.results.accession": "By Order",
   "banner.menu.results.analyzer": "Analyzer",
+  "banner.menu.analyzer.machineResults": "Machine Results",
   "banner.menu.results.cobasc111analyzer": "Biochemistry: Cobas C111",
   "banner.menu.results.genexpertanalyzer": "GeneXpert",
   "banner.menu.results.logbook": "By Unit",

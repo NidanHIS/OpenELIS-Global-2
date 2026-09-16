@@ -627,6 +627,7 @@
   "banner.menu.results": "Résultats",
   "banner.menu.results.accession": "Par Ordonnance",
   "banner.menu.results.analyzer": "Automate",
+  "banner.menu.analyzer.machineResults": "Résultats Machine",
   "banner.menu.results.cobasc111analyzer": "Biochimie: Cobas C111",
   "banner.menu.results.CobasIntegra400": "Biochimie: Cobas Integra 400+",
   "banner.menu.results.FacsCalibur": "Immunologie: FacsCalibur",

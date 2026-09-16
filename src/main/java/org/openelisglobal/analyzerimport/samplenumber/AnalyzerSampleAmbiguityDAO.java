@@ -27,9 +27,10 @@ class AnalyzerSampleAmbiguityDAOImpl extends BaseDAOImpl<AnalyzerSampleAmbiguity
             return Collections.emptyList();
         }
         try {
-            List<AnalyzerSampleAmbiguity> rows = entityManager.createQuery(
-                    "from AnalyzerSampleAmbiguity e where e.status = :status order by e.id desc",
-                    AnalyzerSampleAmbiguity.class).setParameter("status", status).getResultList();
+            List<AnalyzerSampleAmbiguity> rows = entityManager
+                    .createQuery("from AnalyzerSampleAmbiguity e where e.status = :status order by e.id desc",
+                            AnalyzerSampleAmbiguity.class)
+                    .setParameter("status", status).getResultList();
             return rows != null ? rows : Collections.emptyList();
         } catch (Exception e) {
             return Collections.emptyList();
