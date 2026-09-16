@@ -759,8 +759,6 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
         }
         String input = sampleNumber.trim();
         try {
-            // Expand 6-digit display format (DDxxxx) to 10-digit stored format (YYMMDDxxxx)
-            // for AUTO lookup
             String searchKey = SampleNumberUtil.isDisplayFormat(input) ? SampleNumberUtil.toStorage(input) : input;
 
             String sql = "from Sample s where (s.sampleNumber = :searchKey and s.sampleNumberType = 'AUTO') "
@@ -778,5 +776,50 @@ public class SampleDAOImpl extends BaseDAOImpl<Sample, String> implements Sample
             throw new LIMSRuntimeException("Exception in getSampleBySampleNumber", e);
         }
         return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Sample getSampleBySampleNumberExact(String sampleNumber) throws LIMSRuntimeException {
+        if (sampleNumber == null || sampleNumber.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sql = "from Sample s where s.sampleNumber = :input";
+            Query<Sample> query = entityManager.unwrap(Session.class).createQuery(sql, Sample.class);
+            query.setParameter("input", sampleNumber.trim());
+            query.setMaxResults(1);
+            List<Sample> list = query.list();
+            if (list != null && !list.isEmpty()) {
+                return list.get(0);
+            }
+        } catch (RuntimeException e) {
+            LogEvent.logError(e);
+            throw new LIMSRuntimeException("Exception in getSampleBySampleNumberExact", e);
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Sample> findAutoSamplesByStoredNumbers(List<String> storedNumbers) throws LIMSRuntimeException {
+        if (storedNumbers == null || storedNumbers.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            List<String> keys = storedNumbers.stream().filter(k -> k != null && !k.trim().isEmpty())
+                    .map(String::trim).collect(Collectors.toList());
+            if (keys.isEmpty()) {
+                return new ArrayList<>();
+            }
+            String sql = "from Sample s where s.sampleNumber in (:keys) and s.sampleNumberType = 'AUTO'";
+            Query<Sample> query = entityManager.unwrap(Session.class).createQuery(sql, Sample.class);
+            query.setParameter("keys", keys);
+            List<Sample> list = query.list();
+            return list != null ? list : new ArrayList<>();
+        } catch (RuntimeException e) {
+            LogEvent.logError(e);
+            return new ArrayList<>();
+        }
     }
 }

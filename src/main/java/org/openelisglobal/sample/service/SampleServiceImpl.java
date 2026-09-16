@@ -626,6 +626,35 @@ public class SampleServiceImpl extends AuditableBaseObjectServiceImpl<Sample, St
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Sample getSampleBySampleNumberExact(String sampleNumber) {
+        if (sampleNumber == null || sampleNumber.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return sampleDAO.getSampleBySampleNumberExact(sampleNumber.trim());
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "getSampleBySampleNumberExact", e.toString());
+            return null;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Sample> findAutoSamplesByStoredNumbers(List<String> storedNumbers) {
+        try {
+            if (storedNumbers == null || storedNumbers.isEmpty()) {
+                return new ArrayList<>();
+            }
+            List<Sample> found = sampleDAO.findAutoSamplesByStoredNumbers(storedNumbers);
+            return found != null ? found : new ArrayList<>();
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "findAutoSamplesByStoredNumbers", e.toString());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
     public String generateSampleNumber(Sample sample) {
         try {
             DailySampleNumberValidator validator;

@@ -122,17 +122,21 @@ public interface SampleService extends BaseObjectService<Sample, String> {
     List<Sample> getSamplesByPriority(OrderPriority priority);
 
     /**
-     * Looks up a sample by its NIDAN sample number using two-path resolution: Path
-     * A: if input is 6-digit display format (DDxxxx), expand to YYMMDDxxxx and
-     * query WHERE sample_number = expanded AND sample_number_type = 'AUTO'. Path B:
-     * exact match on sample_number (catches manual entries and direct stored
-     * lookups). AUTO path takes precedence. Returns null if not found.
-     *
-     * @param sampleNumber the sample number as entered by user/analyzer (DDxxxx or
-     *                     manual)
-     * @return the matching Sample, or null
+     * Today-only uniqueness lookup. 4-digit display expands to today's stored AUTO
+     * value. Does not look back prior days. Returns null if not found.
      */
     Sample getSampleBySampleNumber(String sampleNumber);
+
+    /**
+     * Exact stored sample_number match. No date expansion. Null-safe.
+     */
+    Sample getSampleBySampleNumberExact(String sampleNumber);
+
+    /**
+     * AUTO samples whose stored numbers match the lookback keys. Empty list on
+     * miss/error. Caller orders by key recency.
+     */
+    List<Sample> findAutoSamplesByStoredNumbers(List<String> storedNumbers);
 
     /**
      * Generates the next AUTO sample number via DailySampleNumberValidator. Returns

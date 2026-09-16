@@ -1,71 +1,43 @@
 package org.openelisglobal.sample.util;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
-import java.util.regex.Matcher;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.openelisglobal.common.log.LogEvent;
 
 /**
- * Pure static utility for NIDAN daily sample number format conversions.
+ * NIDAN daily sample number conversions.
  *
- * <p>
- * Two formats exist:
  * <ul>
- * <li><b>Stored (AUTO)</b>: {@code YYMMDDxxxx} — 10 all-digit chars, no
- * separator. Example: {@code 2609060001} (year=26, month=09, day=06, seq=0001).
- * Only auto-generated numbers use this format in the DB.</li>
- * <li><b>Display</b>: {@code DDxxxx} — 6 all-digit chars, no separator.
- * Example: {@code 060001} (day=06, seq=0001). This is what the UI, users, and
- * analyzers see and send.</li>
- * <li><b>Manual</b>: any alphanumeric string up to 20 chars, stored verbatim.
- * Never expanded or transformed by this utility.</li>
+ * <li>Stored AUTO: {@code YYMMDDxxxx} — 10 digits (e.g. {@code 2609160001}).</li>
+ * <li>Display AUTO: {@code xxxx} — 4 digits (e.g. {@code 0001}).</li>
+ * <li>Manual: any other string, never transformed.</li>
  * </ul>
  *
- * <p>
- * This class has no Spring dependencies and no DB access — safe to call
- * anywhere.
+ * No Spring, no DB. Every method is null-safe and fail-closed on exceptions.
  */
 public final class SampleNumberUtil {
 
-    /** Matches exactly 10 digits — the stored AUTO format: YYMMDDxxxx */
-    private static final Pattern STORED_AUTO_PATTERN = Pattern.compile("^\\d{10}$");
+    public static final int LOOKBACK_CALENDAR_DAYS = 3;
 
-    /** Matches exactly 6 digits — the display format: DDxxxx */
-    private static final Pattern DISPLAY_FORMAT_PATTERN = Pattern.compile("^\\d{6}$");
+    private static final Pattern STORED_AUTO_PATTERN = Pattern.compile("^\\d{10}$");
+    private static final Pattern DISPLAY_FORMAT_PATTERN = Pattern.compile("^\\d{4}$");
 
     private SampleNumberUtil() {
-        // utility class — no instantiation
     }
 
-    /**
-     * Converts a stored AUTO sample number to its display form by stripping the
-     * 4-digit {@code YYMM} prefix.
-     *
-     * <p>
-     * Examples:
-     * 
-     * <pre>
-     *   "2609060001" → "060001"   (AUTO stored → display)
-     *   "060001"     → "060001"   (already display, pass-through)
-     *   "LAB01"      → "LAB01"    (manual, pass-through)
-     *   null/blank   → unchanged
-     * </pre>
-     *
-     * @param raw the raw value as stored in the DB
-     * @return display form (DDxxxx) if raw is a 10-digit AUTO value, otherwise raw
-     *         unchanged
-     */
     public static String toDisplay(String raw) {
         if (raw == null || raw.trim().isEmpty()) {
             return raw;
         }
         try {
             String trimmed = raw.trim();
-            Matcher m = STORED_AUTO_PATTERN.matcher(trimmed);
-            if (m.matches()) {
-                // strip first 4 chars (YYMM) → leaves DDxxxx
-                return trimmed.substring(4);
+            if (STORED_AUTO_PATTERN.matcher(trimmed).matches()) {
+                return trimmed.substring(6);
             }
         } catch (Exception e) {
             LogEvent.logError("SampleNumberUtil", "toDisplay", e.toString());
@@ -73,37 +45,18 @@ public final class SampleNumberUtil {
         return raw;
     }
 
-    /**
-     * Converts a display-format AUTO sample number to its stored form by prepending
-     * the current 4-digit {@code YYMM} prefix.
-     *
-     * <p>
-     * IMPORTANT: This method is called ONLY for AUTO-generated numbers on save.
-     * Manual entries are NEVER passed through this method — they are stored
-     * verbatim.
-     *
-     * <p>
-     * Examples:
-     * 
-     * <pre>
-     *   "060001" → "2609060001"  (display → stored, current YYMM prepended)
-     *   "LAB01"  → "LAB01"       (not 6-digit, pass-through — caller should not call for manual)
-     *   null     → null
-     * </pre>
-     *
-     * @param display the display value (DDxxxx, 6 digits) as seen by users/UI
-     * @return stored form (YYMMDDxxxx) if display matches 6-digit format, otherwise
-     *         unchanged
-     */
     public static String toStorage(String display) {
+        return toStorage(display, new Date());
+    }
+
+    public static String toStorage(String display, Date asOf) {
         if (display == null || display.trim().isEmpty()) {
             return display;
         }
         try {
             String trimmed = display.trim();
-            if (DISPLAY_FORMAT_PATTERN.matcher(trimmed).matches()) {
-                String yyMM = new SimpleDateFormat("yyMM").format(new Date());
-                return yyMM + trimmed;
+            if (DISPLAY_FORMAT_PATTERN.matcher(trimmed).matches() && asOf != null) {
+                return new SimpleDateFormat("yyMMdd").format(asOf) + trimmed;
             }
         } catch (Exception e) {
             LogEvent.logError("SampleNumberUtil", "toStorage", e.toString());
@@ -111,13 +64,6 @@ public final class SampleNumberUtil {
         return display;
     }
 
-    /**
-     * Returns {@code true} if the given string is in stored AUTO format (exactly 10
-     * digits).
-     *
-     * @param s the string to check
-     * @return true if {@code s} matches {@code ^\d{10}$}
-     */
     public static boolean isStoredAutoFormat(String s) {
         if (s == null || s.trim().isEmpty()) {
             return false;
@@ -130,13 +76,6 @@ public final class SampleNumberUtil {
         }
     }
 
-    /**
-     * Returns {@code true} if the given string is in display format (exactly 6
-     * digits).
-     *
-     * @param s the string to check
-     * @return true if {@code s} matches {@code ^\d{6}$}
-     */
     public static boolean isDisplayFormat(String s) {
         if (s == null || s.trim().isEmpty()) {
             return false;
@@ -146,6 +85,33 @@ public final class SampleNumberUtil {
         } catch (Exception e) {
             LogEvent.logError("SampleNumberUtil", "isDisplayFormat", e.toString());
             return false;
+        }
+    }
+
+    public static List<String> storageKeysForLookback(String fourDigit) {
+        return storageKeysForLookback(fourDigit, LOOKBACK_CALENDAR_DAYS, new Date());
+    }
+
+    public static List<String> storageKeysForLookback(String fourDigit, int calendarDays, Date asOf) {
+        try {
+            if (!isDisplayFormat(fourDigit) || calendarDays < 1 || asOf == null) {
+                return Collections.emptyList();
+            }
+            String seq = fourDigit.trim();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(asOf);
+            SimpleDateFormat fmt = new SimpleDateFormat("yyMMdd");
+            List<String> keys = new ArrayList<>(calendarDays);
+            for (int i = 0; i < calendarDays; i++) {
+                if (i > 0) {
+                    cal.add(Calendar.DATE, -1);
+                }
+                keys.add(fmt.format(cal.getTime()) + seq);
+            }
+            return keys;
+        } catch (Exception e) {
+            LogEvent.logError("SampleNumberUtil", "storageKeysForLookback", e.toString());
+            return Collections.emptyList();
         }
     }
 }

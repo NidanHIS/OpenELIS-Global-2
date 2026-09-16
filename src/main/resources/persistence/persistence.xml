@@ -69,6 +69,7 @@
 
         <!-- Incoming Orders entity (nidan-dev external order pipeline) -->
         <class>org.openelisglobal.dataexchange.externalorders.valueholder.IncomingOrder</class>
+        <class>org.openelisglobal.analyzerimport.samplenumber.AnalyzerSampleAmbiguity</class>
 
         <!-- Site Branding entity (001-site-branding) -->
         <class>org.openelisglobal.sitebranding.valueholder.SiteBranding</class>

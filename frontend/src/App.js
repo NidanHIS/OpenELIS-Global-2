@@ -53,6 +53,7 @@ import RoutineReports from "./components/reports/Routine";
 import StudyReports from "./components/reports/Study";
 import StudyValidation from "./components/validation/Index";
 import AnalyserResultIndex from "./components/analyserResults/Index";
+import AnalyzerSampleAmbiguityQueue from "./components/analyserResults/AnalyzerSampleAmbiguityQueue";
 import PathologyDashboard from "./components/pathology/PathologyDashboard";
 import CytologyDashboard from "./components/cytology/CytologyDashBoard";
 import NoteBookDashBoard from "./components/notebook/NoteBookDashBoard";
@@ -868,6 +869,12 @@ export default function App() {
                   path="/AnalyzerResults"
                   exact
                   component={() => <AnalyserResultIndex />}
+                  role={Roles.ANALYSER_IMPORT}
+                />
+                <SecureRoute
+                  path="/AnalyzerSampleAmbiguity"
+                  exact
+                  component={() => <AnalyzerSampleAmbiguityQueue />}
                   role={Roles.ANALYSER_IMPORT}
                 />
                 <Route path="*" component={() => <RedirectOldUI />} />

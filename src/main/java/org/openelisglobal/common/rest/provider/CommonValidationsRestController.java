@@ -186,7 +186,7 @@ public class CommonValidationsRestController {
         response.setStatus(success);
 
         // For DAILY_SAMPLE_NUMBER format: generator returns stored YYMMDDxxxx.
-        // Strip YYMM prefix before sending to UI so user sees DDxxxx (e.g. 060001).
+        // Strip YYMMDD so user sees xxxx.
         String displayNumber = (AccessionFormat.DAILY_SAMPLE_NUMBER.equals(format))
                 ? SampleNumberUtil.toDisplay(nextNumber)
                 : nextNumber;

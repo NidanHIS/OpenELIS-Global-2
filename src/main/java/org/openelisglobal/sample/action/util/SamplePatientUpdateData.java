@@ -381,8 +381,8 @@ public class SamplePatientUpdateData {
 
         // Persist NIDAN sample number.
         // Three cases:
-        // AUTO — UI sent display format (DDxxxx) + type=AUTO → convert to storage
-        // (YYMMDDxxxx).
+        // AUTO — UI sent 4-digit display + type=AUTO → convert to YYMMDDxxxx.
+        // MANUAL — user entered any alphanumeric string → store verbatim.
         // MANUAL — user entered any alphanumeric string (1–20 chars) → store verbatim,
         // no transformation.
         // blank — nothing entered/generated → remains null.
@@ -398,7 +398,7 @@ public class SamplePatientUpdateData {
                             || SampleNumberUtil.isStoredAutoFormat(trimmedNumber)));
 
             if (isAuto) {
-                // Convert from display DDxxxx → stored YYMMDDxxxx (or pass through if already
+                // Convert from display xxxx → stored YYMMDDxxxx (or pass through if already
                 // 10-digit)
                 sample.setSampleNumber(SampleNumberUtil.toStorage(trimmedNumber));
                 sample.setSampleNumberType("AUTO");

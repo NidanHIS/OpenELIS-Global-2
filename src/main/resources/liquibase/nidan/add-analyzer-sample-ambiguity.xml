@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="nidan-analyzer-sample-ambiguity-001" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="clinlims" tableName="analyzer_sample_ambiguity"/>
+            </not>
+        </preConditions>
+        <createTable schemaName="clinlims" tableName="analyzer_sample_ambiguity">
+            <column name="id" type="INTEGER">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="incoming_identifier" type="VARCHAR(40)"/>
+            <column name="analyzer_id" type="VARCHAR(20)"/>
+            <column name="analyzer_test_code" type="VARCHAR(80)"/>
+            <column name="test_id" type="VARCHAR(20)"/>
+            <column name="test_name" type="VARCHAR(255)"/>
+            <column name="result_value" type="VARCHAR(255)"/>
+            <column name="result_units" type="VARCHAR(80)"/>
+            <column name="result_type" type="VARCHAR(8)"/>
+            <column name="complete_date" type="TIMESTAMP"/>
+            <column name="candidate_sample_ids" type="VARCHAR(255)"/>
+            <column name="candidate_json" type="TEXT"/>
+            <column name="status" type="VARCHAR(20)"/>
+            <column name="chosen_sample_id" type="VARCHAR(20)"/>
+            <column name="sys_user_id" type="VARCHAR(50)"/>
+            <column name="last_updated" type="TIMESTAMP"/>
+        </createTable>
+        <createSequence incrementBy="1" schemaName="clinlims"
+            sequenceName="analyzer_sample_ambiguity_seq" startValue="1"/>
+        <createIndex schemaName="clinlims" tableName="analyzer_sample_ambiguity"
+                     indexName="idx_analyzer_sample_ambiguity_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

@@ -90,10 +90,20 @@ public interface SampleDAO extends BaseDAO<Sample, String> {
     List<Sample> getSamplesByPriority(OrderPriority priority) throws LIMSRuntimeException;
 
     /**
-     * Two-path lookup by NIDAN sample number. Path A: 6-digit display input →
-     * expand to YYMMDDxxxx, query AUTO rows. Path B: exact match on sample_number
-     * (manual or already stored form). AUTO takes precedence. Returns null if not
-     * found.
+     * Today-only uniqueness lookup (NOT analyzer lookback). Path A: 4-digit
+     * display → expand to today's YYMMDDxxxx AUTO. Path B: exact sample_number.
+     * Returns at most one row. Never searches prior days.
      */
     Sample getSampleBySampleNumber(String sampleNumber) throws LIMSRuntimeException;
+
+    /**
+     * Exact match on stored sample_number only. No date expansion.
+     */
+    Sample getSampleBySampleNumberExact(String sampleNumber) throws LIMSRuntimeException;
+
+    /**
+     * AUTO rows whose stored number is in the lookback key list (today + prior
+     * days). Empty list on blank input or error. Never silently truncates to one.
+     */
+    List<Sample> findAutoSamplesByStoredNumbers(List<String> storedNumbers) throws LIMSRuntimeException;
 }

@@ -13,20 +13,12 @@ import org.springframework.stereotype.Component;
  * Generates and validates NIDAN daily sample numbers.
  *
  * <p>
- * <b>Display format</b>: {@code DDxxxx} — 6 digits, no separator. {@code DD} =
- * zero-padded day of month (01–31). {@code xxxx} = 4-digit daily sequence
- * (0001–9999), resets at midnight. Example: {@code 060001} (day 6 of any month,
- * first sample).
+ * <b>Display format</b>: {@code xxxx} — 4-digit daily sequence (0001–9999),
+ * resets at midnight.
  *
  * <p>
- * <b>Stored format</b>: {@code YYMMDDxxxx} — 10 digits, no separator. Prepends
- * current {@code YYMM} so the value is globally unique across months and years
- * in the {@code accession_number_info} sequence table. Example:
- * {@code 2609060001} (Sep 2026, day 6, seq 1).
- *
- * <p>
- * The sequence key used in {@code accession_number_info} is {@code yyMMdd}
- * (e.g. {@code 260906}) — one row per calendar day, auto-resets.
+ * <b>Stored format</b>: {@code YYMMDDxxxx} — 10 digits. Sequence key in
+ * {@code accession_number_info} is {@code yyMMdd} (one row per calendar day).
  *
  * <p>
  * Manual user entries bypass this class entirely and are stored verbatim.
@@ -50,10 +42,9 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
     // ── IAccessionNumberGenerator ────────────────────────────────────────────
 
     /**
-     * Returns the next available sample number without reserving (incrementing) it.
-     * The returned value is in <b>stored</b> format (YYMMDDxxxx). The REST endpoint
+     * Returns the next available sample number. Stored format (YYMMDDxxxx). REST
      * applies {@link org.openelisglobal.sample.util.SampleNumberUtil#toDisplay}
-     * before returning it to the UI.
+     * so the UI sees 4 digits.
      */
     @Override
     public String getNextAvailableAccessionNumber(String programCode, boolean reserve) {
@@ -68,12 +59,7 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
     public String getNextAccessionNumber(String programCode, boolean reserve) {
         try {
             Date now = new Date();
-            // Sequence key: yyMMdd — one counter per calendar day
             String sequenceKey = new SimpleDateFormat("yyMMdd").format(now);
-            // YYMM prefix to prepend to the display DDxxxx for storage
-            String yyMM = new SimpleDateFormat("yyMM").format(now);
-            // DD for the display portion
-            String dd = new SimpleDateFormat("dd").format(now);
 
             long nextSeq;
             if (reserve) {
@@ -84,8 +70,7 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
                         AccessionFormat.DAILY_SAMPLE_NUMBER);
             }
 
-            // Stored: YYMMDDxxxx (e.g. 2609060001)
-            return String.format("%s%s%04d", yyMM, dd, nextSeq);
+            return String.format("%s%04d", sequenceKey, nextSeq);
 
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "getNextAccessionNumber", e.toString());
@@ -101,9 +86,8 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
     // ── IAccessionNumberValidator ────────────────────────────────────────────
 
     /**
-     * Validates format and uniqueness of a sample number. Accepts: stored AUTO (10
-     * digits), display AUTO (6 digits), or alphanumeric manual (1–20 chars,
-     * letters/digits only).
+     * Validates format and uniqueness. Accepts stored AUTO (10 digits), display
+     * AUTO (4 digits), or alphanumeric manual (1–20 chars).
      */
     @Override
     public ValidationResults checkAccessionNumberValidity(String sampleNumber, String recordType, String isRequired,
@@ -123,7 +107,7 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
      * <ul>
      * <li>Blocks SQL injection / dangerous characters.</li>
      * <li>Accepts 10-digit stored AUTO format (YYMMDDxxxx).</li>
-     * <li>Accepts 6-digit display format (DDxxxx).</li>
+     * <li>Accepts 4-digit display format (xxxx).</li>
      * <li>Accepts alphanumeric manual entry: {@code [A-Za-z0-9]{1,20}}.</li>
      * </ul>
      */
@@ -140,7 +124,7 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
         // Accept 10-digit stored AUTO format
         boolean isStoredAuto = s.matches("^\\d{10}$");
         // Accept 6-digit display format
-        boolean isDisplayAuto = s.matches("^\\d{6}$");
+        boolean isDisplayAuto = s.matches("^\\d{4}$");
         // Accept alphanumeric manual: letters and digits only, 1-20 chars
         boolean isManual = s.matches("^[A-Za-z0-9]{1,20}$");
 
@@ -174,7 +158,7 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
 
     @Override
     public String getInvalidFormatMessage(ValidationResults results) {
-        return "Invalid sample number. Use DD + 4 digits (e.g. 060001) or alphanumeric only, max 20 chars.";
+        return "Invalid sample number. Use 4 digits (e.g. 0001) or alphanumeric only, max 20 chars.";
     }
 
     @Override
@@ -199,7 +183,6 @@ public class DailySampleNumberValidator implements IAccessionNumberGenerator, IA
 
     @Override
     public String getPrefix() {
-        // Display prefix = today's DD
-        return new SimpleDateFormat("dd").format(new Date());
+        return "";
     }
 }

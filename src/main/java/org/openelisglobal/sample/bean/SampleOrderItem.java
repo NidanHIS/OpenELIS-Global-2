@@ -677,7 +677,7 @@ public class SampleOrderItem implements Serializable {
     private String nidanVisitType;
 
     /**
-     * NIDAN sample number as entered by user/UI (DDxxxx display format or manual
+     * NIDAN sample number as entered by user/UI (4-digit display or manual
      * alphanumeric).
      */
     private String sampleNumber;
