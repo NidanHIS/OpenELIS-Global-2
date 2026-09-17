@@ -4,6 +4,7 @@ import React, {
   useRef,
   useContext,
   useCallback,
+  useMemo,
 } from "react";
 import {
   Button,
@@ -46,6 +47,23 @@ const AnalyzerSampleAmbiguityQueue = () => {
   const [loadError, setLoadError] = useState(null);
   // Per-card action state: { [pendingId]: "resolving" | "discarding" | "error:<msg>" }
   const [actionState, setActionState] = useState({});
+
+  const groupedCards = useMemo(() => {
+    const groups = new Map();
+    cards.forEach((card) => {
+      const dateKey =
+        card.resultDate ||
+        intl.formatMessage({
+          id: "ambiguityQueue.date.unknown",
+          defaultMessage: "Unspecified Date",
+        });
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, []);
+      }
+      groups.get(dateKey).push(card);
+    });
+    return Array.from(groups.entries());
+  }, [cards, intl]);
 
   // ── Load pending cards ────────────────────────────────────────────────────
 
@@ -235,215 +253,273 @@ const AnalyzerSampleAmbiguityQueue = () => {
         </Column>
       )}
 
-      {/* Cards */}
+      {/* Cards grouped by incoming result date */}
       {!loading &&
-        cards.map((card) => {
-          const state = actionState[card.id];
-          const isActing = state === "resolving" || state === "discarding";
-          const cardError =
-            state && state.startsWith("error:") ? state.slice(6) : null;
-
-          return (
+        groupedCards.map(([dateKey, groupCards]) => (
+          <React.Fragment key={dateKey}>
             <Column
-              key={card.id}
               lg={16}
               md={8}
               sm={4}
-              style={{ marginBottom: "1rem" }}
+              style={{ marginTop: "1rem", marginBottom: "0.75rem" }}
             >
-              <Tile
-                style={{ borderLeft: "4px solid #f1c21b", borderRadius: "4px" }}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  borderBottom: "1px solid #e0e0e0",
+                  paddingBottom: "0.5rem",
+                }}
               >
-                {/* Card header: identifier + meta tags */}
-                <div
+                <span
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "0.5rem",
-                    marginBottom: "0.75rem",
+                    fontWeight: 700,
+                    fontSize: "1.05rem",
+                    color: "#161616",
                   }}
                 >
-                  <Warning size={20} style={{ color: "#f1c21b" }} />
-                  <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>
-                    <FormattedMessage
-                      id="ambiguityQueue.card.identifier"
-                      defaultMessage="Identifier:"
-                    />{" "}
-                    <code
-                      style={{
-                        background: "#f4f4f4",
-                        padding: "2px 6px",
-                        borderRadius: 3,
-                      }}
-                    >
-                      {card.incomingIdentifier}
-                    </code>
-                  </span>
-                  {card.analyzerId && (
-                    <Tag type="cool-gray" size="sm">
-                      {card.analyzerId}
-                    </Tag>
-                  )}
-                  {card.analyzerTestCode && (
-                    <Tag type="blue" size="sm">
-                      {card.analyzerTestCode}
-                    </Tag>
-                  )}
-                  {card.testName && card.testName !== card.analyzerTestCode && (
-                    <Tag type="teal" size="sm">
-                      {card.testName}
-                    </Tag>
-                  )}
-                  {card.resultValue != null && (
-                    <Tag type="green" size="sm">
-                      {card.resultValue}
-                      {card.resultUnits ? ` ${card.resultUnits}` : ""}
-                    </Tag>
-                  )}
-                </div>
-
-                {/* Inline card error */}
-                {cardError && (
-                  <InlineNotification
-                    kind="error"
-                    title={intl.formatMessage({
-                      id: "ambiguityQueue.error.action",
-                      defaultMessage: "Action failed",
-                    })}
-                    subtitle={cardError}
-                    lowContrast
-                    style={{ marginBottom: "0.75rem" }}
-                    onCloseButtonClick={() =>
-                      setActionState((prev) => {
-                        const n = { ...prev };
-                        delete n[card.id];
-                        return n;
-                      })
-                    }
-                  />
-                )}
-
-                {/* Candidate list */}
-                <p
-                  style={{
-                    fontWeight: 600,
-                    marginBottom: "0.5rem",
-                    color: "#525252",
-                    fontSize: "0.875rem",
-                  }}
-                >
+                  📅 {dateKey}
+                </span>
+                <Tag type="cool-gray" size="sm">
+                  {groupCards.length}{" "}
                   <FormattedMessage
-                    id="ambiguityQueue.candidates.label"
-                    defaultMessage="{count} candidate sample(s) — choose the correct one:"
-                    values={{ count: (card.candidates || []).length }}
+                    id="ambiguityQueue.group.count"
+                    defaultMessage="result(s)"
                   />
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                    marginBottom: "1rem",
-                  }}
+                </Tag>
+              </div>
+            </Column>
+            {groupCards.map((card) => {
+              const state = actionState[card.id];
+              const isActing = state === "resolving" || state === "discarding";
+              const cardError =
+                state && state.startsWith("error:") ? state.slice(6) : null;
+
+              return (
+                <Column
+                  key={card.id}
+                  lg={16}
+                  md={8}
+                  sm={4}
+                  style={{ marginBottom: "1rem" }}
                 >
-                  {(card.candidates || []).map((c) => (
+                  <Tile
+                    style={{
+                      borderLeft: "4px solid #f1c21b",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    {/* Card header: identifier + meta tags */}
                     <div
-                      key={c.sampleId}
                       style={{
                         display: "flex",
                         alignItems: "center",
                         flexWrap: "wrap",
-                        gap: "0.75rem",
-                        background: "#f4f4f4",
-                        borderRadius: "4px",
-                        padding: "0.5rem 0.75rem",
+                        gap: "0.5rem",
+                        marginBottom: "0.75rem",
                       }}
                     >
-                      <span style={{ fontWeight: 600, minWidth: "90px" }}>
-                        #{c.sampleNumber || c.sampleId}
-                      </span>
-                      {c.accessionNumber && (
-                        <span
-                          style={{ color: "#525252", fontSize: "0.875rem" }}
+                      <Warning size={20} style={{ color: "#f1c21b" }} />
+                      <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>
+                        <FormattedMessage
+                          id="ambiguityQueue.card.identifier"
+                          defaultMessage="Identifier:"
+                        />{" "}
+                        <code
+                          style={{
+                            background: "#f4f4f4",
+                            padding: "2px 6px",
+                            borderRadius: 3,
+                          }}
                         >
-                          <FormattedMessage
-                            id="ambiguityQueue.accession"
-                            defaultMessage="Acc:"
-                          />{" "}
-                          {c.accessionNumber}
-                        </span>
+                          {card.incomingIdentifier}
+                        </code>
+                      </span>
+                      {card.analyzerId && (
+                        <Tag type="cool-gray" size="sm">
+                          {card.analyzerId}
+                        </Tag>
                       )}
-                      {c.patientName && (
-                        <span style={{ fontSize: "0.875rem" }}>
-                          👤 {c.patientName}
-                          {c.patientId ? ` (${c.patientId})` : ""}
-                        </span>
+                      {card.resultDate && (
+                        <Tag type="gray" size="sm">
+                          {card.resultDate}
+                        </Tag>
                       )}
-                      {c.orderedTests && c.orderedTests.length > 0 && (
-                        <span style={{ fontSize: "0.8rem", color: "#6f6f6f" }}>
-                          🧪 {c.orderedTests.join(", ")}
-                        </span>
+                      {card.analyzerTestCode && (
+                        <Tag type="blue" size="sm">
+                          {card.analyzerTestCode}
+                        </Tag>
                       )}
+                      {card.testName && card.testName !== card.analyzerTestCode && (
+                        <Tag type="teal" size="sm">
+                          {card.testName}
+                        </Tag>
+                      )}
+                      {card.resultValue != null && (
+                        <Tag type="green" size="sm">
+                          {card.resultValue}
+                          {card.resultUnits ? ` ${card.resultUnits}` : ""}
+                        </Tag>
+                      )}
+                    </div>
+
+                    {/* Inline card error */}
+                    {cardError && (
+                      <InlineNotification
+                        kind="error"
+                        title={intl.formatMessage({
+                          id: "ambiguityQueue.error.action",
+                          defaultMessage: "Action failed",
+                        })}
+                        subtitle={cardError}
+                        lowContrast
+                        style={{ marginBottom: "0.75rem" }}
+                        onCloseButtonClick={() =>
+                          setActionState((prev) => {
+                            const n = { ...prev };
+                            delete n[card.id];
+                            return n;
+                          })
+                        }
+                      />
+                    )}
+
+                    {/* Candidate list */}
+                    <p
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: "0.5rem",
+                        color: "#525252",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      <FormattedMessage
+                        id="ambiguityQueue.candidates.label"
+                        defaultMessage="{count} candidate sample(s) — choose the correct one:"
+                        values={{ count: (card.candidates || []).length }}
+                      />
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.5rem",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      {(card.candidates || []).map((c) => (
+                        <div
+                          key={c.sampleId}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: "0.75rem",
+                            background: "#f4f4f4",
+                            borderRadius: "4px",
+                            padding: "0.5rem 0.75rem",
+                          }}
+                        >
+                          <span style={{ fontWeight: 600, minWidth: "90px" }}>
+                            #{c.sampleNumber || c.sampleId}
+                          </span>
+                          {c.orderDate && (
+                            <span
+                              style={{ color: "#525252", fontSize: "0.875rem" }}
+                            >
+                              <FormattedMessage
+                                id="sample.label.orderdate"
+                                defaultMessage="Order Date:"
+                              />{" "}
+                              <span style={{ fontWeight: 600, color: "#161616" }}>
+                                {c.orderDate}
+                              </span>
+                            </span>
+                          )}
+                          {c.accessionNumber && (
+                            <span
+                              style={{ color: "#525252", fontSize: "0.875rem" }}
+                            >
+                              <FormattedMessage
+                                id="ambiguityQueue.accession"
+                                defaultMessage="Acc:"
+                              />{" "}
+                              {c.accessionNumber}
+                            </span>
+                          )}
+                          {c.patientName && (
+                            <span style={{ fontSize: "0.875rem" }}>
+                              👤 {c.patientName}
+                              {c.patientId ? ` (${c.patientId})` : ""}
+                            </span>
+                          )}
+                          {c.orderedTests && c.orderedTests.length > 0 && (
+                            <span style={{ fontSize: "0.8rem", color: "#6f6f6f" }}>
+                              🧪 {c.orderedTests.join(", ")}
+                            </span>
+                          )}
+                          <Button
+                            kind="primary"
+                            size="sm"
+                            disabled={isActing}
+                            onClick={() =>
+                              handleResolve(
+                                card.id,
+                                c.sampleId,
+                                c.sampleNumber,
+                                c.accessionNumber,
+                              )
+                            }
+                            style={{ marginLeft: "auto" }}
+                          >
+                            {state === "resolving" ? (
+                              <InlineLoading description="" />
+                            ) : (
+                              <>
+                                <CheckmarkFilled size={16} />
+                                &nbsp;
+                                <FormattedMessage
+                                  id="ambiguityQueue.resolve.btn"
+                                  defaultMessage="Use this sample"
+                                />
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Discard button */}
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <Button
-                        kind="primary"
+                        kind="danger--ghost"
                         size="sm"
                         disabled={isActing}
-                        onClick={() =>
-                          handleResolve(
-                            card.id,
-                            c.sampleId,
-                            c.sampleNumber,
-                            c.accessionNumber,
-                          )
-                        }
-                        style={{ marginLeft: "auto" }}
+                        renderIcon={TrashCan}
+                        onClick={() => handleDiscard(card.id)}
                       >
-                        {state === "resolving" ? (
-                          <InlineLoading description="" />
+                        {state === "discarding" ? (
+                          <InlineLoading
+                            description={intl.formatMessage({
+                              id: "ambiguityQueue.discarding",
+                              defaultMessage: "Discarding...",
+                            })}
+                          />
                         ) : (
-                          <>
-                            <CheckmarkFilled size={16} />
-                            &nbsp;
-                            <FormattedMessage
-                              id="ambiguityQueue.resolve.btn"
-                              defaultMessage="Use this sample"
-                            />
-                          </>
+                          <FormattedMessage
+                            id="ambiguityQueue.discard.btn"
+                            defaultMessage="Discard result"
+                          />
                         )}
                       </Button>
                     </div>
-                  ))}
-                </div>
-
-                {/* Discard button */}
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Button
-                    kind="danger--ghost"
-                    size="sm"
-                    disabled={isActing}
-                    renderIcon={TrashCan}
-                    onClick={() => handleDiscard(card.id)}
-                  >
-                    {state === "discarding" ? (
-                      <InlineLoading
-                        description={intl.formatMessage({
-                          id: "ambiguityQueue.discarding",
-                          defaultMessage: "Discarding...",
-                        })}
-                      />
-                    ) : (
-                      <FormattedMessage
-                        id="ambiguityQueue.discard.btn"
-                        defaultMessage="Discard result"
-                      />
-                    )}
-                  </Button>
-                </div>
-              </Tile>
-            </Column>
-          );
-        })}
+                  </Tile>
+                </Column>
+              );
+            })}
+          </React.Fragment>
+        ))}
 
       {/* Refresh button when cards are present */}
       {!loading && cards.length > 0 && (

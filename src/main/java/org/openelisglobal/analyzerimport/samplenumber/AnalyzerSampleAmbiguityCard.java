@@ -13,6 +13,7 @@ public class AnalyzerSampleAmbiguityCard {
     private String testName;
     private String resultValue;
     private String resultUnits;
+    private String resultDate;
     private List<AnalyzerSampleAmbiguityCandidate> candidates = new ArrayList<>();
 
     public Integer getId() {
@@ -77,6 +78,14 @@ public class AnalyzerSampleAmbiguityCard {
 
     public void setResultUnits(String resultUnits) {
         this.resultUnits = resultUnits;
+    }
+
+    public String getResultDate() {
+        return resultDate;
+    }
+
+    public void setResultDate(String resultDate) {
+        this.resultDate = resultDate;
     }
 
     public List<AnalyzerSampleAmbiguityCandidate> getCandidates() {

@@ -1,6 +1,7 @@
 package org.openelisglobal.analyzerimport.samplenumber;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,10 @@ public class AnalyzerSampleResolver {
     private SampleNumberCandidateFilter candidateFilter;
 
     public AnalyzerSampleResolveOutcome resolve(String identifier, String testId) {
+        return resolve(identifier, testId, null);
+    }
+
+    public AnalyzerSampleResolveOutcome resolve(String identifier, String testId, Date asOf) {
         try {
             if (GenericValidator.isBlankOrNull(identifier)) {
                 return AnalyzerSampleResolveOutcome.none();
@@ -36,7 +41,8 @@ public class AnalyzerSampleResolver {
             add(byId, exact);
 
             if (SampleNumberUtil.isDisplayFormat(trimmed)) {
-                List<String> keys = SampleNumberUtil.storageKeysForLookback(trimmed);
+                Date targetDate = (asOf != null) ? asOf : new Date();
+                List<String> keys = SampleNumberUtil.storageKeysForLookback(trimmed, SampleNumberUtil.LOOKBACK_CALENDAR_DAYS, targetDate);
                 List<Sample> lookback = sampleService.findAutoSamplesByStoredNumbers(keys);
                 if (lookback != null) {
                     Map<String, Sample> keyed = indexByStoredNumber(lookback);

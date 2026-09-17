@@ -15,6 +15,7 @@ import org.openelisglobal.analyzerimport.util.AnalyzerTestNameCache;
 import org.openelisglobal.analyzerresults.service.AnalyzerResultsService;
 import org.openelisglobal.analyzerresults.valueholder.AnalyzerResults;
 import org.openelisglobal.common.log.LogEvent;
+import org.openelisglobal.common.util.DateUtil;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.sample.service.SampleService;
 import org.openelisglobal.sample.util.SampleNumberUtil;
@@ -78,19 +79,11 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                         + incomingIdentifier + " candidates=" + (candidates == null ? "null" : candidates.size()));
                 return;
             }
-            AnalyzerSampleAmbiguity row = new AnalyzerSampleAmbiguity();
-            row.setIncomingIdentifier(incomingIdentifier);
-            row.setAnalyzerId(resolveNumericAnalyzerId(analyzerId));
-            row.setAnalyzerTestCode(analyzerTestCode);
-            row.setTestId(testId);
-            row.setTestName(resolveFullTestName(testId, testName));
-            row.setResultValue(resultValue);
-            row.setResultUnits(resultUnits);
-            row.setResultType(resultType);
-            row.setCompleteDate(completeDate);
-            row.setStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
+            String numericAnalyzerId = resolveNumericAnalyzerId(analyzerId);
+            Timestamp effectiveCompleteDate = completeDate != null ? completeDate
+                    : new Timestamp(System.currentTimeMillis());
 
-            // Comma-separated candidate sample IDs (capped for column length)
+            // Build candidate IDs string
             StringBuilder ids = new StringBuilder();
             for (Sample s : candidates) {
                 if (s != null && !GenericValidator.isBlankOrNull(s.getId())) {
@@ -99,8 +92,55 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                     ids.append(s.getId());
                 }
             }
-            row.setCandidateSampleIds(truncate(ids.toString(), 255));
-            row.setCandidateJson(buildCandidateJson(candidates));
+            String candidateIds = truncate(ids.toString(), 255);
+            String candidateJson = buildCandidateJson(candidates);
+
+            // Deduplication: Check if an identical PENDING record already exists on the same incoming date
+            List<AnalyzerSampleAmbiguity> existingPending = ambiguityDAO.findPendingByIdentifierAndTest(
+                    incomingIdentifier, numericAnalyzerId, analyzerTestCode);
+            String incomingDateStr = "";
+            try {
+                incomingDateStr = DateUtil.convertTimestampToStringDate(effectiveCompleteDate);
+            } catch (Exception ignored) {
+            }
+
+            for (AnalyzerSampleAmbiguity existing : existingPending) {
+                String existingDateStr = "";
+                try {
+                    if (existing.getCompleteDate() != null) {
+                        existingDateStr = DateUtil.convertTimestampToStringDate(existing.getCompleteDate());
+                    }
+                } catch (Exception ignored) {
+                }
+                if (!GenericValidator.isBlankOrNull(incomingDateStr) && incomingDateStr.equals(existingDateStr)) {
+                    // Update existing record in-place with latest result value, timestamp, and candidates
+                    existing.setResultValue(resultValue);
+                    existing.setResultUnits(resultUnits);
+                    existing.setResultType(resultType);
+                    existing.setCompleteDate(effectiveCompleteDate);
+                    existing.setCandidateSampleIds(candidateIds);
+                    existing.setCandidateJson(candidateJson);
+                    ambiguityDAO.update(existing);
+                    LogEvent.logInfo(this.getClass().getSimpleName(), "parkIncoming",
+                            "Refreshed existing PENDING ambiguous result identifier=" + incomingIdentifier
+                                    + " test=" + analyzerTestCode + " rowId=" + existing.getId() + " newValue=" + resultValue);
+                    return;
+                }
+            }
+
+            AnalyzerSampleAmbiguity row = new AnalyzerSampleAmbiguity();
+            row.setIncomingIdentifier(incomingIdentifier);
+            row.setAnalyzerId(numericAnalyzerId);
+            row.setAnalyzerTestCode(analyzerTestCode);
+            row.setTestId(testId);
+            row.setTestName(resolveFullTestName(testId, testName));
+            row.setResultValue(resultValue);
+            row.setResultUnits(resultUnits);
+            row.setResultType(resultType);
+            row.setCompleteDate(effectiveCompleteDate);
+            row.setStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
+            row.setCandidateSampleIds(candidateIds);
+            row.setCandidateJson(candidateJson);
 
             ambiguityDAO.insert(row);
             LogEvent.logInfo(this.getClass().getSimpleName(), "parkIncoming", "Parked ambiguous result identifier="
@@ -257,6 +297,17 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             card.setTestName(resolveFullTestName(row.getTestId(), row.getTestName()));
             card.setResultValue(row.getResultValue());
             card.setResultUnits(row.getResultUnits());
+            String resDate = "";
+            try {
+                if (row.getCompleteDate() != null) {
+                    resDate = DateUtil.convertTimestampToStringDate(row.getCompleteDate());
+                } else {
+                    resDate = DateUtil.convertSqlDateToStringDate(DateUtil.getNowAsSqlDate());
+                }
+            } catch (Exception e) {
+                LogEvent.logWarn(this.getClass().getSimpleName(), "toCard", "failed formatting resultDate: " + e.getMessage());
+            }
+            card.setResultDate(resDate);
             card.setCandidates(buildCandidateList(row.getCandidateSampleIds()));
             return card;
         } catch (Exception e) {
@@ -381,6 +432,15 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 c.setSampleId(sample.getId());
                 c.setAccessionNumber(sample.getAccessionNumber());
                 c.setSampleNumber(SampleNumberUtil.toDisplay(sample.getSampleNumber()));
+                // Order date matching Dashboard backlog
+                String orderDate = sample.getEnteredDateForDisplay();
+                if (GenericValidator.isBlankOrNull(orderDate) && sample.getEnteredDate() != null) {
+                    try {
+                        orderDate = DateUtil.convertSqlDateToStringDate(sample.getEnteredDate());
+                    } catch (Exception ignored) {
+                    }
+                }
+                c.setOrderDate(orderDate != null ? orderDate : "");
                 // Patient
                 try {
                     Patient patient = sampleHumanService.getPatientForSample(sample);
@@ -432,6 +492,14 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 c.setSampleId(s.getId());
                 c.setAccessionNumber(s.getAccessionNumber());
                 c.setSampleNumber(SampleNumberUtil.toDisplay(s.getSampleNumber()));
+                String orderDate = s.getEnteredDateForDisplay();
+                if (GenericValidator.isBlankOrNull(orderDate) && s.getEnteredDate() != null) {
+                    try {
+                        orderDate = DateUtil.convertSqlDateToStringDate(s.getEnteredDate());
+                    } catch (Exception ignored) {
+                    }
+                }
+                c.setOrderDate(orderDate != null ? orderDate : "");
                 list.add(c);
             }
             return JSON.writeValueAsString(list);

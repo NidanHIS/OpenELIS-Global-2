@@ -10,6 +10,7 @@ public class AnalyzerSampleAmbiguityCandidate {
     private String sampleNumber;
     private String patientName;
     private String patientId;
+    private String orderDate;
     private List<String> orderedTests = new ArrayList<>();
 
     public String getSampleId() {
@@ -50,6 +51,14 @@ public class AnalyzerSampleAmbiguityCandidate {
 
     public void setPatientId(String patientId) {
         this.patientId = patientId;
+    }
+
+    public String getOrderDate() {
+        return orderDate;
+    }
+
+    public void setOrderDate(String orderDate) {
+        this.orderDate = orderDate;
     }
 
     public List<String> getOrderedTests() {
