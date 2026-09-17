@@ -9,6 +9,9 @@ import java.util.List;
 import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
+import org.openelisglobal.analyzer.service.AnalyzerService;
+import org.openelisglobal.analyzer.valueholder.Analyzer;
+import org.openelisglobal.analyzerimport.util.AnalyzerTestNameCache;
 import org.openelisglobal.analyzerresults.service.AnalyzerResultsService;
 import org.openelisglobal.analyzerresults.valueholder.AnalyzerResults;
 import org.openelisglobal.common.log.LogEvent;
@@ -17,6 +20,8 @@ import org.openelisglobal.sample.service.SampleService;
 import org.openelisglobal.sample.util.SampleNumberUtil;
 import org.openelisglobal.sample.valueholder.Sample;
 import org.openelisglobal.samplehuman.service.SampleHumanService;
+import org.openelisglobal.test.service.TestService;
+import org.openelisglobal.test.valueholder.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +60,12 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     @Autowired
     private SampleHumanService sampleHumanService;
 
+    @Autowired
+    private AnalyzerService analyzerService;
+
+    @Autowired
+    private TestService testService;
+
     // ── Park ──────────────────────────────────────────────────────────────────
 
     @Override
@@ -69,10 +80,10 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             }
             AnalyzerSampleAmbiguity row = new AnalyzerSampleAmbiguity();
             row.setIncomingIdentifier(incomingIdentifier);
-            row.setAnalyzerId(analyzerId);
+            row.setAnalyzerId(resolveNumericAnalyzerId(analyzerId));
             row.setAnalyzerTestCode(analyzerTestCode);
             row.setTestId(testId);
-            row.setTestName(testName);
+            row.setTestName(resolveFullTestName(testId, testName));
             row.setResultValue(resultValue);
             row.setResultUnits(resultUnits);
             row.setResultType(resultType);
@@ -170,11 +181,15 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 return false;
             }
 
-            // Build AnalyzerResults holding row — same shape as addRecordsToResults
+            // Build AnalyzerResults holding row — strictly numeric analyzerId and full
+            // testName
+            String numericAnalyzerId = resolveNumericAnalyzerId(row.getAnalyzerId());
+            String fullTestName = resolveFullTestName(row.getTestId(), row.getTestName());
+
             AnalyzerResults ar = new AnalyzerResults();
-            ar.setAnalyzerId(row.getAnalyzerId());
+            ar.setAnalyzerId(numericAnalyzerId);
             ar.setAccessionNumber(sample.getAccessionNumber());
-            ar.setTestName(row.getTestName());
+            ar.setTestName(fullTestName);
             ar.setTestId(row.getTestId());
             ar.setResult(row.getResultValue());
             ar.setUnits(row.getResultUnits());
@@ -189,10 +204,12 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
 
             row.setStatus(AnalyzerSampleAmbiguity.STATUS_RESOLVED);
             row.setChosenSampleId(sampleId);
+            row.setAnalyzerId(numericAnalyzerId);
             ambiguityDAO.update(row);
 
             LogEvent.logInfo(this.getClass().getSimpleName(), "promoteToHolding", "Promoted pendingId=" + pendingId
-                    + " sampleId=" + sampleId + " accession=" + sample.getAccessionNumber());
+                    + " sampleId=" + sampleId + " accession=" + sample.getAccessionNumber()
+                    + " analyzerId=" + numericAnalyzerId + " testName=" + fullTestName);
             return true;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "promoteToHolding", e.toString());
@@ -234,10 +251,10 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             AnalyzerSampleAmbiguityCard card = new AnalyzerSampleAmbiguityCard();
             card.setId(row.getId());
             card.setIncomingIdentifier(row.getIncomingIdentifier());
-            card.setAnalyzerId(row.getAnalyzerId());
+            card.setAnalyzerId(resolveAnalyzerDisplayName(row.getAnalyzerId()));
             card.setAnalyzerTestCode(row.getAnalyzerTestCode());
             card.setTestId(row.getTestId());
-            card.setTestName(row.getTestName());
+            card.setTestName(resolveFullTestName(row.getTestId(), row.getTestName()));
             card.setResultValue(row.getResultValue());
             card.setResultUnits(row.getResultUnits());
             card.setCandidates(buildCandidateList(row.getCandidateSampleIds()));
@@ -246,6 +263,106 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             LogEvent.logError(this.getClass().getSimpleName(), "toCard", e.toString());
             return null;
         }
+    }
+
+    private String resolveNumericAnalyzerId(String rawAnalyzerId) {
+        if (!GenericValidator.isBlankOrNull(rawAnalyzerId)) {
+            String trimmed = rawAnalyzerId.trim();
+            if (trimmed.matches("^\\d+$")) {
+                return trimmed;
+            }
+            try {
+                java.util.Optional<Analyzer> byName = analyzerService.getByName(trimmed);
+                if (byName.isPresent()) {
+                    return byName.get().getId();
+                }
+                List<Analyzer> list = analyzerService.getAll();
+                if (list != null && !list.isEmpty()) {
+                    String normTarget = normalize(trimmed);
+
+                    for (Analyzer a : list) {
+                        if (a.getName() != null && normalize(a.getName()).equals(normTarget)) {
+                            return a.getId();
+                        }
+                    }
+                    // 2. Substring / contains match
+                    for (Analyzer a : list) {
+                        if (a.getName() != null && (normTarget.contains(normalize(a.getName()))
+                                || normalize(a.getName()).contains(normTarget))) {
+                            return a.getId();
+                        }
+                    }
+                    // 3. Match against AnalyzerType plugin class name or type name
+                    for (Analyzer a : list) {
+                        if (a.getAnalyzerType() != null) {
+                            String pluginClass = a.getAnalyzerType().getPluginClassName();
+                            String typeName = a.getAnalyzerType().getName();
+                            if ((pluginClass != null && (normTarget.contains(normalize(pluginClass))
+                                    || normalize(pluginClass).contains(normTarget)))
+                                    || (typeName != null && normalize(typeName).equals(normTarget))) {
+                                return a.getId();
+                            }
+                        }
+                    }
+                    return list.get(0).getId();
+                }
+            } catch (Exception e) {
+                LogEvent.logError(this.getClass().getSimpleName(), "resolveNumericAnalyzerId", e.toString());
+            }
+        }
+        // Fallback: first available analyzer in the database
+        try {
+            List<Analyzer> list = analyzerService.getAll();
+            if (list != null && !list.isEmpty()) {
+                return list.get(0).getId();
+            }
+        } catch (Exception ignored) {
+        }
+        return "1";
+    }
+
+    private String normalize(String s) {
+        return s == null ? "" : s.toLowerCase().replaceAll("[^a-z0-9]", "");
+    }
+
+    private String resolveAnalyzerDisplayName(String rawAnalyzerId) {
+        if (!GenericValidator.isBlankOrNull(rawAnalyzerId)) {
+            String trimmed = rawAnalyzerId.trim();
+            if (trimmed.matches("^\\d+$")) {
+                try {
+                    Analyzer a = analyzerService.get(trimmed);
+                    if (a != null && !GenericValidator.isBlankOrNull(a.getName())) {
+                        return a.getName();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            return trimmed;
+        }
+        return "";
+    }
+
+    private String resolveFullTestName(String testId, String fallbackName) {
+        if (!GenericValidator.isBlankOrNull(testId)) {
+            try {
+                String localized = org.openelisglobal.test.service.TestServiceImpl.getUserLocalizedTestName(testId);
+                if (!GenericValidator.isBlankOrNull(localized)) {
+                    return localized;
+                }
+                Test test = new Test();
+                test.setId(testId);
+                testService.getData(test);
+                if (test.getLocalizedTestName() != null
+                        && !GenericValidator.isBlankOrNull(test.getLocalizedTestName().getLocalizedValue())) {
+                    return test.getLocalizedTestName().getLocalizedValue();
+                }
+                if (!GenericValidator.isBlankOrNull(test.getName())) {
+                    return test.getName();
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return fallbackName;
     }
 
     private List<AnalyzerSampleAmbiguityCandidate> buildCandidateList(String ids) {
