@@ -1,5 +1,7 @@
 package org.openelisglobal.analyzerimport.samplenumber;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import org.apache.commons.validator.GenericValidator;
 import org.openelisglobal.analysis.service.AnalysisService;
@@ -14,8 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Drops a lookback candidate when that incoming test already has a real result.
- * Holding occupancy is ignored. Fail-closed: any exception → not eligible.
+ * Drops a lookback candidate when that incoming test already has a real result
+ * or is already occupying analyzer_results holding. Fail-closed: any exception → not eligible.
  */
 @Service
 public class SampleNumberCandidateFilter {
@@ -26,6 +28,8 @@ public class SampleNumberCandidateFilter {
     private ResultService resultService;
     @Autowired
     private IStatusService statusService;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public boolean isEligible(Sample sample, String testId) {
         try {
@@ -61,10 +65,47 @@ public class SampleNumberCandidateFilter {
                 if (hasNonBlankResult(analysis)) {
                     return false;
                 }
+                // Check Stage 2: Is this accession already occupying analyzer_results holding for this test?
+                String testName = (analysis.getTest().getLocalizedTestName() != null)
+                        ? analysis.getTest().getLocalizedTestName().getLocalizedValue()
+                        : analysis.getTest().getName();
+                if (isAccessionInHolding(sample.getAccessionNumber(), testId, testName)) {
+                    LogEvent.logInfo(this.getClass().getSimpleName(), "isEligible",
+                            "Accession " + sample.getAccessionNumber() + " already has active result in analyzer holding for test " + testId);
+                    return false;
+                }
             }
             return foundOrdered;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "isEligible", e.toString());
+            return false;
+        }
+    }
+
+    private boolean isAccessionInHolding(String accessionNumber, String testId, String testName) {
+        if (GenericValidator.isBlankOrNull(accessionNumber) || entityManager == null) {
+            return false;
+        }
+        try {
+            String sql = "SELECT count(1) FROM clinlims.analyzer_results "
+                    + "WHERE accession_number = :accessionNumber "
+                    + "AND (test_id = :testId OR test_name = :testName) "
+                    + "AND (status_id != 3 OR status_id IS NULL)";
+            Long numericTestId = -1L;
+            if (!GenericValidator.isBlankOrNull(testId)) {
+                try {
+                    numericTestId = Long.parseLong(testId);
+                } catch (Exception ignored) {
+                }
+            }
+            Number count = (Number) entityManager.createNativeQuery(sql)
+                    .setParameter("accessionNumber", accessionNumber)
+                    .setParameter("testId", numericTestId)
+                    .setParameter("testName", testName != null ? testName : "")
+                    .getSingleResult();
+            return count != null && count.longValue() > 0;
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "isAccessionInHolding", e.toString());
             return false;
         }
     }

@@ -386,20 +386,50 @@ const AnalyzerSampleAmbiguityQueue = () => {
                     )}
 
                     {/* Candidate list */}
-                    <p
-                      style={{
-                        fontWeight: 600,
-                        marginBottom: "0.5rem",
-                        color: "#525252",
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      <FormattedMessage
-                        id="ambiguityQueue.candidates.label"
-                        defaultMessage="{count} candidate sample(s) — choose the correct one:"
-                        values={{ count: (card.candidates || []).length }}
+                    {card.candidates && card.candidates.length === 1 && (
+                      <div style={{ marginBottom: "0.5rem" }}>
+                        <Tag type="cyan" size="sm">
+                          <FormattedMessage
+                            id="ambiguityQueue.singleCandidate"
+                            defaultMessage="1 Candidate Remaining (Conflict Resolved)"
+                          />
+                        </Tag>
+                      </div>
+                    )}
+
+                    {(!card.candidates || card.candidates.length === 0) ? (
+                      <InlineNotification
+                        kind="warning"
+                        title={intl.formatMessage({
+                          id: "ambiguityQueue.noCandidates.title",
+                          defaultMessage: "No Open Orders Remaining",
+                        })}
+                        subtitle={intl.formatMessage({
+                          id: "ambiguityQueue.noCandidates.subtitle",
+                          defaultMessage:
+                            "All candidate orders for this test have already been claimed or finalized. You may discard this result.",
+                        })}
+                        lowContrast
+                        hideCloseButton
+                        style={{ marginBottom: "0.75rem" }}
                       />
-                    </p>
+                    ) : (
+                      <p
+                        style={{
+                          fontWeight: 600,
+                          marginBottom: "0.5rem",
+                          color: "#525252",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        <FormattedMessage
+                          id="ambiguityQueue.candidates.label"
+                          defaultMessage="{count} candidate sample(s) — choose the correct one:"
+                          values={{ count: (card.candidates || []).length }}
+                        />
+                      </p>
+                    )}
+
                     <div
                       style={{
                         display: "flex",

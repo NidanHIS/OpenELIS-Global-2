@@ -67,6 +67,9 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     @Autowired
     private TestService testService;
 
+    @Autowired
+    private SampleNumberCandidateFilter candidateFilter;
+
     // ── Park ──────────────────────────────────────────────────────────────────
 
     @Override
@@ -250,10 +253,78 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             LogEvent.logInfo(this.getClass().getSimpleName(), "promoteToHolding", "Promoted pendingId=" + pendingId
                     + " sampleId=" + sampleId + " accession=" + sample.getAccessionNumber()
                     + " analyzerId=" + numericAnalyzerId + " testName=" + fullTestName);
+
+            // Reactive Prune Cascade: Eject claimed sampleId from all other PENDING ambiguity cards for this test
+            pruneClaimedCandidateFromPeerCards(pendingId, sampleId, row.getTestId(), row.getAnalyzerTestCode());
+
             return true;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "promoteToHolding", e.toString());
             return false;
+        }
+    }
+
+    private void pruneClaimedCandidateFromPeerCards(Integer resolvedPendingId, String chosenSampleId, String testId,
+            String analyzerTestCode) {
+        if (GenericValidator.isBlankOrNull(chosenSampleId)) {
+            return;
+        }
+        try {
+            List<AnalyzerSampleAmbiguity> allPending = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
+            for (AnalyzerSampleAmbiguity peer : allPending) {
+                if (peer == null || peer.getId() == null || peer.getId().equals(resolvedPendingId)) {
+                    continue;
+                }
+                // Match test by testId or analyzerTestCode
+                boolean testMatches = false;
+                if (!GenericValidator.isBlankOrNull(testId) && testId.equals(peer.getTestId())) {
+                    testMatches = true;
+                } else if (!GenericValidator.isBlankOrNull(analyzerTestCode)
+                        && analyzerTestCode.equals(peer.getAnalyzerTestCode())) {
+                    testMatches = true;
+                }
+                if (!testMatches) {
+                    continue;
+                }
+
+                if (!isCandidateId(peer.getCandidateSampleIds(), chosenSampleId)) {
+                    continue;
+                }
+
+                // Token-safe pruning of chosenSampleId
+                String[] tokens = peer.getCandidateSampleIds().split(",");
+                List<String> remainingIds = new ArrayList<>();
+                for (String tok : tokens) {
+                    String trimmed = tok.trim();
+                    if (!trimmed.isEmpty() && !trimmed.equals(chosenSampleId)) {
+                        remainingIds.add(trimmed);
+                    }
+                }
+
+                String newCandidateIds = String.join(",", remainingIds);
+                peer.setCandidateSampleIds(truncate(newCandidateIds, 255));
+
+                // Rebuild candidate JSON
+                List<Sample> remainingSamples = new ArrayList<>();
+                for (String sId : remainingIds) {
+                    try {
+                        Sample s = sampleService.get(sId);
+                        if (s != null) {
+                            remainingSamples.add(s);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+                peer.setCandidateJson(buildCandidateJson(remainingSamples));
+                ambiguityDAO.update(peer);
+
+                LogEvent.logInfo(this.getClass().getSimpleName(), "pruneClaimedCandidateFromPeerCards",
+                        "Pruned claimed sampleId=" + chosenSampleId + " from peer pendingId=" + peer.getId()
+                                + " remaining candidate count=" + remainingIds.size());
+            }
+        } catch (Exception e) {
+            LogEvent.logError(this.getClass().getSimpleName(), "pruneClaimedCandidateFromPeerCards",
+                    "Error pruning candidate " + chosenSampleId + ": " + e.toString());
         }
     }
 
@@ -308,7 +379,7 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 LogEvent.logWarn(this.getClass().getSimpleName(), "toCard", "failed formatting resultDate: " + e.getMessage());
             }
             card.setResultDate(resDate);
-            card.setCandidates(buildCandidateList(row.getCandidateSampleIds()));
+            card.setCandidates(buildCandidateList(row.getCandidateSampleIds(), row.getTestId()));
             return card;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "toCard", e.toString());
@@ -417,6 +488,10 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     }
 
     private List<AnalyzerSampleAmbiguityCandidate> buildCandidateList(String ids) {
+        return buildCandidateList(ids, null);
+    }
+
+    private List<AnalyzerSampleAmbiguityCandidate> buildCandidateList(String ids, String testId) {
         List<AnalyzerSampleAmbiguityCandidate> list = new ArrayList<>();
         if (GenericValidator.isBlankOrNull(ids))
             return list;
@@ -428,6 +503,13 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 Sample sample = sampleService.get(trimmed);
                 if (sample == null)
                     continue;
+                // Live safety filter: verify candidate is still eligible (not already in holding or finalized)
+                if (candidateFilter != null && !GenericValidator.isBlankOrNull(testId)
+                        && !candidateFilter.isEligible(sample, testId)) {
+                    LogEvent.logInfo(this.getClass().getSimpleName(), "buildCandidateList",
+                            "Filtered out ineligible sample " + sample.getAccessionNumber() + " for test " + testId);
+                    continue;
+                }
                 AnalyzerSampleAmbiguityCandidate c = new AnalyzerSampleAmbiguityCandidate();
                 c.setSampleId(sample.getId());
                 c.setAccessionNumber(sample.getAccessionNumber());
