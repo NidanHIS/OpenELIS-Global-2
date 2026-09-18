@@ -70,6 +70,7 @@ type MetricType =
   | "ORDERS_IN_PROGRESS"
   | "ON_GOING_ORDERS"
   | "ORDERS_READY_FOR_VALIDATION"
+  | "ANALYZER_RESULTS"
   | "ORDERS_COMPLETED_TODAY"
   | "ORDERS_PATIALLY_COMPLETED_TODAY"
   | "ORDERS_ENTERED_BY_USER_TODAY"
@@ -122,6 +123,7 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const [testSections, setTestSections] = useState([]);
   const [selectedTestSection, setSelectedTestSection] = useState("");
   const [loading, setLoading] = useState(true);
+  const [analyzerAmbiguityCount, setAnalyzerAmbiguityCount] = useState<number>(0);
 
   const [rightPage, setRightPage] = useState(1);
   const [rightPageSize, setRightPageSize] = useState(10);
@@ -275,6 +277,17 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
     getFromOpenElisServer("/rest/home-dashboard/metrics", loadCount);
     // Initial left-panel load: today's orders, page 1, pageSize 10
     fetchIncomingOrdersPage(1, leftPageSize, leftPanelView, leftSearch);
+    getFromOpenElisServer(
+      "/rest/nidan/analyzer-ambiguity/pending/count",
+      (res: any) => {
+        if (!componentMounted.current) return;
+        if (typeof res === "number") {
+          setAnalyzerAmbiguityCount(res);
+        } else if (res && typeof res.count === "number") {
+          setAnalyzerAmbiguityCount(res.count);
+        }
+      },
+    );
     return () => {
       componentMounted.current = false;
     };
@@ -831,10 +844,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       value: counts.ordersReadyForValidation,
     },
     {
-      title: <FormattedMessage id="dashboard.complete.orders.label" />,
-      subTitle: <FormattedMessage id="dashboard.orders.subtitle.label" />,
-      type: "ORDERS_COMPLETED_TODAY",
-      value: counts.ordersCompletedToday,
+      title: "Analyzer Results",
+      subTitle: "Ambiguous analyzer results queue",
+      type: "ANALYZER_RESULTS",
+      value: analyzerAmbiguityCount,
     },
     {
       title: <FormattedMessage id="dashboard.samplesToCollect.label" />,
@@ -965,6 +978,10 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   };
 
   const handleMaximizeClick = (tile) => {
+    if (tile?.type === "ANALYZER_RESULTS") {
+      window.location.href = getFullPath("/Analyzer/MachineResults");
+      return;
+    }
     if (tile?.type === "SAMPLES_TO_COLLECT") {
       window.location.href = getFullPath("/IncomingOrders");
       return;
@@ -1194,9 +1211,12 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
       color: "#6c8b74",
     },
     {
-      label: intl.formatMessage({ id: "dashboard.complete.orders.label" }),
-      value: counts.ordersCompletedToday ?? 0,
-      color: "#9a8366",
+      label: "Analyzer Results",
+      value: analyzerAmbiguityCount ?? 0,
+      color: "#d97706",
+      onClick: () => {
+        window.location.href = getFullPath("/Analyzer/MachineResults");
+      },
     },
   ];
 
@@ -1659,8 +1679,26 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
               </div>
             </div>
             <div className="split-summary-strip">
-              {summaryCards.map((c) => (
-                <div key={c.label} className="split-summary-pill">
+              {summaryCards.map((c: any) => (
+                <div
+                  key={typeof c.label === "string" ? c.label : "card"}
+                  className={`split-summary-pill${c.onClick ? " split-summary-pill--clickable" : ""}`}
+                  onClick={c.onClick}
+                  role={c.onClick ? "button" : undefined}
+                  tabIndex={c.onClick ? 0 : undefined}
+                  onKeyDown={
+                    c.onClick
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            c.onClick();
+                          }
+                        }
+                      : undefined
+                  }
+                  title={c.onClick ? "View Analyzer Machine Results" : undefined}
+                  style={c.onClick ? { cursor: "pointer" } : undefined}
+                >
                   <span
                     className="split-summary-dot"
                     style={{ background: c.color }}

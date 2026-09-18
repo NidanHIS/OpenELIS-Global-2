@@ -1,4 +1,4 @@
-﻿/* Clinical operations dashboard */
+/* Clinical operations dashboard */
 :root {
   --dashboard-bg: #f4f7fb;
   --dashboard-surface: #ffffff;
@@ -273,6 +273,22 @@
   background: #ffffff;
   color: var(--dashboard-text);
   box-shadow: var(--dashboard-shadow);
+}
+
+.split-summary-pill--clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+}
+
+.split-summary-pill--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  background-color: #fafbfc;
+}
+
+.split-summary-pill--clickable:active {
+  transform: translateY(0);
 }
 
 .split-summary-pill__meta {
