@@ -12,6 +12,7 @@ import {
   Grid,
   InlineLoading,
   InlineNotification,
+  Pagination,
   Tag,
   Tile,
 } from "@carbon/react";
@@ -25,6 +26,7 @@ import { NotificationContext } from "../layout/Layout";
 import { NotificationKinds } from "../common/CustomNotification";
 
 const PENDING_ENDPOINT = "/rest/nidan/analyzer-ambiguity/pending";
+const PENDING_COUNT_ENDPOINT = "/rest/nidan/analyzer-ambiguity/pending/count";
 const RESOLVE_ENDPOINT = "/rest/nidan/analyzer-ambiguity/resolve";
 const DISCARD_ENDPOINT = "/rest/nidan/analyzer-ambiguity/discard";
 
@@ -43,14 +45,30 @@ const AnalyzerSampleAmbiguityQueue = () => {
     useContext(NotificationContext);
 
   const [cards, setCards] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   // Per-card action state: { [pendingId]: "resolving" | "discarding" | "error:<msg>" }
   const [actionState, setActionState] = useState({});
 
+  // Pagination state (UI display: default 10 items per page)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Batch loading state (Backend query: default 50 items per batch)
+  const [batchOffset, setBatchOffset] = useState(0);
+  const [batchLimit, setBatchLimit] = useState(50);
+
+  // Sliced cards for the current UI page
+  const visibleCards = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return cards.slice(start, start + pageSize);
+  }, [cards, page, pageSize]);
+
+  // Group visible cards by incoming result date
   const groupedCards = useMemo(() => {
     const groups = new Map();
-    cards.forEach((card) => {
+    visibleCards.forEach((card) => {
       const dateKey =
         card.resultDate ||
         intl.formatMessage({
@@ -63,29 +81,54 @@ const AnalyzerSampleAmbiguityQueue = () => {
       groups.get(dateKey).push(card);
     });
     return Array.from(groups.entries());
-  }, [cards, intl]);
+  }, [visibleCards, intl]);
 
   // ── Load pending cards ────────────────────────────────────────────────────
 
-  const loadPending = useCallback(() => {
-    setLoading(true);
-    setLoadError(null);
-    getFromOpenElisServer(PENDING_ENDPOINT, (data) => {
-      if (!componentMounted.current) return;
-      if (!data) {
-        setLoadError(
-          intl.formatMessage({
-            id: "ambiguityQueue.error.load",
-            defaultMessage: "Failed to load pending items",
-          }),
-        );
-        setCards([]);
-      } else {
-        setCards(Array.isArray(data) ? data : []);
+  const loadPending = useCallback(
+    (showSpinner = true, offset = batchOffset, limit = batchLimit) => {
+      if (showSpinner) {
+        setLoading(true);
       }
-      setLoading(false);
-    });
-  }, [intl]);
+      setLoadError(null);
+
+      getFromOpenElisServer(
+        `${PENDING_ENDPOINT}?offset=${offset}&limit=${limit}`,
+        (data) => {
+          if (!componentMounted.current) return;
+          if (!data) {
+            if (showSpinner) {
+              setLoadError(
+                intl.formatMessage({
+                  id: "ambiguityQueue.error.load",
+                  defaultMessage: "Failed to load pending items",
+                }),
+              );
+              setCards([]);
+            }
+          } else {
+            const list = Array.isArray(data) ? data : [];
+            setCards(list);
+            setPage((prevPage) => {
+              const maxPage = Math.max(1, Math.ceil(list.length / pageSize));
+              return prevPage > maxPage ? maxPage : prevPage;
+            });
+          }
+          if (showSpinner) {
+            setLoading(false);
+          }
+        },
+      );
+
+      getFromOpenElisServer(PENDING_COUNT_ENDPOINT, (countData) => {
+        if (!componentMounted.current) return;
+        if (typeof countData === "number") {
+          setTotalCount(countData);
+        }
+      });
+    },
+    [batchOffset, batchLimit, pageSize, intl],
+  );
 
   useEffect(() => {
     componentMounted.current = true;
@@ -95,6 +138,24 @@ const AnalyzerSampleAmbiguityQueue = () => {
     };
   }, [loadPending]);
 
+  // ── Pagination & Batch Handlers ──────────────────────────────────────────
+
+  const handlePageChange = ({ page: newPage, pageSize: newPageSize }) => {
+    if (newPage !== page) {
+      setPage(newPage);
+    }
+    if (newPageSize !== pageSize) {
+      setPageSize(newPageSize);
+      setPage(1);
+    }
+  };
+
+  const handleBatchOffsetChange = (newOffset) => {
+    setBatchOffset(newOffset);
+    setPage(1);
+    loadPending(true, newOffset, batchLimit);
+  };
+
   // ── Resolve action ────────────────────────────────────────────────────────
 
   const handleResolve = (pendingId, sampleId, sampleNumber, accession) => {
@@ -103,13 +164,13 @@ const AnalyzerSampleAmbiguityQueue = () => {
     postToOpenElisServerJsonResponse(RESOLVE_ENDPOINT, payload, (response) => {
       if (!componentMounted.current) return;
       if (response && (response.message || !response.error)) {
-        // Success: remove card, notify
-        setCards((prev) => prev.filter((c) => c.id !== pendingId));
         setActionState((prev) => {
           const n = { ...prev };
           delete n[pendingId];
           return n;
         });
+        // Silent re-fetch: immediate fresh truth from DB without flicker
+        loadPending(false);
         addNotification({
           kind: NotificationKinds.success,
           title: intl.formatMessage({
@@ -130,7 +191,6 @@ const AnalyzerSampleAmbiguityQueue = () => {
         });
         setNotificationVisible(true);
       } else {
-        // Error: show inline error on card
         const msg =
           (response && response.error) ||
           intl.formatMessage({
@@ -150,12 +210,13 @@ const AnalyzerSampleAmbiguityQueue = () => {
     postToOpenElisServerJsonResponse(DISCARD_ENDPOINT, payload, (response) => {
       if (!componentMounted.current) return;
       if (response && (response.message || !response.error)) {
-        setCards((prev) => prev.filter((c) => c.id !== pendingId));
         setActionState((prev) => {
           const n = { ...prev };
           delete n[pendingId];
           return n;
         });
+        // Silent re-fetch: immediate fresh truth from DB without flicker
+        loadPending(false);
         addNotification({
           kind: NotificationKinds.info,
           title: intl.formatMessage({
@@ -551,13 +612,130 @@ const AnalyzerSampleAmbiguityQueue = () => {
           </React.Fragment>
         ))}
 
+      {/* Pagination Controls */}
+      {!loading && cards.length > 0 && (
+        <Column lg={16} md={8} sm={4} style={{ marginTop: "1rem" }}>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            pageSizes={[10, 20, 30, 50]}
+            totalItems={cards.length}
+            onChange={handlePageChange}
+            forwardText={intl.formatMessage({
+              id: "pagination.forward",
+              defaultMessage: "Next page",
+            })}
+            backwardText={intl.formatMessage({
+              id: "pagination.backward",
+              defaultMessage: "Previous page",
+            })}
+            itemRangeText={(min, max, total) =>
+              intl.formatMessage(
+                {
+                  id: "pagination.item-range",
+                  defaultMessage: "{min}–{max} of {total} items",
+                },
+                { min, max, total },
+              )
+            }
+            itemsPerPageText={intl.formatMessage({
+              id: "pagination.items-per-page",
+              defaultMessage: "Items per page:",
+            })}
+            itemText={(min, max) =>
+              intl.formatMessage(
+                {
+                  id: "pagination.item",
+                  defaultMessage: "{min}–{max} items",
+                },
+                { min, max },
+              )
+            }
+            pageNumberText={intl.formatMessage({
+              id: "pagination.page-number",
+              defaultMessage: "Page number",
+            })}
+            pageRangeText={(_current, total) =>
+              intl.formatMessage(
+                {
+                  id: "pagination.page-range",
+                  defaultMessage: "of {total} pages",
+                },
+                { total },
+              )
+            }
+          />
+        </Column>
+      )}
+
+      {/* Batch Navigation Controls (when total items exceed current batch) */}
+      {!loading && (totalCount > batchLimit || batchOffset > 0) && (
+        <Column
+          lg={16}
+          md={8}
+          sm={4}
+          style={{
+            marginTop: "0.5rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "0.5rem",
+            background: "#f4f4f4",
+            padding: "0.5rem 1rem",
+            borderRadius: "4px",
+          }}
+        >
+          <span style={{ fontSize: "0.875rem", color: "#525252" }}>
+            <FormattedMessage
+              id="ambiguityQueue.batch.info"
+              defaultMessage="Batch: {start}–{end} of {total} total items (Batch size: {limit})"
+              values={{
+                start: batchOffset + 1,
+                end: Math.min(batchOffset + cards.length, totalCount),
+                total: totalCount,
+                limit: batchLimit,
+              }}
+            />
+          </span>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <Button
+              kind="ghost"
+              size="sm"
+              disabled={batchOffset <= 0}
+              onClick={() =>
+                handleBatchOffsetChange(Math.max(0, batchOffset - batchLimit))
+              }
+            >
+              <FormattedMessage
+                id="ambiguityQueue.batch.prev"
+                defaultMessage="← Previous batch"
+              />
+            </Button>
+            <Button
+              kind="ghost"
+              size="sm"
+              disabled={batchOffset + cards.length >= totalCount}
+              onClick={() =>
+                handleBatchOffsetChange(batchOffset + batchLimit)
+              }
+            >
+              <FormattedMessage
+                id="ambiguityQueue.batch.next"
+                defaultMessage="Next batch →"
+              />
+            </Button>
+          </div>
+        </Column>
+      )}
+
       {/* Refresh button when cards are present */}
       {!loading && cards.length > 0 && (
         <Column lg={16} md={8} sm={4} style={{ marginTop: "1rem" }}>
           <Button
             kind="ghost"
             size="sm"
-            onClick={loadPending}
+            onClick={() => loadPending(true)}
             disabled={loading}
           >
             <FormattedMessage

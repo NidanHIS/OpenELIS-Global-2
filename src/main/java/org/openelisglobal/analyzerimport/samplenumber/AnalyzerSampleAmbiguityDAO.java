@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 interface AnalyzerSampleAmbiguityDAO extends BaseDAO<AnalyzerSampleAmbiguity, Integer> {
     List<AnalyzerSampleAmbiguity> findByStatus(String status);
+    List<AnalyzerSampleAmbiguity> findByStatus(String status, int offset, int limit);
     List<AnalyzerSampleAmbiguity> findPendingByIdentifierAndTest(String incomingIdentifier, String analyzerId, String analyzerTestCode);
 }
 
@@ -24,14 +25,27 @@ class AnalyzerSampleAmbiguityDAOImpl extends BaseDAOImpl<AnalyzerSampleAmbiguity
     @Override
     @Transactional(readOnly = true)
     public List<AnalyzerSampleAmbiguity> findByStatus(String status) {
+        return findByStatus(status, 0, 0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AnalyzerSampleAmbiguity> findByStatus(String status, int offset, int limit) {
         if (status == null || status.trim().isEmpty()) {
             return Collections.emptyList();
         }
         try {
-            List<AnalyzerSampleAmbiguity> rows = entityManager
+            var query = entityManager
                     .createQuery("from AnalyzerSampleAmbiguity e where e.status = :status order by e.id desc",
                             AnalyzerSampleAmbiguity.class)
-                    .setParameter("status", status).getResultList();
+                    .setParameter("status", status);
+            if (offset > 0) {
+                query.setFirstResult(offset);
+            }
+            if (limit > 0) {
+                query.setMaxResults(limit);
+            }
+            List<AnalyzerSampleAmbiguity> rows = query.getResultList();
             return rows != null ? rows : Collections.emptyList();
         } catch (Exception e) {
             return Collections.emptyList();

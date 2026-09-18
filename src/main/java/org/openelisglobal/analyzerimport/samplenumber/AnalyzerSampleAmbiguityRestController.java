@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -45,9 +46,11 @@ public class AnalyzerSampleAmbiguityRestController extends BaseController {
     // ── GET pending list ─────────────────────────────────────────────────────
 
     @GetMapping(value = "/pending", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> listPending() {
+    public ResponseEntity<?> listPending(
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(value = "limit", required = false, defaultValue = "50") int limit) {
         try {
-            List<AnalyzerSampleAmbiguityCard> cards = ambiguityService.listPending();
+            List<AnalyzerSampleAmbiguityCard> cards = ambiguityService.listPending(offset, limit);
             return ResponseEntity.ok(cards != null ? cards : Collections.emptyList());
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "listPending", e.toString());

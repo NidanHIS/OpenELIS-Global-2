@@ -161,8 +161,14 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     @Override
     @Transactional(readOnly = true)
     public List<AnalyzerSampleAmbiguityCard> listPending() {
+        return listPending(0, 0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AnalyzerSampleAmbiguityCard> listPending(int offset, int limit) {
         try {
-            List<AnalyzerSampleAmbiguity> rows = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
+            List<AnalyzerSampleAmbiguity> rows = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING, offset, limit);
             List<AnalyzerSampleAmbiguityCard> cards = new ArrayList<>();
             for (AnalyzerSampleAmbiguity row : rows) {
                 AnalyzerSampleAmbiguityCard card = toCard(row);

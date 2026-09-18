@@ -12,6 +12,8 @@ public interface AnalyzerSampleAmbiguityService {
 
     List<AnalyzerSampleAmbiguityCard> listPending();
 
+    List<AnalyzerSampleAmbiguityCard> listPending(int offset, int limit);
+
     long countPending();
 
     boolean promoteToHolding(Integer pendingId, String sampleId, String sysUserId);
