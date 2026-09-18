@@ -123,7 +123,8 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
   const [testSections, setTestSections] = useState([]);
   const [selectedTestSection, setSelectedTestSection] = useState("");
   const [loading, setLoading] = useState(true);
-  const [analyzerAmbiguityCount, setAnalyzerAmbiguityCount] = useState<number>(0);
+  const [analyzerAmbiguityCount, setAnalyzerAmbiguityCount] =
+    useState<number>(0);
 
   const [rightPage, setRightPage] = useState(1);
   const [rightPageSize, setRightPageSize] = useState(10);
@@ -1696,7 +1697,9 @@ const HomeDashBoard: React.FC<DashBoardProps> = () => {
                         }
                       : undefined
                   }
-                  title={c.onClick ? "View Analyzer Machine Results" : undefined}
+                  title={
+                    c.onClick ? "View Analyzer Machine Results" : undefined
+                  }
                   style={c.onClick ? { cursor: "pointer" } : undefined}
                 >
                   <span

@@ -42,7 +42,8 @@ public class AnalyzerSampleResolver {
 
             if (SampleNumberUtil.isDisplayFormat(trimmed)) {
                 Date targetDate = (asOf != null) ? asOf : new Date();
-                List<String> keys = SampleNumberUtil.storageKeysForLookback(trimmed, SampleNumberUtil.LOOKBACK_CALENDAR_DAYS, targetDate);
+                List<String> keys = SampleNumberUtil.storageKeysForLookback(trimmed,
+                        SampleNumberUtil.LOOKBACK_CALENDAR_DAYS, targetDate);
                 List<Sample> lookback = sampleService.findAutoSamplesByStoredNumbers(keys);
                 if (lookback != null) {
                     Map<String, Sample> keyed = indexByStoredNumber(lookback);

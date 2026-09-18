@@ -17,7 +17,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Drops a lookback candidate when that incoming test already has a real result
- * or is already occupying analyzer_results holding. Fail-closed: any exception → not eligible.
+ * or is already occupying analyzer_results holding. Fail-closed: any exception
+ * → not eligible.
  */
 @Service
 public class SampleNumberCandidateFilter {
@@ -65,13 +66,15 @@ public class SampleNumberCandidateFilter {
                 if (hasNonBlankResult(analysis)) {
                     return false;
                 }
-                // Check Stage 2: Is this accession already occupying analyzer_results holding for this test?
+                // Check Stage 2: Is this accession already occupying analyzer_results holding
+                // for this test?
                 String testName = (analysis.getTest().getLocalizedTestName() != null)
                         ? analysis.getTest().getLocalizedTestName().getLocalizedValue()
                         : analysis.getTest().getName();
                 if (isAccessionInHolding(sample.getAccessionNumber(), testId, testName)) {
                     LogEvent.logInfo(this.getClass().getSimpleName(), "isEligible",
-                            "Accession " + sample.getAccessionNumber() + " already has active result in analyzer holding for test " + testId);
+                            "Accession " + sample.getAccessionNumber()
+                                    + " already has active result in analyzer holding for test " + testId);
                     return false;
                 }
             }
@@ -88,8 +91,7 @@ public class SampleNumberCandidateFilter {
         }
         try {
             String sql = "SELECT count(1) FROM clinlims.analyzer_results "
-                    + "WHERE accession_number = :accessionNumber "
-                    + "AND (test_id = :testId OR test_name = :testName) "
+                    + "WHERE accession_number = :accessionNumber " + "AND (test_id = :testId OR test_name = :testName) "
                     + "AND (status_id != 3 OR status_id IS NULL)";
             Long numericTestId = -1L;
             if (!GenericValidator.isBlankOrNull(testId)) {
@@ -99,10 +101,8 @@ public class SampleNumberCandidateFilter {
                 }
             }
             Number count = (Number) entityManager.createNativeQuery(sql)
-                    .setParameter("accessionNumber", accessionNumber)
-                    .setParameter("testId", numericTestId)
-                    .setParameter("testName", testName != null ? testName : "")
-                    .getSingleResult();
+                    .setParameter("accessionNumber", accessionNumber).setParameter("testId", numericTestId)
+                    .setParameter("testName", testName != null ? testName : "").getSingleResult();
             return count != null && count.longValue() > 0;
         } catch (Exception e) {
             LogEvent.logError(this.getClass().getSimpleName(), "isAccessionInHolding", e.toString());

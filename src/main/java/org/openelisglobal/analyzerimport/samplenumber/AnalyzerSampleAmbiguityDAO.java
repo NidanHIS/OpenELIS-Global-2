@@ -9,8 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 interface AnalyzerSampleAmbiguityDAO extends BaseDAO<AnalyzerSampleAmbiguity, Integer> {
     List<AnalyzerSampleAmbiguity> findByStatus(String status);
+
     List<AnalyzerSampleAmbiguity> findByStatus(String status, int offset, int limit);
-    List<AnalyzerSampleAmbiguity> findPendingByIdentifierAndTest(String incomingIdentifier, String analyzerId, String analyzerTestCode);
+
+    List<AnalyzerSampleAmbiguity> findPendingByIdentifierAndTest(String incomingIdentifier, String analyzerId,
+            String analyzerTestCode);
 }
 
 @Component
@@ -54,18 +57,17 @@ class AnalyzerSampleAmbiguityDAOImpl extends BaseDAOImpl<AnalyzerSampleAmbiguity
 
     @Override
     @Transactional(readOnly = true)
-    public List<AnalyzerSampleAmbiguity> findPendingByIdentifierAndTest(String incomingIdentifier, String analyzerId, String analyzerTestCode) {
+    public List<AnalyzerSampleAmbiguity> findPendingByIdentifierAndTest(String incomingIdentifier, String analyzerId,
+            String analyzerTestCode) {
         if (incomingIdentifier == null || analyzerTestCode == null) {
             return Collections.emptyList();
         }
         try {
-            List<AnalyzerSampleAmbiguity> rows = entityManager
-                    .createQuery("from AnalyzerSampleAmbiguity e where e.status = 'PENDING' and e.incomingIdentifier = :incomingIdentifier and e.analyzerId = :analyzerId and e.analyzerTestCode = :analyzerTestCode order by e.id desc",
-                            AnalyzerSampleAmbiguity.class)
-                    .setParameter("incomingIdentifier", incomingIdentifier.trim())
+            List<AnalyzerSampleAmbiguity> rows = entityManager.createQuery(
+                    "from AnalyzerSampleAmbiguity e where e.status = 'PENDING' and e.incomingIdentifier = :incomingIdentifier and e.analyzerId = :analyzerId and e.analyzerTestCode = :analyzerTestCode order by e.id desc",
+                    AnalyzerSampleAmbiguity.class).setParameter("incomingIdentifier", incomingIdentifier.trim())
                     .setParameter("analyzerId", analyzerId != null ? analyzerId.trim() : "")
-                    .setParameter("analyzerTestCode", analyzerTestCode.trim())
-                    .getResultList();
+                    .setParameter("analyzerTestCode", analyzerTestCode.trim()).getResultList();
             return rows != null ? rows : Collections.emptyList();
         } catch (Exception e) {
             return Collections.emptyList();

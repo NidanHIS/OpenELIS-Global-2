@@ -581,9 +581,9 @@ public class StringUtil {
     public static final int MAX_ANALYZER_DECIMAL_PLACES = 4;
 
     /**
-     * Caps numeric decimal places to at most maxDecimals (e.g. 4).
-     * If value is blank, non-numeric, or has <= maxDecimals, returns verbatim.
-     * If value has > maxDecimals, rounds using HALF_UP to maxDecimals.
+     * Caps numeric decimal places to at most maxDecimals (e.g. 4). If value is
+     * blank, non-numeric, or has <= maxDecimals, returns verbatim. If value has >
+     * maxDecimals, rounds using HALF_UP to maxDecimals.
      */
     public static String capDecimalPlaces(String value, int maxDecimals) {
         if (GenericValidator.isBlankOrNull(value)) {

@@ -11,7 +11,6 @@ import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
 import org.openelisglobal.analyzer.service.AnalyzerService;
 import org.openelisglobal.analyzer.valueholder.Analyzer;
-import org.openelisglobal.analyzerimport.util.AnalyzerTestNameCache;
 import org.openelisglobal.analyzerresults.service.AnalyzerResultsService;
 import org.openelisglobal.analyzerresults.valueholder.AnalyzerResults;
 import org.openelisglobal.common.log.LogEvent;
@@ -100,9 +99,10 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             String candidateIds = truncate(ids.toString(), 255);
             String candidateJson = buildCandidateJson(candidates);
 
-            // Deduplication: Check if an identical PENDING record already exists on the same incoming date
-            List<AnalyzerSampleAmbiguity> existingPending = ambiguityDAO.findPendingByIdentifierAndTest(
-                    incomingIdentifier, numericAnalyzerId, analyzerTestCode);
+            // Deduplication: Check if an identical PENDING record already exists on the
+            // same incoming date
+            List<AnalyzerSampleAmbiguity> existingPending = ambiguityDAO
+                    .findPendingByIdentifierAndTest(incomingIdentifier, numericAnalyzerId, analyzerTestCode);
             String incomingDateStr = "";
             try {
                 incomingDateStr = DateUtil.convertTimestampToStringDate(effectiveCompleteDate);
@@ -118,7 +118,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 } catch (Exception ignored) {
                 }
                 if (!GenericValidator.isBlankOrNull(incomingDateStr) && incomingDateStr.equals(existingDateStr)) {
-                    // Update existing record in-place with latest result value, timestamp, and candidates
+                    // Update existing record in-place with latest result value, timestamp, and
+                    // candidates
                     existing.setResultValue(resultValue);
                     existing.setResultUnits(resultUnits);
                     existing.setResultType(resultType);
@@ -127,8 +128,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                     existing.setCandidateJson(candidateJson);
                     ambiguityDAO.update(existing);
                     LogEvent.logInfo(this.getClass().getSimpleName(), "parkIncoming",
-                            "Refreshed existing PENDING ambiguous result identifier=" + incomingIdentifier
-                                    + " test=" + analyzerTestCode + " rowId=" + existing.getId() + " newValue=" + resultValue);
+                            "Refreshed existing PENDING ambiguous result identifier=" + incomingIdentifier + " test="
+                                    + analyzerTestCode + " rowId=" + existing.getId() + " newValue=" + resultValue);
                     return;
                 }
             }
@@ -168,7 +169,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
     @Transactional(readOnly = true)
     public List<AnalyzerSampleAmbiguityCard> listPending(int offset, int limit) {
         try {
-            List<AnalyzerSampleAmbiguity> rows = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING, offset, limit);
+            List<AnalyzerSampleAmbiguity> rows = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING,
+                    offset, limit);
             List<AnalyzerSampleAmbiguityCard> cards = new ArrayList<>();
             for (AnalyzerSampleAmbiguity row : rows) {
                 AnalyzerSampleAmbiguityCard card = toCard(row);
@@ -258,11 +260,13 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             row.setAnalyzerId(numericAnalyzerId);
             ambiguityDAO.update(row);
 
-            LogEvent.logInfo(this.getClass().getSimpleName(), "promoteToHolding", "Promoted pendingId=" + pendingId
-                    + " sampleId=" + sampleId + " accession=" + sample.getAccessionNumber()
-                    + " analyzerId=" + numericAnalyzerId + " testName=" + fullTestName);
+            LogEvent.logInfo(this.getClass().getSimpleName(), "promoteToHolding",
+                    "Promoted pendingId=" + pendingId + " sampleId=" + sampleId + " accession="
+                            + sample.getAccessionNumber() + " analyzerId=" + numericAnalyzerId + " testName="
+                            + fullTestName);
 
-            // Reactive Prune Cascade: Eject claimed sampleId from all other PENDING ambiguity cards for this test
+            // Reactive Prune Cascade: Eject claimed sampleId from all other PENDING
+            // ambiguity cards for this test
             pruneClaimedCandidateFromPeerCards(pendingId, sampleId, row.getTestId(), row.getAnalyzerTestCode());
 
             return true;
@@ -278,7 +282,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             return;
         }
         try {
-            List<AnalyzerSampleAmbiguity> allPending = ambiguityDAO.findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
+            List<AnalyzerSampleAmbiguity> allPending = ambiguityDAO
+                    .findByStatus(AnalyzerSampleAmbiguity.STATUS_PENDING);
             for (AnalyzerSampleAmbiguity peer : allPending) {
                 if (peer == null || peer.getId() == null || peer.getId().equals(resolvedPendingId)) {
                     continue;
@@ -384,7 +389,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                     resDate = DateUtil.convertSqlDateToStringDate(DateUtil.getNowAsSqlDate());
                 }
             } catch (Exception e) {
-                LogEvent.logWarn(this.getClass().getSimpleName(), "toCard", "failed formatting resultDate: " + e.getMessage());
+                LogEvent.logWarn(this.getClass().getSimpleName(), "toCard",
+                        "failed formatting resultDate: " + e.getMessage());
             }
             card.setResultDate(resDate);
             card.setCandidates(buildCandidateList(row.getCandidateSampleIds(), row.getTestId()));
@@ -511,7 +517,8 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
                 Sample sample = sampleService.get(trimmed);
                 if (sample == null)
                     continue;
-                // Live safety filter: verify candidate is still eligible (not already in holding or finalized)
+                // Live safety filter: verify candidate is still eligible (not already in
+                // holding or finalized)
                 if (candidateFilter != null && !GenericValidator.isBlankOrNull(testId)
                         && !candidateFilter.isEligible(sample, testId)) {
                     LogEvent.logInfo(this.getClass().getSimpleName(), "buildCandidateList",

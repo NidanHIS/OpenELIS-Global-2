@@ -412,11 +412,12 @@ const AnalyzerSampleAmbiguityQueue = () => {
                           {card.analyzerTestCode}
                         </Tag>
                       )}
-                      {card.testName && card.testName !== card.analyzerTestCode && (
-                        <Tag type="teal" size="sm">
-                          {card.testName}
-                        </Tag>
-                      )}
+                      {card.testName &&
+                        card.testName !== card.analyzerTestCode && (
+                          <Tag type="teal" size="sm">
+                            {card.testName}
+                          </Tag>
+                        )}
                       {card.resultValue != null && (
                         <Tag type="green" size="sm">
                           {card.resultValue}
@@ -458,7 +459,7 @@ const AnalyzerSampleAmbiguityQueue = () => {
                       </div>
                     )}
 
-                    {(!card.candidates || card.candidates.length === 0) ? (
+                    {!card.candidates || card.candidates.length === 0 ? (
                       <InlineNotification
                         kind="warning"
                         title={intl.formatMessage({
@@ -523,7 +524,9 @@ const AnalyzerSampleAmbiguityQueue = () => {
                                 id="sample.label.orderdate"
                                 defaultMessage="Order Date:"
                               />{" "}
-                              <span style={{ fontWeight: 600, color: "#161616" }}>
+                              <span
+                                style={{ fontWeight: 600, color: "#161616" }}
+                              >
                                 {c.orderDate}
                               </span>
                             </span>
@@ -546,7 +549,9 @@ const AnalyzerSampleAmbiguityQueue = () => {
                             </span>
                           )}
                           {c.orderedTests && c.orderedTests.length > 0 && (
-                            <span style={{ fontSize: "0.8rem", color: "#6f6f6f" }}>
+                            <span
+                              style={{ fontSize: "0.8rem", color: "#6f6f6f" }}
+                            >
                               🧪 {c.orderedTests.join(", ")}
                             </span>
                           )}
@@ -582,7 +587,9 @@ const AnalyzerSampleAmbiguityQueue = () => {
                     </div>
 
                     {/* Discard button */}
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <div
+                      style={{ display: "flex", justifyContent: "flex-end" }}
+                    >
                       <Button
                         kind="danger--ghost"
                         size="sm"
@@ -716,9 +723,7 @@ const AnalyzerSampleAmbiguityQueue = () => {
               kind="ghost"
               size="sm"
               disabled={batchOffset + cards.length >= totalCount}
-              onClick={() =>
-                handleBatchOffsetChange(batchOffset + batchLimit)
-              }
+              onClick={() => handleBatchOffsetChange(batchOffset + batchLimit)}
             >
               <FormattedMessage
                 id="ambiguityQueue.batch.next"
