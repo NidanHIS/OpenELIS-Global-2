@@ -635,7 +635,8 @@ public class AnalyzerResultsAcceptServiceImpl implements AnalyzerResultsAcceptSe
 
             if (!resultList.isEmpty()) {
                 result = resultList.get(resultList.size() - 1);
-                String resultValue = resultItem.getIsRejected() ? REJECT_VALUE : resultItem.getResult();
+                String resultValue = resultItem.getIsRejected() ? REJECT_VALUE
+                        : StringUtil.capDecimalPlaces(resultItem.getResult(), StringUtil.MAX_ANALYZER_DECIMAL_PLACES);
                 TestResult resolvedTestResult = getTestResultForResult(resultItem);
                 result.setTestResult(resolvedTestResult);
                 if ("D".equals(resultItem.getTestResultType()) && resolvedTestResult != null
@@ -645,6 +646,15 @@ public class AnalyzerResultsAcceptServiceImpl implements AnalyzerResultsAcceptSe
                     result.setValue(resultValue);
                 }
                 result.setSysUserId(sysUserId);
+
+                if (!GenericValidator.isBlankOrNull(resultItem.getSignificantDigits())
+                        && StringUtil.isInteger(resultItem.getSignificantDigits())) {
+                    result.setSignificantDigits(Integer.parseInt(resultItem.getSignificantDigits()));
+                }
+                int valueDecimals = getDecimalPlaces(result.getValue());
+                if (valueDecimals > 0 && result.getSignificantDigits() < valueDecimals) {
+                    result.setSignificantDigits(Math.min(valueDecimals, StringUtil.MAX_ANALYZER_DECIMAL_PLACES));
+                }
 
                 setAnalyte(result);
             }
@@ -659,7 +669,8 @@ public class AnalyzerResultsAcceptServiceImpl implements AnalyzerResultsAcceptSe
 
     private Result createNewResult(AnalyzerResultItem resultItem, Patient patient, String sysUserId) {
         Result result = new Result();
-        String rawValue = resultItem.getIsRejected() ? REJECT_VALUE : resultItem.getResult();
+        String rawValue = resultItem.getIsRejected() ? REJECT_VALUE
+                : StringUtil.capDecimalPlaces(resultItem.getResult(), StringUtil.MAX_ANALYZER_DECIMAL_PLACES);
         TestResult resolvedTestResult = getTestResultForResult(resultItem);
         result.setTestResult(resolvedTestResult);
         if ("D".equals(resultItem.getTestResultType()) && resolvedTestResult != null && !resultItem.getIsRejected()) {
@@ -676,11 +687,23 @@ public class AnalyzerResultsAcceptServiceImpl implements AnalyzerResultsAcceptSe
                         "Invalid significantDigits value for testId '" + resultItem.getTestId() + "'");
             }
         }
+        int valueDecimals = getDecimalPlaces(result.getValue());
+        if (valueDecimals > 0 && result.getSignificantDigits() < valueDecimals) {
+            result.setSignificantDigits(Math.min(valueDecimals, StringUtil.MAX_ANALYZER_DECIMAL_PLACES));
+        }
 
         addMinMaxNormal(result, resultItem, patient);
         result.setSysUserId(sysUserId);
 
         return result;
+    }
+
+    private int getDecimalPlaces(String val) {
+        if (val == null) {
+            return 0;
+        }
+        int dot = val.indexOf('.');
+        return (dot >= 0) ? (val.length() - dot - 1) : 0;
     }
 
     private void populateAnalysis(AnalyzerResultItem resultItem, Analysis analysis, Test test) {

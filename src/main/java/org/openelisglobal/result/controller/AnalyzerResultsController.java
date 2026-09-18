@@ -403,8 +403,21 @@ public class AnalyzerResultsController extends BaseController {
         resultItem.setCompleteDate(result.getCompleteDateForDisplay());
         resultItem.setLastUpdated(result.getLastupdated());
         resultItem.setReadOnly((result.isReadOnly() || result.getTestId() == null));
-        resultItem.setResult(getResultForItem(result));
-        resultItem.setSignificantDigits(getSignificantDigitsFromAnalyzerResults(result));
+        String resolvedResult = getResultForItem(result);
+        resultItem.setResult(resolvedResult);
+
+        String catalogSignificantDigits = getSignificantDigitsFromAnalyzerResults(result);
+        int resolvedDecimals = getDecimalPlaces(resolvedResult);
+        if (resolvedDecimals > 0) {
+            int digits = resolvedDecimals;
+            if (StringUtil.isInteger(catalogSignificantDigits)) {
+                digits = Math.max(digits, Integer.parseInt(catalogSignificantDigits));
+            }
+            digits = Math.min(digits, StringUtil.MAX_ANALYZER_DECIMAL_PLACES);
+            resultItem.setSignificantDigits(String.valueOf(digits));
+        } else {
+            resultItem.setSignificantDigits(catalogSignificantDigits);
+        }
         resultItem.setTestResultType(result.getResultType());
         resultItem.setDictionaryResultList(getDictionaryResultList(result));
         resultItem.setIsHighlighted(!GenericValidator.isBlankOrNull(result.getDuplicateAnalyzerResultId())
@@ -605,31 +618,55 @@ public class AnalyzerResultsController extends BaseController {
 
     private String getRoundedToSignificantDigits(AnalyzerResults result) {
         if (result.getTestId() != null) {
+            String raw = result.getResult();
+            if (GenericValidator.isBlankOrNull(raw)) {
+                return raw;
+            }
+
+            // Cap decimals at MAX_ANALYZER_DECIMAL_PLACES (4)
+            raw = StringUtil.capDecimalPlaces(raw, StringUtil.MAX_ANALYZER_DECIMAL_PLACES);
 
             Double results;
             try {
-                results = Double.valueOf(result.getResult());
+                results = Double.valueOf(raw);
             } catch (NumberFormatException e) {
-                return result.getResult();
+                return raw;
             }
 
             String significantDigitsAsString = getSignificantDigitsFromAnalyzerResults(result);
             if (GenericValidator.isBlankOrNull(significantDigitsAsString) || "-1".equals(significantDigitsAsString)) {
-                return result.getResult();
+                return raw;
             }
 
             Integer significantDigits;
             try {
                 significantDigits = Integer.parseInt(significantDigitsAsString);
             } catch (NumberFormatException e) {
-                return result.getResult();
+                return raw;
             }
 
-            // not truly significant digits, just decimal places
-            return StringUtil.doubleWithSignificantDigits(results, significantDigits);
+            int rawDecimals = getDecimalPlaces(raw);
+            // If catalog has significantDigits <= 0, do not truncate instrument decimals!
+            if (rawDecimals > 0 && significantDigits <= 0) {
+                return raw;
+            }
+
+            // If instrument provided decimals, never truncate below instrument precision
+            int effectiveDigits = Math.max(significantDigits, rawDecimals);
+            effectiveDigits = Math.min(effectiveDigits, StringUtil.MAX_ANALYZER_DECIMAL_PLACES);
+
+            return StringUtil.doubleWithSignificantDigits(results, effectiveDigits);
         } else {
             return result.getResult();
         }
+    }
+
+    private int getDecimalPlaces(String val) {
+        if (val == null) {
+            return 0;
+        }
+        int dot = val.indexOf('.');
+        return (dot >= 0) ? (val.length() - dot - 1) : 0;
     }
 
     private String getUnits(String units) {

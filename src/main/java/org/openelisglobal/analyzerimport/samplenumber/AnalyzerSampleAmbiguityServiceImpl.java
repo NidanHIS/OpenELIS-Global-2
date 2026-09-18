@@ -16,6 +16,7 @@ import org.openelisglobal.analyzerresults.service.AnalyzerResultsService;
 import org.openelisglobal.analyzerresults.valueholder.AnalyzerResults;
 import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.util.DateUtil;
+import org.openelisglobal.common.util.StringUtil;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.sample.service.SampleService;
 import org.openelisglobal.sample.util.SampleNumberUtil;
@@ -77,6 +78,7 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             String testName, String resultValue, String resultUnits, String resultType, Timestamp completeDate,
             List<Sample> candidates) {
         try {
+            resultValue = StringUtil.capDecimalPlaces(resultValue, StringUtil.MAX_ANALYZER_DECIMAL_PLACES);
             if (GenericValidator.isBlankOrNull(incomingIdentifier) || candidates == null || candidates.size() < 2) {
                 LogEvent.logWarn(this.getClass().getSimpleName(), "parkIncoming", "invalid args — identifier="
                         + incomingIdentifier + " candidates=" + (candidates == null ? "null" : candidates.size()));
@@ -234,7 +236,7 @@ public class AnalyzerSampleAmbiguityServiceImpl implements AnalyzerSampleAmbigui
             ar.setAccessionNumber(sample.getAccessionNumber());
             ar.setTestName(fullTestName);
             ar.setTestId(row.getTestId());
-            ar.setResult(row.getResultValue());
+            ar.setResult(StringUtil.capDecimalPlaces(row.getResultValue(), StringUtil.MAX_ANALYZER_DECIMAL_PLACES));
             ar.setUnits(row.getResultUnits());
             ar.setResultType(row.getResultType() != null ? row.getResultType() : "N");
             ar.setCompleteDate(row.getCompleteDate());

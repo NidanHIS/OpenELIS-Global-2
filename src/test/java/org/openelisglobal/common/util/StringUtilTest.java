@@ -141,4 +141,19 @@ public class StringUtilTest {
     public void countInstances_shouldCountOccurrences() {
         assertEquals(3, StringUtil.countInstances("hello world", 'l'));
     }
+
+    @Test
+    public void capDecimalPlaces_shouldPreserveVerbatimUnderCap() {
+        assertEquals("4.65", StringUtil.capDecimalPlaces("4.65", 4));
+        assertEquals("5", StringUtil.capDecimalPlaces("5", 4));
+        assertEquals("1.1234", StringUtil.capDecimalPlaces("1.1234", 4));
+        assertEquals("POSITIVE", StringUtil.capDecimalPlaces("POSITIVE", 4));
+        assertEquals("<0.0001", StringUtil.capDecimalPlaces("<0.0001", 4));
+    }
+
+    @Test
+    public void capDecimalPlaces_shouldCapAtFourDecimals() {
+        assertEquals("1.1235", StringUtil.capDecimalPlaces("1.12345678", 4));
+        assertEquals("4.6543", StringUtil.capDecimalPlaces("4.654321", 4));
+    }
 }

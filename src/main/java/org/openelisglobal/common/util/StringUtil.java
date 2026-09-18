@@ -22,6 +22,8 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -574,6 +576,29 @@ public class StringUtil {
     public static String doubleWithSignificantDigits(double value, int significantDigits) {
         String format = "%1$." + significantDigits + "f";
         return String.format(format, value);
+    }
+
+    public static final int MAX_ANALYZER_DECIMAL_PLACES = 4;
+
+    /**
+     * Caps numeric decimal places to at most maxDecimals (e.g. 4).
+     * If value is blank, non-numeric, or has <= maxDecimals, returns verbatim.
+     * If value has > maxDecimals, rounds using HALF_UP to maxDecimals.
+     */
+    public static String capDecimalPlaces(String value, int maxDecimals) {
+        if (GenericValidator.isBlankOrNull(value)) {
+            return value;
+        }
+        int dot = value.indexOf('.');
+        if (dot < 0 || (value.length() - dot - 1) <= maxDecimals) {
+            return value;
+        }
+        try {
+            BigDecimal bd = new BigDecimal(value.trim());
+            return bd.setScale(maxDecimals, RoundingMode.HALF_UP).toPlainString();
+        } catch (Exception e) {
+            return value;
+        }
     }
 
     /**
