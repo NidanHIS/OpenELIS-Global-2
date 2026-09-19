@@ -1,7 +1,7 @@
 package org.openelisglobal.nidanpatientsync;
 
 /**
- * Payload sent to nidan-cis {@code POST /openelis/patient}.
+ * Payload sent to nidan-cis {@code POST /internal/openelis/patient}.
  *
  * <p>
  * Fields:

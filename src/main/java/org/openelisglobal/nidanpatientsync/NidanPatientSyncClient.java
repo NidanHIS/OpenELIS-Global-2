@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * HTTP client — POSTs a {@link NidanPatientSyncNotification} to nidan-cis
- * {@code /openelis/patient} on patient create or update.
+ * {@code /internal/openelis/patient} on patient create or update.
  *
  * <p>
  * Config (set via CATALINA_OPTS -D flags from nidan-docker):
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
  * <li>{@code org.openelisglobal.nidan.patientsync.enabled} — default
  * {@code false}</li>
  * <li>{@code org.openelisglobal.nidan.patientsync.url} — e.g.
- * {@code http://nidan-cis:8081/openelis/patient}</li>
+ * {@code http://nidan-cis:8081/internal/openelis/patient}</li>
  * <li>{@code org.openelisglobal.middleware.result.sync.secret} — shared webhook
  * secret (reused across all nidan clients)</li>
  * </ul>
