@@ -52,6 +52,7 @@ import org.hl7.fhir.r4.model.ServiceRequest;
 import org.hl7.fhir.r4.model.ServiceRequest.ServiceRequestIntent;
 import org.hl7.fhir.r4.model.ServiceRequest.ServiceRequestPriority;
 import org.hl7.fhir.r4.model.ServiceRequest.ServiceRequestStatus;
+import org.hl7.fhir.r4.model.SimpleQuantity;
 import org.hl7.fhir.r4.model.Specimen;
 import org.hl7.fhir.r4.model.Specimen.SpecimenCollectionComponent;
 import org.hl7.fhir.r4.model.Specimen.SpecimenStatus;
@@ -1763,6 +1764,30 @@ public class FhirTransformServiceImpl implements FhirTransformService {
             } else if (TypeOfTestResultServiceImpl.ResultType.isTextOnlyVariant(result.getResultType())) {
                 observation.setValue(new StringType(result.getValue()));
             }
+        }
+        // The normal range, so a reader can place the number. Only for a numeric result
+        // whose test actually has one: OpenELIS stores min == max when there is no
+        // range,
+        // and emitting a 0-0 range would tell a patient every such result is out of
+        // range
+        // (the portal's putReferenceRange note warns of exactly this).
+        if (TypeOfTestResultServiceImpl.ResultType.isNumeric(result.getResultType()) && result.getMinNormal() != null
+                && result.getMaxNormal() != null && !result.getMinNormal().equals(result.getMaxNormal())) {
+            String rangeUom = resultService.getUOM(result);
+            Observation.ObservationReferenceRangeComponent referenceRange = new Observation.ObservationReferenceRangeComponent();
+            SimpleQuantity low = new SimpleQuantity();
+            low.setValue(result.getMinNormal());
+            low.setUnit(rangeUom);
+            referenceRange.setLow(low);
+            SimpleQuantity high = new SimpleQuantity();
+            high.setValue(result.getMaxNormal());
+            high.setUnit(rangeUom);
+            referenceRange.setHigh(high);
+            String rangeText = resultService.getDisplayReferenceRange(result, false);
+            if (!GenericValidator.isBlankOrNull(rangeText)) {
+                referenceRange.setText(rangeText);
+            }
+            observation.addReferenceRange(referenceRange);
         }
         observation.setCode(transformTestToCodeableConcept(test.getId()));
         String basedOnServiceRequestId = analysis.getFhirUuidAsString();
