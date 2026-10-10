@@ -80,7 +80,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         return authorities;
     }
 
-    private String toRoleAuthority(String roleName) {
+    /**
+     * Role name to Spring authority; shared with central login so both carry
+     * identical authorities.
+     */
+    public static String toRoleAuthority(String roleName) {
         if (Constants.ROLE_GLOBAL_ADMIN.equalsIgnoreCase(roleName)) {
             return "ROLE_GLOBAL_ADMIN";
         }

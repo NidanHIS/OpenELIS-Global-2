@@ -76,7 +76,7 @@ public class SystemUserServiceImpl extends AuditableBaseObjectServiceImpl<System
     public String insert(SystemUser systemUser) {
         if (duplicateSystemUserExists(systemUser)) {
             throw new LIMSDuplicateRecordException("Duplicate record exists for " + systemUser.getFirstName()
-                    + IActionConstants.BLANK + systemUser.getFirstName());
+                    + IActionConstants.BLANK + systemUser.getLastName());
         }
         return super.insert(systemUser);
     }
@@ -85,7 +85,7 @@ public class SystemUserServiceImpl extends AuditableBaseObjectServiceImpl<System
     public SystemUser save(SystemUser systemUser) {
         if (duplicateSystemUserExists(systemUser)) {
             throw new LIMSDuplicateRecordException("Duplicate record exists for " + systemUser.getFirstName()
-                    + IActionConstants.BLANK + systemUser.getFirstName());
+                    + IActionConstants.BLANK + systemUser.getLastName());
         }
         return super.save(systemUser);
     }
@@ -94,9 +94,17 @@ public class SystemUserServiceImpl extends AuditableBaseObjectServiceImpl<System
     public SystemUser update(SystemUser systemUser) {
         if (duplicateSystemUserExists(systemUser)) {
             throw new LIMSDuplicateRecordException("Duplicate record exists for " + systemUser.getFirstName()
-                    + IActionConstants.BLANK + systemUser.getFirstName());
+                    + IActionConstants.BLANK + systemUser.getLastName());
         }
         return super.update(systemUser);
+    }
+
+    @Override
+    @Transactional
+    public SystemUser saveCentralLoginUser(SystemUser systemUser) {
+        // super.insert, not save(): save() dispatches to this class's insert(), which
+        // applies the name rule
+        return get(super.insert(systemUser));
     }
 
     private boolean duplicateSystemUserExists(SystemUser systemUser) {

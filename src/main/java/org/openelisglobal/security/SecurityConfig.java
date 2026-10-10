@@ -27,6 +27,8 @@ import org.openelisglobal.security.login.BasicAuthFilter;
 import org.openelisglobal.security.login.CustomAuthenticationFailureHandler;
 import org.openelisglobal.security.login.CustomFormAuthenticationSuccessHandler;
 import org.openelisglobal.security.login.CustomSSOAuthenticationSuccessHandler;
+import org.openelisglobal.security.login.NidanOidcUserService;
+import org.openelisglobal.security.login.OidcAuthenticationSuccessHandler;
 import org.openelisglobal.spring.util.SpringContext;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.schema.XSString;
@@ -66,6 +68,10 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
 import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.core.Saml2X509Credential.Saml2X509CredentialType;
@@ -99,9 +105,12 @@ public class SecurityConfig {
     // /rest/analyzer/analyzers)
     // are NOT in OPEN_PAGES — the bridge sends Basic auth for all OE calls.
     // With @Order(1) on httpBasicServletFilterChain, Basic auth is processed first.
-    public static final String[] OPEN_PAGES = { "/pluginServlet/**", "/ChangePasswordLogin",
-            "/UpdateLoginChangePassword", "/health/**", "/rest/open-configuration-properties", "/docs/UserManual",
-            "/rest/site-branding/**", "/rest/supportedlocales/active" };
+    // /pluginServlet/** is not open: PluginsController runs the plugin
+    // servlet named in the URL, so an open route exposes every plugin.
+    // Plugin callers use HTTP Basic, like the analyzer bridge.
+    public static final String[] OPEN_PAGES = { "/ChangePasswordLogin", "/UpdateLoginChangePassword", "/health/**",
+            "/rest/open-configuration-properties", "/docs/UserManual", "/rest/site-branding/**",
+            "/rest/supportedlocales/active" };
     public static final String[] LOGIN_PAGES = { "/LoginPage", "/ValidateLogin", "/session" };
 
     public static final String[] AUTH_OPEN_PAGES = { "/Home", "/Dashboard", "/Logout", "/MasterListsPage",
@@ -321,7 +330,40 @@ public class SecurityConfig {
     @Value("${org.itech.login.oauth.clientSecret:}")
     private String clientSecret;
 
+    // Nidan central login (KC-38): explicit endpoints, because the browser uses
+    // Keycloak's public URL while this
+    // container reaches Keycloak only through the gateway's internal back-channel
+    // (discovery would need both).
+    @Value("${org.itech.login.oauth.authorizationUri:}")
+    private String authorizationUri;
+
+    @Value("${org.itech.login.oauth.tokenUri:}")
+    private String tokenUri;
+
+    @Value("${org.itech.login.oauth.jwkSetUri:}")
+    private String jwkSetUri;
+
+    @Value("${org.itech.login.oauth.userInfoUri:}")
+    private String userInfoUri;
+
+    @Value("${org.itech.login.oauth.issuerUri:}")
+    private String issuerUri;
+
+    // The callback must come back through the same front door that started the
+    // login (/api/OpenELIS-Global), or the browser does not send that path's
+    // session cookie and Spring finds no saved authorization request.
+    @Value("${org.itech.login.oauth.redirectUri:{baseUrl}/login/oauth2/code/{registrationId}}")
+    private String redirectUri;
+
     private ClientRegistration clientRegistrationFromConfig(String config) {
+        if (!GenericValidator.isBlankOrNull(authorizationUri)) {
+            return ClientRegistration.withRegistrationId("nidan-keycloak").clientId(clientID).clientSecret(clientSecret)
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).redirectUri(redirectUri)
+                    .scope("openid", "profile").authorizationUri(authorizationUri).tokenUri(tokenUri)
+                    .jwkSetUri(jwkSetUri).userInfoUri(userInfoUri).userNameAttributeName("preferred_username")
+                    .issuerUri(issuerUri).clientName("Nidan central login").build();
+        }
         return ClientRegistrations.fromOidcIssuerLocation(config).clientId(clientID).clientSecret(clientSecret).build();
     }
 
@@ -351,6 +393,8 @@ public class SecurityConfig {
         http.securityMatcher(new OAuthRequestedMatcher())
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .oauth2Login(oAuth -> oAuth.clientRegistrationRepository(clientRegistrationRepository())
+                        .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(pkceResolver()))
+                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(nidanOidcUserService()))
                         .authorizedClientService(authorizedClientService())
                         .failureHandler(customOAuthAuthenticationFailureHandler())
                         .successHandler(customOAuthAuthenticationSuccessHandler())) //
@@ -358,6 +402,23 @@ public class SecurityConfig {
                 // add security headers
                 .headers(headers -> headers.frameOptions().sameOrigin().contentSecurityPolicy(CONTENT_SECURITY_POLICY));
         return http.build();
+    }
+
+    // Central-login users get the same ROLE_* authorities as password logins
+    // (KC-38-06).
+    @Bean
+    @ConditionalOnProperty(property = "org.itech.login.oauth", havingValue = "true")
+    public NidanOidcUserService nidanOidcUserService() {
+        return new NidanOidcUserService();
+    }
+
+    // PKCE S256 on the authorization request (the Keycloak client requires it,
+    // KC-54-01).
+    private DefaultOAuth2AuthorizationRequestResolver pkceResolver() {
+        DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(
+                clientRegistrationRepository(), "/oauth2/authorization");
+        resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
+        return resolver;
     }
 
     private LogoutSuccessHandler oidcLogoutSuccessHandler() {
@@ -375,7 +436,9 @@ public class SecurityConfig {
     @Bean("oauthAuthenticationSuccessHandler")
     @ConditionalOnProperty(property = "org.itech.login.oauth", havingValue = "true")
     public AuthenticationSuccessHandler customOAuthAuthenticationSuccessHandler() {
-        return new CustomFormAuthenticationSuccessHandler();
+        // Links by Keycloak sub only; the form handler could not handle an OIDC
+        // principal at all (KC-38).
+        return new OidcAuthenticationSuccessHandler();
     }
 
     @Bean("oauthAuthenticationFailureHandler")

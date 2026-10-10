@@ -1,6 +1,7 @@
 package org.openelisglobal.systemUser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -8,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.openelisglobal.BaseWebContextSensitiveTest;
+import org.openelisglobal.common.exception.LIMSDuplicateRecordException;
 import org.openelisglobal.common.util.ConfigurationProperties;
 import org.openelisglobal.systemuser.service.SystemUserService;
 import org.openelisglobal.systemuser.valueholder.SystemUser;
@@ -59,6 +61,21 @@ public class SystemUserServiceTest extends BaseWebContextSensitiveTest {
         List<SystemUser> systemUsers = systemUserService.getAllSystemUsers();
         assertTrue(systemUsers.size() == 5);
 
+    }
+
+    @Test
+    public void saveCentralLoginUser_shouldAllowTwoStaffWithTheSameName() {
+        SystemUser sameName = new SystemUser();
+        sameName.setFirstName("John");
+        sameName.setLastName("Doe");
+        sameName.setLoginName("john.doe2");
+        sameName.setIsActive("Y");
+        sameName.setExternalId("keycloak-sub-2");
+        sameName.setIsEmployee("Y");
+        sameName.setSysUserId("1");
+        assertThrows(LIMSDuplicateRecordException.class, () -> systemUserService.save(sameName));
+        systemUserService.saveCentralLoginUser(sameName);
+        assertEquals(5, systemUserService.getAllSystemUsers().size());
     }
 
     @Test

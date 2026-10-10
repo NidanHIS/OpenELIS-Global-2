@@ -20,6 +20,8 @@ import org.openelisglobal.common.services.PluginAnalyzerService;
 import org.openelisglobal.common.services.RequesterService;
 import org.openelisglobal.common.services.SampleOrderService;
 import org.openelisglobal.common.util.Versioning;
+import org.openelisglobal.configuration.service.ConfigImportLogService;
+import org.openelisglobal.configuration.service.FieldProvenanceService;
 import org.openelisglobal.dataexchange.fhir.FhirConfig;
 import org.openelisglobal.dataexchange.fhir.FhirUtil;
 import org.openelisglobal.dataexchange.fhir.service.FhirPersistanceService;
@@ -39,6 +41,7 @@ import org.openelisglobal.referral.fhir.service.FhirReferralService;
 import org.openelisglobal.reports.service.WHONetReportServiceImpl;
 import org.openelisglobal.requester.service.RequesterTypeService;
 import org.openelisglobal.result.controller.AnalyzerResultsController;
+import org.openelisglobal.shipment.fhir.ShipmentFhirImportService;
 import org.openelisglobal.shipment.fhir.ShippingBoxFhirTransform;
 import org.openelisglobal.test.service.fhir.TestFhirTransformService;
 import org.ozeki.sms.service.OzekiMessageOutService;
@@ -48,6 +51,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.MediaType;
@@ -62,6 +66,8 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+// needed by scanned beans (PanelItemService, OclConfigurationHandler); the rest of configuration.service runs imports at startup
+@Import({ FieldProvenanceService.class, ConfigImportLogService.class })
 @ComponentScan(basePackages = { "org.openelisglobal.spring", "org.openelisglobal.common.services",
         "org.openelisglobal.patient", "org.openelisglobal.patientidentity", "org.openelisglobal.gender",
         "org.openelisglobal.patientidentitytype", "org.openelisglobal.patienttype", "org.openelisglobal.address",
@@ -100,8 +106,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
         "org.openelisglobal.alert", "org.openelisglobal.notification", "org.openelisglobal.notifications",
         "org.openelisglobal.shipment", "org.openelisglobal.reportdefinition", "org.openelisglobal.scheduler",
         "org.openelisglobal.sitebranding", "org.openelisglobal.resultvalidation", "org.openelisglobal.fhir.providers",
-        "org.openelisglobal.common.dao", "org.openelisglobal.report", "org.openelisglobal.eqa",
-        "org.openelisglobal.qc" }, excludeFilters = {
+        "org.openelisglobal.common.dao", "org.openelisglobal.report", "org.openelisglobal.eqa", "org.openelisglobal.qc",
+        "org.openelisglobal.nidanpaywall" }, excludeFilters = {
                 @ComponentScan.Filter(type = FilterType.REGEX, pattern = "org\\.openelisglobal\\.patient\\.controller\\..*"),
                 @ComponentScan.Filter(type = FilterType.REGEX, pattern = "org\\.openelisglobal\\.organization\\.controller\\..*"),
                 @ComponentScan.Filter(type = FilterType.REGEX, pattern = "org\\.openelisglobal\\.sample\\.controller\\..*"),
@@ -248,6 +254,12 @@ public class AppTestConfig implements WebMvcConfigurer {
     @Profile("test")
     public ShippingBoxFhirTransform shippingBoxFhirTransform() {
         return mock(ShippingBoxFhirTransform.class);
+    }
+
+    @Bean
+    @Profile("test")
+    public ShipmentFhirImportService shipmentFhirImportService() {
+        return mock(ShipmentFhirImportService.class);
     }
 
     @Bean()
