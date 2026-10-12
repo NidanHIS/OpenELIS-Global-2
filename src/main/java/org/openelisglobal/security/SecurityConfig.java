@@ -110,7 +110,7 @@ public class SecurityConfig {
     // Plugin callers use HTTP Basic, like the analyzer bridge.
     public static final String[] OPEN_PAGES = { "/ChangePasswordLogin", "/UpdateLoginChangePassword", "/health/**",
             "/rest/open-configuration-properties", "/docs/UserManual", "/rest/site-branding/**",
-            "/rest/supportedlocales/active" };
+            "/rest/supportedlocales/active", "/rest/nidan/role-catalog" };
     public static final String[] LOGIN_PAGES = { "/LoginPage", "/ValidateLogin", "/session" };
 
     public static final String[] AUTH_OPEN_PAGES = { "/Home", "/Dashboard", "/Logout", "/MasterListsPage",
