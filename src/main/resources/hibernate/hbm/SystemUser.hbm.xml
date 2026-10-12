@@ -21,13 +21,13 @@
             <column name="EXTERNAL_ID" length="80" />
         </property>
         <property name="loginName" type="java.lang.String">
-            <column name="LOGIN_NAME" length="20" not-null="true" />
+            <column name="LOGIN_NAME" length="40" not-null="true" />
         </property>
         <property name="lastName" type="java.lang.String">
-            <column name="LAST_NAME" length="30" not-null="true" />
+            <column name="LAST_NAME" length="255" not-null="true" />
         </property>
         <property name="firstName" type="java.lang.String">
-            <column name="FIRST_NAME" length="20" not-null="true" />
+            <column name="FIRST_NAME" length="255" not-null="true" />
         </property>
         <property name="initials" type="java.lang.String">
             <column name="INITIALS" length="3" />

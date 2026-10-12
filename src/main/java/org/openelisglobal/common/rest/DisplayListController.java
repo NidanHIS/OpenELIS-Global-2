@@ -83,6 +83,11 @@ public class DisplayListController extends BaseRestController {
     @Value("${org.itech.login.oauth:false}")
     private Boolean useOAUTH;
 
+    // false: the SPA's login page goes straight to the one OAuth provider (Nidan
+    // central login), like SAML's flag
+    @Value("${org.itech.login.oauth.loginpage:true}")
+    private Boolean useOauthLoginPage;
+
     @Value("${org.itech.login.form:true}")
     private Boolean useFormLogin;
 
@@ -424,6 +429,7 @@ public class DisplayListController extends BaseRestController {
         configs.put("useSaml", useSAML ? "true" : "false");
         configs.put("useSamlLoginPage", useSamlLoginPage ? "true" : "false");
         configs.put("useOauth", useOAUTH ? "true" : "false");
+        configs.put("useOauthLoginPage", useOauthLoginPage ? "true" : "false");
         if (useOAUTH) {
             ResolvableType type = ResolvableType.forInstance(clientRegistrationRepository).as(Iterable.class);
             if (type != ResolvableType.NONE && ClientRegistration.class.isAssignableFrom(type.resolveGenerics()[0])) {

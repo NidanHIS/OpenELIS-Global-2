@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Widens clinlims.system_user to what Keycloak allows (central login, KC-38): login_name 20 -> 40 (Keycloak
+        usernames are 3-40 characters), first_name 20 -> 255 and last_name 30 -> 255 (Keycloak names up to 255).
+        Before this, a person whose username or name was longer could not sign in to OpenELIS at all: creating their
+        system user failed with "value too long". Widening keeps every existing value. Each change runs only while
+        the column is still narrower (MARK_RAN otherwise).
+    -->
+    <changeSet id="widen-system-user-login-name-to-40" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN character_maximum_length &lt; 40 THEN 1 ELSE 0 END
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims' AND table_name = 'system_user' AND column_name = 'login_name'
+            </sqlCheck>
+        </preConditions>
+        <modifyDataType schemaName="clinlims" tableName="system_user" columnName="login_name" newDataType="VARCHAR(40)" />
+    </changeSet>
+    <changeSet id="widen-system-user-first-name-to-255" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN character_maximum_length &lt; 255 THEN 1 ELSE 0 END
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims' AND table_name = 'system_user' AND column_name = 'first_name'
+            </sqlCheck>
+        </preConditions>
+        <modifyDataType schemaName="clinlims" tableName="system_user" columnName="first_name" newDataType="VARCHAR(255)" />
+    </changeSet>
+    <changeSet id="widen-system-user-last-name-to-255" author="nidan">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN character_maximum_length &lt; 255 THEN 1 ELSE 0 END
+                FROM information_schema.columns
+                WHERE table_schema = 'clinlims' AND table_name = 'system_user' AND column_name = 'last_name'
+            </sqlCheck>
+        </preConditions>
+        <modifyDataType schemaName="clinlims" tableName="system_user" columnName="last_name" newDataType="VARCHAR(255)" />
+    </changeSet>
+
+</databaseChangeLog>

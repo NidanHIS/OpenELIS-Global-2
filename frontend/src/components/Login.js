@@ -69,6 +69,43 @@ function Login(props) {
     userSessionDetails.authenticated,
   ]);
 
+  // Auto-redirect to the single OAuth provider (central login) when the login page is turned off. Waits for the
+  // session check (authenticated === false, not undefined) and tries at most once per 30 s, so a sign-in that fails
+  // or is not yet visible shows this page with its button instead of looping.
+  useEffect(() => {
+    const urls = configurationProperties?.oauthUrls;
+    if (
+      configurationProperties?.useOauth !== "true" ||
+      configurationProperties?.useOauthLoginPage !== "false" ||
+      !Array.isArray(urls) ||
+      urls.length !== 1 ||
+      userSessionDetails.authenticated !== false ||
+      samlRedirectInitiated
+    ) {
+      return;
+    }
+    let last = 0;
+    try {
+      last = Number(sessionStorage.getItem("oauthAutoRedirect")) || 0;
+    } catch (e) {
+      return; // no storage: no loop guard, so keep the button
+    }
+    if (Date.now() - last < 30000) {
+      return;
+    }
+    try {
+      sessionStorage.setItem("oauthAutoRedirect", String(Date.now()));
+    } catch (e) {
+      return;
+    }
+    setSamlRedirectInitiated(true); // shows "Redirecting to single sign-on..."
+    window.location.href = config.serverBaseUrl + "/" + urls[0].value;
+  }, [
+    configurationProperties,
+    samlRedirectInitiated,
+    userSessionDetails.authenticated,
+  ]);
+
   useEffect(() => {
     firstInput?.current?.focus();
   }, []);
@@ -318,70 +355,74 @@ function Login(props) {
                         <FormattedMessage id="login.title" />
                       </Heading>
                     </FormLabel>
-                    {configurationProperties?.useFormLogin == "true" && (
-                      <>
-                        <TextInput
-                          id="loginName"
-                          invalidText={props.intl.formatMessage({
-                            id: "login.msg.username.missing",
-                          })}
-                          labelText={props.intl.formatMessage({
-                            id: "login.msg.username",
-                          })}
-                          hideLabel={true}
-                          placeholder={props.intl.formatMessage({
-                            id: "login.msg.username",
-                          })}
-                          autoComplete="off"
-                          ref={firstInput}
-                        />
-                        <TextInput.PasswordInput
-                          id="password"
-                          invalidText={props.intl.formatMessage({
-                            id: "login.msg.password.missing",
-                          })}
-                          labelText={props.intl.formatMessage({
-                            id: "login.msg.password",
-                          })}
-                          hideLabel={true}
-                          placeholder={props.intl.formatMessage({
-                            id: "login.msg.password",
-                          })}
-                        />
-                        <div
-                          style={{
-                            display: "flex",
-                            width: "100%",
-                            gap: "1rem",
-                          }}
-                        >
-                          <Button
-                            type="submit"
-                            disabled={!isValid}
-                            data-cy="loginButton"
-                            style={{ flex: 1 }}
-                          >
-                            <FormattedMessage id="label.button.login" />
-                            <Loading
-                              small={true}
-                              withOverlay={false}
-                              className={submitting ? "show" : "hidden"}
-                            />
-                          </Button>
-
-                          <Button
-                            data-cy="changePassword"
-                            type="button"
-                            onClick={() => {
-                              navigateTo("/ChangePasswordLogin");
+                    {/* central login in charge (OAuth login page off): no password form, the gateway refuses
+                        /ValidateLogin anyway (Nidan KC-38-05); only the single sign-on button stays */}
+                    {configurationProperties?.useFormLogin == "true" &&
+                      configurationProperties?.useOauthLoginPage !==
+                        "false" && (
+                        <>
+                          <TextInput
+                            id="loginName"
+                            invalidText={props.intl.formatMessage({
+                              id: "login.msg.username.missing",
+                            })}
+                            labelText={props.intl.formatMessage({
+                              id: "login.msg.username",
+                            })}
+                            hideLabel={true}
+                            placeholder={props.intl.formatMessage({
+                              id: "login.msg.username",
+                            })}
+                            autoComplete="off"
+                            ref={firstInput}
+                          />
+                          <TextInput.PasswordInput
+                            id="password"
+                            invalidText={props.intl.formatMessage({
+                              id: "login.msg.password.missing",
+                            })}
+                            labelText={props.intl.formatMessage({
+                              id: "login.msg.password",
+                            })}
+                            hideLabel={true}
+                            placeholder={props.intl.formatMessage({
+                              id: "login.msg.password",
+                            })}
+                          />
+                          <div
+                            style={{
+                              display: "flex",
+                              width: "100%",
+                              gap: "1rem",
                             }}
-                            style={{ flex: 1 }}
                           >
-                            <FormattedMessage id="label.button.changepassword" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                            <Button
+                              type="submit"
+                              disabled={!isValid}
+                              data-cy="loginButton"
+                              style={{ flex: 1 }}
+                            >
+                              <FormattedMessage id="label.button.login" />
+                              <Loading
+                                small={true}
+                                withOverlay={false}
+                                className={submitting ? "show" : "hidden"}
+                              />
+                            </Button>
+
+                            <Button
+                              data-cy="changePassword"
+                              type="button"
+                              onClick={() => {
+                                navigateTo("/ChangePasswordLogin");
+                              }}
+                              style={{ flex: 1 }}
+                            >
+                              <FormattedMessage id="label.button.changepassword" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     {configurationProperties?.useSaml == "true" &&
                       configurationProperties?.useSamlLoginPage !== "false" && (
                         <Button
